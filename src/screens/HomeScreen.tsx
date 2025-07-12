@@ -88,25 +88,44 @@ export const HomeScreen: React.FC = () => {
 
   const setupNotifications = async () => {
     try {
+      console.log('📱 [HOME] Setting up notifications for user:', userProfile?.id);
+      
       // Register for push notifications
       if (userProfile) {
         const pushToken = await registerForPushNotifications();
         
+        console.log('📱 [HOME] Push token result:', pushToken ? 'received' : 'not received');
+        
         // Save token to database if we got one
         if (pushToken && supabase) {
           try {
-            await supabase
+            console.log('📱 [HOME] Saving token to database...');
+            console.log('📱 [HOME] User ID:', userProfile.id);
+            console.log('📱 [HOME] Platform:', Platform.OS);
+            console.log('📱 [HOME] Token preview:', `${pushToken.substring(0, 20)}...`);
+            
+            const { data, error } = await supabase
               .from('device_tokens')
               .upsert({
                 user_id: userProfile.id,
                 token: pushToken,
                 platform: Platform.OS === 'android' ? 'android' : 'ios',
                 updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'user_id,platform'
               });
-            console.log('✅ [NOTIFICATIONS] Push token saved to database');
-          } catch (error) {
-            console.error('❌ [NOTIFICATIONS] Failed to save token to database:', error);
+            
+            if (error) {
+              console.error('❌ [HOME] Database error saving token:', error);
+            } else {
+              console.log('✅ [HOME] Push token saved to database successfully');
+              console.log('✅ [HOME] Database response:', data);
+            }
+          } catch (dbError) {
+            console.error('❌ [HOME] Exception saving token to database:', dbError);
           }
+        } else {
+          console.warn('⚠️ [HOME] No push token to save or no supabase client');
         }
       }
       
@@ -116,7 +135,7 @@ export const HomeScreen: React.FC = () => {
       // Return cleanup function
       return cleanup;
     } catch (error) {
-      console.error('Error setting up notifications:', error);
+      console.error('❌ [HOME] Error setting up notifications:', error);
     }
   };
 
@@ -179,13 +198,35 @@ export const HomeScreen: React.FC = () => {
             
             const { title, body, data } = payload.payload;
             
-            // Show local notification with proper sound
-            Notifications.presentNotificationAsync({
+            console.log('📨 [NOTIFICATIONS] Processing notification:', {
+              title,
+              body,
+              data,
+              platform: Platform.OS
+            });
+            
+            // Use scheduleNotificationAsync with immediate trigger instead of deprecated presentNotificationAsync
+            const notificationContent = {
               title: title || 'Bildirim',
               body: body || 'Yeni bildirim aldınız',
               sound: 'default', // Always use default sound
-              categoryIdentifier: data?.type === 'video_call_invite' ? 'calls' : 'default',
               data: data || {},
+              // Android-specific settings
+              ...(Platform.OS === 'android' && {
+                channelId: data?.type === 'video_call_invite' ? 'calls' : 'default',
+                priority: data?.type === 'video_call_invite' ? 'high' : 'default',
+              }),
+            };
+            
+            console.log('📨 [NOTIFICATIONS] Scheduling notification with content:', notificationContent);
+            
+            Notifications.scheduleNotificationAsync({
+              content: notificationContent,
+              trigger: null, // Show immediately
+            }).then(() => {
+              console.log('✅ [NOTIFICATIONS] Real-time notification scheduled successfully');
+            }).catch((error) => {
+              console.error('❌ [NOTIFICATIONS] Error scheduling notification:', error);
             });
             
           } catch (error) {
@@ -194,6 +235,11 @@ export const HomeScreen: React.FC = () => {
         })
         .subscribe((status) => {
           console.log('📡 [NOTIFICATIONS] Real-time channel status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ [NOTIFICATIONS] Successfully subscribed to real-time notifications');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ [NOTIFICATIONS] Error subscribing to real-time notifications');
+          }
         });
       
       setNotificationChannel(channel);
@@ -386,6 +432,8 @@ export const HomeScreen: React.FC = () => {
 
   const handleTestNotification = async () => {
     try {
+      console.log('🔔 [TEST] Starting notification test...');
+      
       // Check device token first
       const deviceToken = await registerForPushNotifications();
       console.log('📱 [DEBUG] Current device token:', deviceToken);
@@ -406,19 +454,28 @@ export const HomeScreen: React.FC = () => {
         }
       }
       
-      // Show immediate local notification first
-      await Notifications.presentNotificationAsync({
-        title: '🔔 Test Bildirimi (Yerel)',
-        body: 'Local notification sistemi çalışıyor! ✅',
-        sound: 'default',
-        categoryIdentifier: 'default',
-        data: {
-          type: 'test_notification',
-          timestamp: new Date().toISOString()
+      // Show immediate local notification first using new method
+      console.log('📨 [TEST] Scheduling local test notification...');
+      
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '🔔 Test Bildirimi (Yerel)',
+          body: 'Local notification sistemi çalışıyor! ✅',
+          sound: 'default',
+          data: {
+            type: 'test_notification',
+            timestamp: new Date().toISOString()
+          },
+          // Android-specific settings
+          ...(Platform.OS === 'android' && {
+            channelId: 'default',
+            priority: 'default',
+          }),
         },
+        trigger: null, // Show immediately
       });
       
-      console.log('✅ [TEST] Local notification sent successfully');
+      console.log('✅ [TEST] Local notification scheduled successfully');
 
       // Test cross-user notification if we have a partner
       const partnerId = userProfile?.role === 'student' 

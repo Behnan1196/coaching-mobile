@@ -51,23 +51,43 @@ export const setupNotificationChannels = async () => {
 // Configure how notifications should be handled when app is running
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
-    const { data } = notification.request.content;
+    const { data, title, body } = notification.request.content;
     
-    // For high priority notifications like calls, show as alert
+    console.log('📱 [NOTIFICATION-HANDLER] Received notification:', {
+      title,
+      body,
+      data,
+      platform: Platform.OS
+    });
+    
+    // For video call invites and incoming calls, show as proper notification with sound
     if (data?.type === 'video_call_invite' || data?.type === 'incoming_call') {
+      console.log('📱 [NOTIFICATION-HANDLER] Video call notification - showing with sound');
       return {
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
+        shouldShowAlert: true,   // Show as proper notification
+        shouldPlaySound: true,   // Play sound
+        shouldSetBadge: true,    // Set badge
         priority: Notifications.AndroidNotificationPriority.HIGH,
       };
     }
     
-    // For regular notifications, show as notification (not alert)
+    // For session reminders, also show with sound
+    if (data?.type === 'session_reminder') {
+      console.log('📱 [NOTIFICATION-HANDLER] Session reminder - showing with sound');
+      return {
+        shouldShowAlert: true,   // Show as proper notification
+        shouldPlaySound: true,   // Play sound
+        shouldSetBadge: true,    // Set badge
+        priority: Notifications.AndroidNotificationPriority.DEFAULT,
+      };
+    }
+    
+    // For regular notifications, show as notification with sound
+    console.log('📱 [NOTIFICATION-HANDLER] Regular notification - showing with sound');
     return {
-      shouldShowAlert: false,  // This makes it appear as notification, not banner
-      shouldPlaySound: true,
-      shouldSetBadge: true,
+      shouldShowAlert: true,   // Show as proper notification (not just badge)
+      shouldPlaySound: true,   // Play sound
+      shouldSetBadge: true,    // Set badge
       priority: Notifications.AndroidNotificationPriority.DEFAULT,
     };
   },
@@ -76,18 +96,22 @@ Notifications.setNotificationHandler({
 export const registerForPushNotifications = async (): Promise<string | null> => {
   try {
     console.log('📱 [NOTIFICATIONS] Registering for push notifications...');
+    console.log('📱 [NOTIFICATIONS] Platform:', Platform.OS);
 
     // Set up notification channels first
     await setupNotificationChannels();
 
     // Check if we have permission
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    console.log('📱 [NOTIFICATIONS] Current permission status:', existingStatus);
     let finalStatus = existingStatus;
 
     // Request permission if not granted
     if (existingStatus !== 'granted') {
+      console.log('📱 [NOTIFICATIONS] Requesting permissions...');
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
+      console.log('📱 [NOTIFICATIONS] Permission request result:', status);
     }
 
     if (finalStatus !== 'granted') {
@@ -95,16 +119,26 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
       return null;
     }
 
+    console.log('📱 [NOTIFICATIONS] Permission granted, getting push token...');
+
     try {
       // Get the push token
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: '7cd95625-11cc-40e0-967a-f09e46a57e58',
+        projectId: process.env.EXPO_PUBLIC_PROJECT_ID || 'your-project-id',
       });
 
       const token = tokenData.data;
-      console.log('✅ [NOTIFICATIONS] Push token obtained:', token);
+      console.log('✅ [NOTIFICATIONS] Push token obtained successfully');
+      console.log('✅ [NOTIFICATIONS] Token preview:', `${token.substring(0, 20)}...`);
+      console.log('✅ [NOTIFICATIONS] Token length:', token.length);
       return token;
     } catch (tokenError: any) {
+      console.error('❌ [NOTIFICATIONS] Token error details:', {
+        message: tokenError.message,
+        stack: tokenError.stack,
+        code: tokenError.code
+      });
+      
       // Handle Firebase/FCM errors gracefully for development
       if (Platform.OS === 'android' && tokenError.message?.includes('FirebaseApp')) {
         console.warn('⚠️ [NOTIFICATIONS] Android Firebase not configured - push notifications disabled for development');
@@ -115,6 +149,7 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
     }
   } catch (error: any) {
     console.error('❌ [NOTIFICATIONS] Error registering for push notifications:', error.message);
+    console.error('❌ [NOTIFICATIONS] Full error:', error);
     return null;
   }
 };
@@ -129,6 +164,9 @@ export const sendPushNotificationToUser = async (
     const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
     
     console.log(`📤 [PUSH] Sending notification to user ${userId}: ${title}`);
+    console.log(`📤 [PUSH] API URL: ${apiUrl}`);
+    console.log(`📤 [PUSH] Platform: ${Platform.OS}`);
+    console.log(`📤 [PUSH] Full payload:`, { userId, title, body, data });
     
     const response = await fetch(`${apiUrl}/api/notifications/send`, {
       method: 'POST',
@@ -139,25 +177,36 @@ export const sendPushNotificationToUser = async (
         userId,
         title,
         body,
-        data,
+        data: {
+          ...data,
+          senderPlatform: Platform.OS,
+          timestamp: new Date().toISOString(),
+        },
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
+    console.log(`📤 [PUSH] Response status: ${response.status}`);
+    console.log(`📤 [PUSH] Response headers:`, response.headers);
+    
     const result = await response.json();
+    console.log(`📤 [PUSH] Response body:`, result);
     
     if (result.success) {
       console.log('✅ [PUSH] Notification sent successfully');
+      console.log('✅ [PUSH] Success details:', result.results);
       return true;
     } else {
       console.error('❌ [PUSH] Notification failed:', result.error);
+      console.error('❌ [PUSH] Error details:', result.results);
+      console.error('❌ [PUSH] Debug info:', result.debug);
       return false;
     }
   } catch (error) {
     console.error('❌ [PUSH] Error sending notification:', error);
+    console.error('❌ [PUSH] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return false;
   }
 };
