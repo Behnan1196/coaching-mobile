@@ -209,7 +209,7 @@ export const HomeScreen: React.FC = () => {
             const notificationContent = {
               title: title || 'Bildirim',
               body: body || 'Yeni bildirim aldınız',
-              sound: data?.type === 'video_call_invite' ? 'incoming_call.mp3' : 'default', // Use custom sound for video calls
+              sound: data?.type === 'video_call_invite' ? 'mixkit2576' : 'default', // Use filename without extension
               data: data || {},
               // Android-specific settings
               ...(Platform.OS === 'android' && {

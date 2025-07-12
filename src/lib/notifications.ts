@@ -30,7 +30,7 @@ export const setupNotificationChannels = async () => {
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 500, 250, 500],
       lightColor: '#10B981',
-      sound: 'incoming_call.mp3', // Use the custom sound file
+      sound: 'mixkit2576', // Try without .wav extension
       enableLights: true,
       enableVibrate: true,
       showBadge: true,

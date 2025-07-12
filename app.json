@@ -31,7 +31,8 @@
         "android.permission.WAKE_LOCK",
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_ADMIN",
-        "android.permission.BLUETOOTH_CONNECT"
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.VIBRATE"
       ],
       "package": "com.behnan.coachingmobile",
       "googleServicesFile": "./google-services.json"
@@ -45,7 +46,7 @@
           "color": "#3B82F6",
           "defaultChannel": "default",
           "sounds": [
-            "./assets/sounds/incoming_call.mp3"
+            "./assets/sounds/mixkit2576.wav"
           ],
           "mode": "production"
         }
