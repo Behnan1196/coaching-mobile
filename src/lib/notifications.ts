@@ -5,18 +5,80 @@ import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { Task } from '../types/database';
 
+// Set up notification channels for Android
+export const setupNotificationChannels = async () => {
+  if (Platform.OS === 'android') {
+    // Default channel for general notifications
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Default',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#3B82F6',
+      sound: 'default',
+      enableLights: true,
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // High priority channel for calls and urgent notifications
+    await Notifications.setNotificationChannelAsync('calls', {
+      name: 'Video Calls',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 500, 250, 500],
+      lightColor: '#10B981',
+      sound: 'incoming_call.mp3', // Use our custom sound
+      enableLights: true,
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // Session reminders channel
+    await Notifications.setNotificationChannelAsync('session_reminders', {
+      name: 'Session Reminders',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#F59E0B',
+      sound: 'default',
+      enableLights: true,
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    console.log('✅ [NOTIFICATIONS] Android notification channels configured');
+  }
+};
+
 // Configure how notifications should be handled when app is running
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (notification) => {
+    const { data } = notification.request.content;
+    
+    // For high priority notifications like calls, show as alert
+    if (data?.type === 'video_call_invite' || data?.type === 'incoming_call') {
+      return {
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      };
+    }
+    
+    // For regular notifications, show as notification (not alert)
+    return {
+      shouldShowAlert: false,  // This makes it appear as notification, not banner
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      priority: Notifications.AndroidNotificationPriority.DEFAULT,
+    };
+  },
 });
 
 export const registerForPushNotifications = async (): Promise<string | null> => {
   try {
     console.log('📱 [NOTIFICATIONS] Registering for push notifications...');
+
+    // Set up notification channels first
+    await setupNotificationChannels();
 
     // Check if we have permission
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -235,6 +297,8 @@ export class NotificationService {
           content: {
             title: 'Koçluk Seansı Hatırlatması',
             body: `${session.title} yarın ${session.scheduled_start_time} saatinde başlayacak`,
+            sound: 'default',
+            categoryIdentifier: 'session_reminder',
             data: {
               type: 'session_reminder',
               sessionId: session.id,
@@ -254,6 +318,8 @@ export class NotificationService {
           content: {
             title: 'Koçluk Seansı Hatırlatması',
             body: `${session.title} 1 saat sonra başlayacak (${session.scheduled_start_time})`,
+            sound: 'default',
+            categoryIdentifier: 'session_reminder',
             data: {
               type: 'session_reminder',
               sessionId: session.id,
@@ -273,6 +339,8 @@ export class NotificationService {
           content: {
             title: 'Koçluk Seansı Yaklaşıyor!',
             body: `${session.title} 15 dakika sonra başlayacak. Hazır olun!`,
+            sound: 'default',
+            categoryIdentifier: 'session_reminder',
             data: {
               type: 'session_reminder',
               sessionId: session.id,

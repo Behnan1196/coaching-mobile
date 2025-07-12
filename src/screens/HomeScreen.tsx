@@ -22,7 +22,8 @@ import { Task, UserProfile } from '../types/database';
 import NotificationService, { 
   registerForPushNotifications, 
   sendPushNotificationToUser,
-  sendSessionNotificationToStudent 
+  sendSessionNotificationToStudent,
+  setupNotificationChannels
 } from '../lib/notifications';
 import PresenceService from '../lib/presence';
 
@@ -182,10 +183,12 @@ export const HomeScreen: React.FC = () => {
             
             const { title, body, data } = payload.payload;
             
-            // Show local notification
+            // Show local notification with proper sound
             Notifications.presentNotificationAsync({
               title: title || 'Bildirim',
               body: body || 'Yeni bildirim aldınız',
+              sound: data?.type === 'video_call_invite' ? 'incoming_call.mp3' : 'default',
+              categoryIdentifier: data?.type === 'video_call_invite' ? 'calls' : 'default',
               data: data || {},
             });
             
@@ -391,6 +394,8 @@ export const HomeScreen: React.FC = () => {
       await Notifications.presentNotificationAsync({
         title: '🔔 Test Bildirimi (Yerel)',
         body: 'Local notification sistemi çalışıyor! ✅',
+        sound: 'default',
+        categoryIdentifier: 'default',
         data: {
           type: 'test_notification',
           timestamp: new Date().toISOString()

@@ -43,7 +43,10 @@
         "expo-notifications",
         {
           "color": "#3B82F6",
-          "sounds": []
+          "defaultChannel": "default",
+          "sounds": [
+            "./assets/sounds/incoming_call.mp3"
+          ]
         }
       ]
     ],
