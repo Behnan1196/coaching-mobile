@@ -209,12 +209,14 @@ export const HomeScreen: React.FC = () => {
             const notificationContent = {
               title: title || 'Bildirim',
               body: body || 'Yeni bildirim aldınız',
-              sound: 'default', // Always use default sound
+              sound: data?.type === 'video_call_invite' ? 'incoming_call.mp3' : 'default', // Use custom sound for video calls
               data: data || {},
               // Android-specific settings
               ...(Platform.OS === 'android' && {
                 channelId: data?.type === 'video_call_invite' ? 'calls' : 'default',
                 priority: data?.type === 'video_call_invite' ? 'high' : 'default',
+                vibrate: data?.type === 'video_call_invite' ? [0, 500, 250, 500] : [0, 250, 250, 250],
+                color: data?.type === 'video_call_invite' ? '#10B981' : '#3B82F6',
               }),
             };
             
@@ -470,6 +472,8 @@ export const HomeScreen: React.FC = () => {
           ...(Platform.OS === 'android' && {
             channelId: 'default',
             priority: 'default',
+            vibrate: [0, 250, 250, 250],
+            color: '#3B82F6',
           }),
         },
         trigger: null, // Show immediately

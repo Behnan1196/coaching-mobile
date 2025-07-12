@@ -8,16 +8,20 @@ import { Task } from '../types/database';
 // Set up notification channels for Android
 export const setupNotificationChannels = async () => {
   if (Platform.OS === 'android') {
+    console.log('📱 [NOTIFICATIONS] Setting up Android notification channels...');
+    
     // Default channel for general notifications
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Default',
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: Notifications.AndroidImportance.HIGH, // Changed from DEFAULT to HIGH
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#3B82F6',
       sound: 'default',
       enableLights: true,
       enableVibrate: true,
       showBadge: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: false,
     });
 
     // High priority channel for calls and urgent notifications
@@ -26,10 +30,12 @@ export const setupNotificationChannels = async () => {
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 500, 250, 500],
       lightColor: '#10B981',
-      sound: 'default', // Use default system sound for now
+      sound: 'incoming_call.mp3', // Use the custom sound file
       enableLights: true,
       enableVibrate: true,
       showBadge: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: true, // Allow these to bypass Do Not Disturb
     });
 
     // Session reminders channel
@@ -42,6 +48,8 @@ export const setupNotificationChannels = async () => {
       enableLights: true,
       enableVibrate: true,
       showBadge: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: false,
     });
 
     console.log('✅ [NOTIFICATIONS] Android notification channels configured');
@@ -60,6 +68,8 @@ Notifications.setNotificationHandler({
       platform: Platform.OS
     });
     
+    console.log('📱 [NOTIFICATION-HANDLER] Full notification object:', notification.request.content);
+    
     // For video call invites and incoming calls, show as proper notification with sound
     if (data?.type === 'video_call_invite' || data?.type === 'incoming_call') {
       console.log('📱 [NOTIFICATION-HANDLER] Video call notification - showing with sound');
@@ -74,6 +84,17 @@ Notifications.setNotificationHandler({
     // For session reminders, also show with sound
     if (data?.type === 'session_reminder') {
       console.log('📱 [NOTIFICATION-HANDLER] Session reminder - showing with sound');
+      return {
+        shouldShowAlert: true,   // Show as proper notification
+        shouldPlaySound: true,   // Play sound
+        shouldSetBadge: true,    // Set badge
+        priority: Notifications.AndroidNotificationPriority.DEFAULT,
+      };
+    }
+    
+    // For test notifications, also show with sound
+    if (data?.type === 'test_notification' || data?.type === 'test_cross_user') {
+      console.log('📱 [NOTIFICATION-HANDLER] Test notification - showing with sound');
       return {
         shouldShowAlert: true,   // Show as proper notification
         shouldPlaySound: true,   // Play sound

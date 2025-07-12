@@ -46,7 +46,8 @@
           "defaultChannel": "default",
           "sounds": [
             "./assets/sounds/incoming_call.mp3"
-          ]
+          ],
+          "mode": "production"
         }
       ]
     ],
