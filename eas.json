@@ -12,9 +12,6 @@
       "android": {
         "buildType": "apk"
       },
-      "hooks": {
-        "postInstall": "node scripts/setup-google-services.js"
-      },
       "env": {
         "EXPO_PUBLIC_STREAM_API_KEY": "9xvpnn7jqchk",
         "EXPO_PUBLIC_SUPABASE_URL": "https://qcopfmseprcriaxnuxmb.supabase.co",
@@ -26,9 +23,6 @@
     "production": {
       "android": {
         "buildType": "app-bundle"
-      },
-      "hooks": {
-        "postInstall": "node scripts/setup-google-services.js"
       },
       "env": {
         "EXPO_PUBLIC_STREAM_API_KEY": "9xvpnn7jqchk",
