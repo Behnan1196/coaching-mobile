@@ -11,7 +11,6 @@ import {
   RefreshControl,
   Platform,
   AppState,
-  TextInput,
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useAuth } from '../contexts/AuthContext';
@@ -43,10 +42,7 @@ export const HomeScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [partnerOnline, setPartnerOnline] = useState(false);
   const [notificationChannel, setNotificationChannel] = useState<any>(null);
-  const [isInviting, setIsInviting] = useState(false);
-  const [inviteMessage, setInviteMessage] = useState('');
-  const [showInviteForm, setShowInviteForm] = useState(false);
-  const [justSentInvite, setJustSentInvite] = useState(false);
+
 
   useEffect(() => {
     if (userProfile) {
@@ -187,7 +183,7 @@ export const HomeScreen: React.FC = () => {
             Notifications.presentNotificationAsync({
               title: title || 'Bildirim',
               body: body || 'Yeni bildirim aldınız',
-              sound: data?.type === 'video_call_invite' ? 'incoming_call.mp3' : 'default',
+              sound: 'default', // Always use default sound
               categoryIdentifier: data?.type === 'video_call_invite' ? 'calls' : 'default',
               data: data || {},
             });
@@ -390,6 +386,26 @@ export const HomeScreen: React.FC = () => {
 
   const handleTestNotification = async () => {
     try {
+      // Check device token first
+      const deviceToken = await registerForPushNotifications();
+      console.log('📱 [DEBUG] Current device token:', deviceToken);
+      
+      if (deviceToken && supabase) {
+        // Check if token is saved in database
+        try {
+          const { data: tokenData, error } = await supabase
+            .from('device_tokens')
+            .select('*')
+            .eq('user_id', userProfile?.id)
+            .eq('platform', Platform.OS === 'android' ? 'android' : 'ios');
+          
+          console.log('💾 [DEBUG] Saved tokens in database:', tokenData);
+          if (error) console.error('❌ [DEBUG] Token query error:', error);
+        } catch (dbError) {
+          console.error('❌ [DEBUG] Database error:', dbError);
+        }
+      }
+      
       // Show immediate local notification first
       await Notifications.presentNotificationAsync({
         title: '🔔 Test Bildirimi (Yerel)',
@@ -454,59 +470,7 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  const handleSendVideoInvite = async () => {
-    const partnerId = userProfile?.role === 'student' 
-      ? assignedCoach?.id 
-      : selectedStudent?.id;
-    
-    const partnerName = userProfile?.role === 'student' 
-      ? assignedCoach?.full_name 
-      : selectedStudent?.full_name;
 
-    if (!partnerId || !partnerName) {
-      Alert.alert('Hata', 'Video daveti göndermek için partner bilgisi bulunamadı.');
-      return;
-    }
-
-    setIsInviting(true);
-    try {
-      const success = await sendPushNotificationToUser(
-        partnerId,
-        '📹 Video Görüşme Daveti',
-        `${userProfile?.full_name} size video görüşme daveti gönderiyor: "${inviteMessage.trim() || 'Video görüşme daveti'}"`,
-        {
-          type: 'video_call_invite',
-          fromUserId: userProfile?.id,
-          fromUserName: userProfile?.full_name,
-          message: inviteMessage.trim() || 'Video görüşme daveti'
-        }
-      );
-
-      if (success) {
-        setJustSentInvite(true);
-        setInviteMessage('');
-        setShowInviteForm(false);
-        
-        // Hide the confirmation after 3 seconds
-        setTimeout(() => {
-          setJustSentInvite(false);
-        }, 3000);
-      } else {
-        Alert.alert(
-          'Davet Gönderilirken Hata',
-          'Video daveti gönderilemedi. Lütfen tekrar deneyin.'
-        );
-      }
-    } catch (error) {
-      console.error('❌ [VIDEO-INVITE] Error sending video invite:', error);
-      Alert.alert(
-        'Davet Gönderilirken Hata',
-        'Video daveti gönderilemedi. Lütfen tekrar deneyin.'
-      );
-    } finally {
-      setIsInviting(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -575,74 +539,7 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Video Call Invite Section */}
-        {((userProfile?.role === 'student' && assignedCoach) || 
-          (userProfile?.role === 'coach' && selectedStudent)) && (
-          <View style={styles.videoInviteSection}>
-            
-            {justSentInvite ? (
-              <View style={styles.inviteSuccessCard}>
-                <Text style={styles.inviteSuccessTitle}>✅ Davet Gönderildi!</Text>
-                <Text style={styles.inviteSuccessText}>
-                  {userProfile?.role === 'student' ? assignedCoach?.full_name : selectedStudent?.full_name} 
-                  adlı kişiye video görüşme daveti gönderildi
-                </Text>
-              </View>
-            ) : showInviteForm ? (
-              <View style={styles.inviteFormCard}>
-                <Text style={styles.inviteFormTitle}>
-                  {userProfile?.role === 'student' ? assignedCoach?.full_name : selectedStudent?.full_name} 
-                  adlı kişiye video görüşme daveti gönder
-                </Text>
-                
-                <View style={styles.inviteInputContainer}>
-                  <Text style={styles.inviteInputLabel}>Davet Mesajı (İsteğe bağlı)</Text>
-                  <TextInput
-                    style={styles.inviteInput}
-                    value={inviteMessage}
-                    onChangeText={setInviteMessage}
-                    placeholder="Örn: Matematik konusunu görüşelim"
-                    maxLength={100}
-                    multiline
-                  />
-                </View>
-                
-                <View style={styles.inviteButtonContainer}>
-                  <TouchableOpacity
-                    style={[styles.inviteButton, styles.inviteButtonCancel]}
-                    onPress={() => {
-                      setShowInviteForm(false);
-                      setInviteMessage('');
-                    }}
-                  >
-                    <Text style={styles.inviteButtonCancelText}>İptal</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={[styles.inviteButton, styles.inviteButtonSend, isInviting && styles.inviteButtonDisabled]}
-                    onPress={handleSendVideoInvite}
-                    disabled={isInviting}
-                  >
-                    <Text style={styles.inviteButtonSendText}>
-                      {isInviting ? 'Gönderiliyor...' : '📹 Davet Gönder'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.inviteCard}
-                onPress={() => setShowInviteForm(true)}
-              >
-                <Text style={styles.inviteCardTitle}>📹 Video Görüşme Daveti Gönder</Text>
-                <Text style={styles.inviteCardSubtitle}>
-                  {userProfile?.role === 'student' ? assignedCoach?.full_name : selectedStudent?.full_name} 
-                  adlı kişiye video görüşme daveti gönderin
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+
 
         {/* Upcoming Coaching Sessions */}
         <View style={styles.sessionsCard}>
@@ -981,117 +878,5 @@ const styles = StyleSheet.create({
   partnerName: {
     fontSize: 14,
     color: '#6B7280',
-  },
-  
-  // Video Invite Styles
-  videoInviteSection: {
-    marginTop: 16,
-  },
-  inviteCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 16,
-    marginHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  inviteCardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  inviteCardSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  inviteSuccessCard: {
-    backgroundColor: '#F0FDF4',
-    borderRadius: 8,
-    padding: 16,
-    marginHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-  },
-  inviteSuccessTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#15803D',
-    marginBottom: 8,
-  },
-  inviteSuccessText: {
-    fontSize: 14,
-    color: '#166534',
-  },
-  inviteFormCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 16,
-    marginHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  inviteFormTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  inviteInputContainer: {
-    marginBottom: 16,
-  },
-  inviteInputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  inviteInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#1F2937',
-    backgroundColor: '#FFFFFF',
-    minHeight: 40,
-  },
-  inviteButtonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  inviteButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  inviteButtonCancel: {
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-  },
-  inviteButtonCancelText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  inviteButtonSend: {
-    backgroundColor: '#3B82F6',
-  },
-  inviteButtonSendText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFFFFF',
-  },
-  inviteButtonDisabled: {
-    backgroundColor: '#9CA3AF',
   },
 }); 

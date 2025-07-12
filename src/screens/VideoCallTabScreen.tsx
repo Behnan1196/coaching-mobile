@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   SafeAreaView,
+  TextInput,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useStream } from '../contexts/StreamContext';
@@ -14,6 +15,7 @@ import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
 import { VideoCallScreen } from './VideoCallScreen';
+import { sendPushNotificationToUser } from '../lib/notifications';
 
 export const VideoCallTabScreen: React.FC = () => {
   const { userProfile } = useAuth();
@@ -32,6 +34,12 @@ export const VideoCallTabScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [callPartner, setCallPartner] = useState<UserProfile | null>(null);
+  
+  // Video invite state
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [justSentInvite, setJustSentInvite] = useState(false);
 
   useEffect(() => {
     if (userProfile) {
@@ -96,6 +104,52 @@ export const VideoCallTabScreen: React.FC = () => {
       await initializeVideoCall(callPartner.id);
     } catch (error) {
       Alert.alert('Hata', 'Video görüşme başlatılamadı');
+    }
+  };
+
+  const handleSendVideoInvite = async () => {
+    if (!callPartner) {
+      Alert.alert('Hata', 'Video daveti göndermek için partner bilgisi bulunamadı.');
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      const success = await sendPushNotificationToUser(
+        callPartner.id,
+        '📹 Video Görüşme Daveti',
+        `${userProfile?.full_name} size video görüşme daveti gönderiyor: "${inviteMessage.trim() || 'Video görüşme daveti'}"`,
+        {
+          type: 'video_call_invite',
+          fromUserId: userProfile?.id,
+          fromUserName: userProfile?.full_name,
+          message: inviteMessage.trim() || 'Video görüşme daveti'
+        }
+      );
+
+      if (success) {
+        setJustSentInvite(true);
+        setInviteMessage('');
+        setShowInviteForm(false);
+        
+        // Hide the confirmation after 3 seconds
+        setTimeout(() => {
+          setJustSentInvite(false);
+        }, 3000);
+      } else {
+        Alert.alert(
+          'Davet Gönderilirken Hata',
+          'Video daveti gönderilemedi. Lütfen tekrar deneyin.'
+        );
+      }
+    } catch (error) {
+      console.error('❌ [VIDEO-INVITE] Error sending video invite:', error);
+      Alert.alert(
+        'Davet Gönderilirken Hata',
+        'Video daveti gönderilemedi. Lütfen tekrar deneyin.'
+      );
+    } finally {
+      setIsInviting(false);
     }
   };
 
@@ -171,6 +225,68 @@ export const VideoCallTabScreen: React.FC = () => {
               {videoError && (
                 <Text style={styles.errorText}>{videoError}</Text>
               )}
+
+              {/* Video Call Invite Section */}
+              <View style={styles.inviteSection}>
+                {justSentInvite ? (
+                  <View style={styles.inviteSuccessCard}>
+                    <Text style={styles.inviteSuccessTitle}>✅ Davet Gönderildi!</Text>
+                    <Text style={styles.inviteSuccessText}>
+                      {callPartner.full_name} adlı kişiye video görüşme daveti gönderildi
+                    </Text>
+                  </View>
+                ) : showInviteForm ? (
+                  <View style={styles.inviteFormCard}>
+                    <Text style={styles.inviteFormTitle}>
+                      {callPartner.full_name} adlı kişiye video görüşme daveti gönder
+                    </Text>
+                    
+                    <View style={styles.inviteInputContainer}>
+                      <Text style={styles.inviteInputLabel}>Davet Mesajı (İsteğe bağlı)</Text>
+                      <TextInput
+                        style={styles.inviteInput}
+                        value={inviteMessage}
+                        onChangeText={setInviteMessage}
+                        placeholder="Örn: Matematik konusunu görüşelim"
+                        maxLength={100}
+                        multiline
+                      />
+                    </View>
+                    
+                    <View style={styles.inviteButtonContainer}>
+                      <TouchableOpacity
+                        style={[styles.inviteButton, styles.inviteButtonCancel]}
+                        onPress={() => {
+                          setShowInviteForm(false);
+                          setInviteMessage('');
+                        }}
+                      >
+                        <Text style={styles.inviteButtonCancelText}>İptal</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={[styles.inviteButton, styles.inviteButtonSend, isInviting && styles.inviteButtonDisabled]}
+                        onPress={handleSendVideoInvite}
+                        disabled={isInviting}
+                      >
+                        <Text style={styles.inviteButtonSendText}>
+                          {isInviting ? 'Gönderiliyor...' : '📹 Davet Gönder'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.inviteCard}
+                    onPress={() => setShowInviteForm(true)}
+                  >
+                    <Text style={styles.inviteCardTitle}>📹 Video Görüşme Daveti Gönder</Text>
+                    <Text style={styles.inviteCardSubtitle}>
+                      {callPartner.full_name} adlı kişiye video görüşme daveti gönderin
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           </View>
         ) : (
@@ -310,5 +426,111 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  
+  // Video Invite Styles
+  inviteSection: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  inviteCard: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  inviteCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  inviteCardSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  inviteSuccessCard: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  inviteSuccessTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#15803D',
+    marginBottom: 8,
+  },
+  inviteSuccessText: {
+    fontSize: 14,
+    color: '#166534',
+  },
+  inviteFormCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  inviteFormTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 16,
+  },
+  inviteInputContainer: {
+    marginBottom: 16,
+  },
+  inviteInputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  inviteInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#1F2937',
+    backgroundColor: '#FFFFFF',
+    minHeight: 40,
+  },
+  inviteButtonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  inviteButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  inviteButtonCancel: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  inviteButtonCancelText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  inviteButtonSend: {
+    backgroundColor: '#3B82F6',
+  },
+  inviteButtonSendText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+  },
+  inviteButtonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
 }); 
