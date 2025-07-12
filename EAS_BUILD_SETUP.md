@@ -10,13 +10,13 @@ EAS Build only uploads files tracked by Git. Since `google-services.json` contai
 ```
 
 ## The Solution
-We've implemented a secure solution using EAS environment variables and a prebuild script:
+We've implemented a secure solution using EAS environment variables and a postInstall hook:
 
 ### 1. Environment Variables Configuration
 The `google-services.json` content is stored as an environment variable `GOOGLE_SERVICES_JSON` in `eas.json` for both preview and production builds.
 
-### 2. Prebuild Script
-A Node.js script (`scripts/setup-google-services.js`) runs before each build to:
+### 2. PostInstall Hook Script
+A Node.js script (`scripts/setup-google-services.js`) runs after dependencies are installed but before the build starts to:
 - Read the `GOOGLE_SERVICES_JSON` environment variable
 - Parse and validate the JSON content
 - Create the `google-services.json` file in the project root
@@ -24,21 +24,21 @@ A Node.js script (`scripts/setup-google-services.js`) runs before each build to:
 
 ### 3. EAS Configuration
 The `eas.json` includes:
-- `prebuildCommand`: Runs the setup script before building
+- `hooks.postInstall`: Runs the setup script after npm install but before building
 - `env.GOOGLE_SERVICES_JSON`: Contains the Firebase configuration
 
 ## How It Works
 
 ### During EAS Builds:
-1. EAS reads the environment variables from `eas.json`
-2. The `prebuildCommand` runs `node scripts/setup-google-services.js`
+1. EAS installs dependencies using npm/yarn
+2. The `postInstall` hook runs `node scripts/setup-google-services.js`
 3. The script creates `google-services.json` from the environment variable
 4. The build process continues with the file available
 5. Push notifications work correctly in the built app
 
 ### During Local Development:
 1. The `google-services.json` file exists locally (not tracked by Git)
-2. The prebuild script detects no environment variable and skips creation
+2. The script only runs during EAS builds (not locally)
 3. Local development uses the existing file
 4. No changes needed to your development workflow
 
@@ -60,9 +60,9 @@ eas build --platform android --profile production
 ## File Structure
 ```
 coaching-mobile/
-├── eas.json                          # EAS configuration with env vars
+├── eas.json                          # EAS configuration with env vars and hooks
 ├── scripts/
-│   └── setup-google-services.js      # Prebuild script
+│   └── setup-google-services.js      # PostInstall hook script
 ├── google-services.json              # Local file (not tracked)
 ├── google-services.json.template     # Template for reference
 └── .gitignore                        # Excludes google-services.json
@@ -80,13 +80,13 @@ The `GOOGLE_SERVICES_JSON` environment variable contains the complete Firebase c
 ### Build Still Failing?
 1. Check that the `GOOGLE_SERVICES_JSON` environment variable is properly set in `eas.json`
 2. Verify the JSON is valid and escaped properly
-3. Ensure the prebuild script is executable
+3. Ensure the postInstall hook is configured correctly
 4. Check the EAS build logs for script execution details
 
 ### Local Development Issues?
 1. Make sure `google-services.json` exists in your project root
 2. The file should match the template structure in `google-services.json.template`
-3. The prebuild script will skip creation if the env var is not found
+3. The postInstall hook only runs during EAS builds, not locally
 
 ### Script Errors?
 The setup script includes comprehensive error handling:
@@ -101,6 +101,13 @@ If you need to update Firebase settings:
 2. Update your local `google-services.json` file
 3. Commit the `eas.json` changes
 4. The next EAS build will use the updated configuration
+
+## EAS Hooks vs Scripts
+We use EAS `hooks.postInstall` instead of `prebuildCommand` because:
+- `postInstall` runs after dependencies are installed but before the build
+- It's the correct hook for setting up files needed for the build process
+- It doesn't conflict with Expo's build commands
+- It provides better timing for file generation
 
 ## Security Note
 Never commit the actual `google-services.json` file to version control. Always use the environment variable approach for EAS builds and maintain the local file for development. 
