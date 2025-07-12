@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   TextInput,
+  Platform,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useStream } from '../contexts/StreamContext';
@@ -113,6 +114,14 @@ export const VideoCallTabScreen: React.FC = () => {
       return;
     }
 
+    console.log('📤 [VIDEO-INVITE] Starting invite process...', {
+      fromUser: userProfile?.full_name,
+      fromUserId: userProfile?.id,
+      toUser: callPartner.full_name,
+      toUserId: callPartner.id,
+      platform: Platform.OS
+    });
+
     setIsInviting(true);
     try {
       const success = await sendPushNotificationToUser(
@@ -123,11 +132,15 @@ export const VideoCallTabScreen: React.FC = () => {
           type: 'video_call_invite',
           fromUserId: userProfile?.id,
           fromUserName: userProfile?.full_name,
+          fromPlatform: Platform.OS,
           message: inviteMessage.trim() || 'Video görüşme daveti'
         }
       );
 
+      console.log('📤 [VIDEO-INVITE] Notification result:', success);
+
       if (success) {
+        console.log('✅ [VIDEO-INVITE] Invite sent successfully');
         setJustSentInvite(true);
         setInviteMessage('');
         setShowInviteForm(false);
@@ -137,16 +150,17 @@ export const VideoCallTabScreen: React.FC = () => {
           setJustSentInvite(false);
         }, 3000);
       } else {
+        console.error('❌ [VIDEO-INVITE] Invite failed - API returned false');
         Alert.alert(
           'Davet Gönderilirken Hata',
-          'Video daveti gönderilemedi. Lütfen tekrar deneyin.'
+          `Video daveti gönderilemedi. Lütfen tekrar deneyin.\n\nPlatform: ${Platform.OS}\nHedef: ${callPartner.full_name}`
         );
       }
     } catch (error) {
       console.error('❌ [VIDEO-INVITE] Error sending video invite:', error);
       Alert.alert(
         'Davet Gönderilirken Hata',
-        'Video daveti gönderilemedi. Lütfen tekrar deneyin.'
+        `Video daveti gönderilemedi. Hata: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}\n\nPlatform: ${Platform.OS}`
       );
     } finally {
       setIsInviting(false);
