@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Coaching Mobile",
+    "slug": "coaching-mobile",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.behnan.coachingmobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs access to camera for video calls with your coach",
+        "NSMicrophoneUsageDescription": "This app needs access to microphone for voice calls with your coach",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "aps-environment": "development"
+      }
+    },
+    "android": {
+      "versionCode": 2,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CHANGE_NETWORK_STATE",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.WAKE_LOCK",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ],
+      "package": "com.behnan.coachingmobile",
+      "googleServicesFile": "./google-services.json"
+    },
+    "plugins": [
+      "expo-av",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#3B82F6",
+          "sounds": []
+        }
+      ]
+    ],
+    "notification": {
+      "color": "#3B82F6"
+    },
+    "sdkVersion": "53.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "7cd95625-11cc-40e0-967a-f09e46a57e58"
+      }
+    },
+    "owner": "behnan"
+  }
+}

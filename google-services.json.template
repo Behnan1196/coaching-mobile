@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "563892471445",
+    "project_id": "coaching-mobile-7e0c3",
+    "storage_bucket": "coaching-mobile-7e0c3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:563892471445:android:57e247e17023557635fd9c",
+        "android_client_info": {
+          "package_name": "com.behnan.coachingmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1QKxp-zDa8S2OOsnptmiJRC-wCKRkZp8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
