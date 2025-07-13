@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,58 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../contexts/AuthContext';
+
+const CREDENTIALS_KEY = 'user_credentials';
 
 export const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loadingCredentials, setLoadingCredentials] = useState(true);
   const { signIn } = useAuth();
+
+  // Load saved credentials on component mount
+  useEffect(() => {
+    loadSavedCredentials();
+  }, []);
+
+  const loadSavedCredentials = async () => {
+    try {
+      const savedCredentials = await SecureStore.getItemAsync(CREDENTIALS_KEY);
+      if (savedCredentials) {
+        const { email: savedEmail, password: savedPassword } = JSON.parse(savedCredentials);
+        setEmail(savedEmail);
+        setPassword(savedPassword);
+        setRememberMe(true);
+      }
+    } catch (error) {
+      console.log('Error loading saved credentials:', error);
+    } finally {
+      setLoadingCredentials(false);
+    }
+  };
+
+  const saveCredentials = async (email: string, password: string) => {
+    try {
+      const credentials = JSON.stringify({ email, password });
+      await SecureStore.setItemAsync(CREDENTIALS_KEY, credentials);
+    } catch (error) {
+      console.log('Error saving credentials:', error);
+    }
+  };
+
+  const clearSavedCredentials = async () => {
+    try {
+      await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+    } catch (error) {
+      console.log('Error clearing credentials:', error);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -30,8 +74,34 @@ export const LoginScreen: React.FC = () => {
 
     if (error) {
       Alert.alert('Giriş Hatası', error.message);
+    } else {
+      // Save credentials if remember me is checked
+      if (rememberMe) {
+        await saveCredentials(email, password);
+      } else {
+        // Clear credentials if remember me is unchecked
+        await clearSavedCredentials();
+      }
     }
   };
+
+  const handleRememberMeChange = async (value: boolean) => {
+    setRememberMe(value);
+    if (!value) {
+      // Clear saved credentials when remember me is turned off
+      await clearSavedCredentials();
+    }
+  };
+
+  // Show loading indicator while loading credentials
+  if (loadingCredentials) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text style={styles.loadingText}>Yükleniyor...</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView 
@@ -55,6 +125,8 @@ export const LoginScreen: React.FC = () => {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete="email"
+              textContentType="emailAddress"
             />
           </View>
 
@@ -66,7 +138,19 @@ export const LoginScreen: React.FC = () => {
               onChangeText={setPassword}
               placeholder="Şifrenizi girin"
               secureTextEntry
+              autoComplete="password"
+              textContentType="password"
             />
+          </View>
+
+          <View style={styles.rememberMeContainer}>
+            <Switch
+              value={rememberMe}
+              onValueChange={handleRememberMeChange}
+              trackColor={{ false: '#D1D5DB', true: '#3B82F6' }}
+              thumbColor={rememberMe ? '#FFFFFF' : '#FFFFFF'}
+            />
+            <Text style={styles.rememberMeText}>Beni hatırla</Text>
           </View>
 
           <TouchableOpacity
@@ -90,6 +174,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
   },
   content: {
     flex: 1,
@@ -131,6 +226,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: '#1F2937',
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  rememberMeText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#374151',
   },
   loginButton: {
     backgroundColor: '#3B82F6',
