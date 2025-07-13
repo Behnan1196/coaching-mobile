@@ -80,15 +80,9 @@ const AuthenticatedApp: React.FC = () => {
   const [studentSelected, setStudentSelected] = useState(false);
   const navigationRef = useRef<NavigationContainerRef<any>>(null);
 
-  // Debug: Log student selection state
-  useEffect(() => {
-    console.log('🎯 [NAVIGATOR] Student selected state:', studentSelected);
-  }, [studentSelected]);
-
   // Auto-navigate to VideoCall tab when a call becomes active
   useEffect(() => {
     if (videoCall && navigationRef.current) {
-      console.log('🎯 [NAVIGATOR] Active call detected, navigating to VideoCall tab');
       navigationRef.current.navigate('VideoCall' as never);
     }
   }, [videoCall]);
@@ -110,9 +104,7 @@ const AuthenticatedApp: React.FC = () => {
         return (
           <CoachStudentSelectionScreen
             onStudentSelected={() => {
-              console.log('🎯 [NAVIGATOR] onStudentSelected callback triggered');
               setStudentSelected(true);
-              console.log('🎯 [NAVIGATOR] Student selected state set to true');
             }}
           />
         );

@@ -8,90 +8,88 @@ import { Task } from '../types/database';
 // Set up notification channels for Android and categories for iOS
 export const setupNotificationChannels = async () => {
   if (Platform.OS === 'android') {
-    console.log('📱 [NOTIFICATIONS] Setting up Android notification channels...');
-    
-    // Default channel for general notifications
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Default Notifications',
+      name: 'Default',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+      sound: 'default',
+      enableVibrate: true,
+      enableLights: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    });
+
+    await Notifications.setNotificationChannelAsync('video_calls', {
+      name: 'Video Calls',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#10B981',
+      sound: 'default',
+      enableVibrate: true,
+      enableLights: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    });
+
+    await Notifications.setNotificationChannelAsync('session_reminders', {
+      name: 'Session Reminders',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#3B82F6',
       sound: 'default',
-      enableLights: true,
       enableVibrate: true,
-      showBadge: true,
+      enableLights: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      bypassDnd: false,
     });
 
-    // High priority channel for calls and urgent notifications
-    await Notifications.setNotificationChannelAsync('calls', {
-      name: 'Video Calls & Invites',
+    await Notifications.setNotificationChannelAsync('test_notifications', {
+      name: 'Test Notifications',
       importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 1000, 500, 1000], // Longer, more noticeable vibration
-      lightColor: '#10B981',
-      sound: 'default',
-      enableLights: true,
-      enableVibrate: true,
-      showBadge: true,
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      bypassDnd: true, // Allow these to bypass Do Not Disturb
-    });
-
-    // Session reminders channel
-    await Notifications.setNotificationChannelAsync('session_reminders', {
-      name: 'Session Reminders',
-      importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#F59E0B',
       sound: 'default',
-      enableLights: true,
       enableVibrate: true,
-      showBadge: true,
+      enableLights: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      bypassDnd: false,
     });
 
-    console.log('✅ [NOTIFICATIONS] Android notification channels configured');
-    
     // Debug: Log current notification channels
     try {
       const channels = await Notifications.getNotificationChannelsAsync();
-      console.log('📱 [DEBUG] Current notification channels:', channels.map(c => ({
-        id: c.id,
-        name: c.name,
-        importance: c.importance,
-        sound: c.sound,
-        enableVibrate: c.enableVibrate,
-        vibrationPattern: c.vibrationPattern
-      })));
+      // Keep minimal logging for debugging channel configuration
     } catch (error) {
-      console.log('📱 [DEBUG] Could not get notification channels:', error);
+      console.error('❌ [DEBUG] Could not get notification channels:', error);
     }
   } else if (Platform.OS === 'ios') {
-    console.log('📱 [NOTIFICATIONS] Setting up iOS notification categories...');
-    
-    // Set up notification categories for iOS
+    // iOS Categories
     await Notifications.setNotificationCategoryAsync('video_call', [
       {
-        identifier: 'accept',
+        identifier: 'accept_call',
         buttonTitle: 'Accept',
         options: {
-          opensAppToForeground: true,
+          isDestructive: false,
+          isAuthenticationRequired: false,
         },
       },
       {
-        identifier: 'decline',
+        identifier: 'decline_call',
         buttonTitle: 'Decline',
         options: {
-          opensAppToForeground: false,
+          isDestructive: true,
+          isAuthenticationRequired: false,
         },
       },
     ]);
 
-    await Notifications.setNotificationCategoryAsync('general', []);
-
-    console.log('✅ [NOTIFICATIONS] iOS notification categories configured');
+    await Notifications.setNotificationCategoryAsync('session_reminder', [
+      {
+        identifier: 'join_session',
+        buttonTitle: 'Join',
+        options: {
+          isDestructive: false,
+          isAuthenticationRequired: false,
+        },
+      },
+    ]);
   }
 };
 
@@ -100,23 +98,10 @@ Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     const { data, title, body } = notification.request.content;
     
-    console.log('📱 [NOTIFICATION-HANDLER] Received notification:', {
-      title,
-      body,
-      data,
-      platform: Platform.OS,
-      timestamp: new Date().toISOString()
-    });
-    
-    console.log('📱 [NOTIFICATION-HANDLER] Full notification object:', notification.request.content);
-    
     // Platform-specific handling
     if (Platform.OS === 'ios') {
-      console.log('📱 [NOTIFICATION-HANDLER] iOS - handling foreground notification');
-      
       // For video call invites on iOS, show with high priority
       if (data?.type === 'video_call_invite' || data?.type === 'incoming_call') {
-        console.log('📱 [iOS] Video call notification - showing with sound and alert');
         return {
           shouldShowAlert: true,   // Show alert banner
           shouldPlaySound: true,   // Play sound
@@ -126,7 +111,6 @@ Notifications.setNotificationHandler({
       }
       
       // For other notifications on iOS, also show with sound
-      console.log('📱 [iOS] Regular notification - showing with sound and alert');
       return {
         shouldShowAlert: true,   // Always show alert on iOS
         shouldPlaySound: true,   // Always play sound on iOS
@@ -136,11 +120,8 @@ Notifications.setNotificationHandler({
     
     // Android handling
     if (Platform.OS === 'android') {
-      console.log('📱 [NOTIFICATION-HANDLER] Android - handling foreground notification');
-      
       // For video call invites and incoming calls, show as proper notification with sound
       if (data?.type === 'video_call_invite' || data?.type === 'incoming_call') {
-        console.log('📱 [NOTIFICATION-HANDLER] Video call notification - showing with sound');
         return {
           shouldShowAlert: true,   // Show as proper notification
           shouldPlaySound: true,   // Play sound
@@ -151,7 +132,6 @@ Notifications.setNotificationHandler({
       
       // For session reminders, also show with sound
       if (data?.type === 'session_reminder') {
-        console.log('📱 [NOTIFICATION-HANDLER] Session reminder - showing with sound');
         return {
           shouldShowAlert: true,   // Show as proper notification
           shouldPlaySound: true,   // Play sound
@@ -162,7 +142,6 @@ Notifications.setNotificationHandler({
       
       // For test notifications, also show with sound
       if (data?.type === 'test_notification' || data?.type === 'test_cross_user') {
-        console.log('📱 [NOTIFICATION-HANDLER] Test notification - showing with sound');
         return {
           shouldShowAlert: true,   // Show as proper notification
           shouldPlaySound: true,   // Play sound
@@ -172,7 +151,6 @@ Notifications.setNotificationHandler({
       }
       
       // For regular notifications, show as notification with sound
-      console.log('📱 [NOTIFICATION-HANDLER] Regular notification - showing with sound');
       return {
         shouldShowAlert: true,   // Show as proper notification (not just badge)
         shouldPlaySound: true,   // Play sound
@@ -182,7 +160,6 @@ Notifications.setNotificationHandler({
     }
     
     // Fallback for other platforms
-    console.log('📱 [NOTIFICATION-HANDLER] Fallback - showing notification');
     return {
       shouldShowAlert: true,
       shouldPlaySound: true,
@@ -193,76 +170,66 @@ Notifications.setNotificationHandler({
 
 export const registerForPushNotifications = async (): Promise<string | null> => {
   try {
-    console.log('📱 [NOTIFICATIONS] Registering for push notifications...');
-    console.log('📱 [NOTIFICATIONS] Platform:', Platform.OS);
-
     // Set up notification channels first
     await setupNotificationChannels();
 
-    // Check if we have permission
+    // Check existing permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    console.log('📱 [NOTIFICATIONS] Current permission status:', existingStatus);
+    
     let finalStatus = existingStatus;
-
-    // Request permission if not granted
+    
+    // Request permissions if not already granted
     if (existingStatus !== 'granted') {
-      console.log('📱 [NOTIFICATIONS] Requesting permissions...');
+      const { status } = await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+          allowAnnouncements: true,
+          allowCriticalAlerts: true,
+          allowDisplayInCarPlay: true,
+          allowProvisional: true,
+        },
+        android: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+          allowAnnouncements: true,
+        },
+      });
       
-      // iOS-specific permission request with additional options
-      if (Platform.OS === 'ios') {
-        const { status } = await Notifications.requestPermissionsAsync({
-          ios: {
-            allowAlert: true,
-            allowBadge: true,
-            allowSound: true,
-            allowDisplayInCarPlay: false,
-            allowCriticalAlerts: false,
-            provideAppNotificationSettings: false,
-            allowProvisional: false,
-            allowAnnouncements: false,
-          },
-        });
-        finalStatus = status;
-      } else {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      
-      console.log('📱 [NOTIFICATIONS] Permission request result:', finalStatus);
+      finalStatus = status;
     }
-
+    
     if (finalStatus !== 'granted') {
       console.warn('⚠️ [NOTIFICATIONS] Permission not granted for push notifications');
       return null;
     }
-
-    console.log('📱 [NOTIFICATIONS] Permission granted, getting push token...');
-
+    
+    // Get push token
     try {
-      // Get the push token
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: process.env.EXPO_PUBLIC_PROJECT_ID || 'your-project-id',
-      });
-
-      const token = tokenData.data;
-      console.log('✅ [NOTIFICATIONS] Push token obtained successfully');
-      console.log('✅ [NOTIFICATIONS] Token preview:', `${token.substring(0, 20)}...`);
-      console.log('✅ [NOTIFICATIONS] Token length:', token.length);
-      return token;
-    } catch (tokenError: any) {
-      console.error('❌ [NOTIFICATIONS] Token error details:', {
-        message: tokenError.message,
-        stack: tokenError.stack,
-        code: tokenError.code
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
       });
       
-      // Handle Firebase/FCM errors gracefully for development
-      if (Platform.OS === 'android' && tokenError.message?.includes('FirebaseApp')) {
-        console.warn('⚠️ [NOTIFICATIONS] Android Firebase not configured - push notifications disabled for development');
-        console.warn('   To enable: Set up Firebase and add google-services.json');
-        return null;
+      return token.data;
+    } catch (tokenError: any) {
+      console.error('❌ [NOTIFICATIONS] Token error details:', {
+        error: tokenError,
+        platform: Platform.OS,
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+      
+      // Platform-specific error handling
+      if (Platform.OS === 'android') {
+        // Check for common Android Firebase issues
+        if (tokenError.message?.includes('SERVICE_NOT_AVAILABLE')) {
+          console.warn('⚠️ [NOTIFICATIONS] Android Firebase not configured - push notifications disabled for development');
+          console.warn('   To enable: Set up Firebase and add google-services.json');
+        }
       }
-      throw tokenError;
+      
+      return null;
     }
   } catch (error: any) {
     console.error('❌ [NOTIFICATIONS] Error registering for push notifications:', error.message);
@@ -278,39 +245,25 @@ export const sendPushNotificationToUser = async (
   data: any = {}
 ): Promise<boolean> => {
   try {
-    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+    const apiUrl = `${Constants.expoConfig?.extra?.supabaseUrl}/functions/v1/push-notification`;
     
-    console.log(`📤 [PUSH] Sending notification to user ${userId}: ${title}`);
-    console.log(`📤 [PUSH] API URL: ${apiUrl}`);
-    console.log(`📤 [PUSH] Platform: ${Platform.OS}`);
-    console.log(`📤 [PUSH] Full payload:`, { userId, title, body, data });
-    
-    const response = await fetch(`${apiUrl}/api/notifications/send`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Constants.expoConfig?.extra?.supabaseAnonKey}`,
       },
       body: JSON.stringify({
         userId,
         title,
         body,
-        data: {
-          ...data,
-          senderPlatform: Platform.OS,
-          timestamp: new Date().toISOString(),
-        },
+        data,
       }),
     });
 
-    console.log(`📤 [PUSH] Response status: ${response.status}`);
-    console.log(`📤 [PUSH] Response headers:`, response.headers);
-    
     const result = await response.json();
-    console.log(`📤 [PUSH] Response body:`, result);
     
-    if (result.success) {
-      console.log('✅ [PUSH] Notification sent successfully');
-      console.log('✅ [PUSH] Success details:', result.results);
+    if (response.ok && result.success) {
       return true;
     } else {
       console.error('❌ [PUSH] Notification failed:', result.error);
@@ -321,8 +274,11 @@ export const sendPushNotificationToUser = async (
   } catch (error) {
     console.error('❌ [PUSH] Error sending notification:', error);
     console.error('❌ [PUSH] Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+      userId,
+      title,
+      body,
+      data,
+      platform: Platform.OS,
     });
     return false;
   }
@@ -386,12 +342,12 @@ export class NotificationService {
     minutesBeforeSession: number = 15
   ) {
     try {
-      // Get user's device token
       if (!supabase) {
-        console.log('Supabase client not available');
+        console.error('Supabase client not available');
         return;
       }
-      
+
+      // Get user's device token
       const { data: tokenData } = await supabase
         .from('device_tokens')
         .select('token')
@@ -399,38 +355,29 @@ export class NotificationService {
         .single();
 
       if (!tokenData?.token) {
-        console.log('No device token found for user:', userId);
+        console.error('No device token found for user:', userId);
         return;
       }
 
-      // Send push notification via Expo Push Service
-      const message = {
-        to: tokenData.token,
-        sound: 'default',
-        title: 'Koçluk Seansı Hatırlatması',
-        body: `${sessionTitle} ${minutesBeforeSession} dakika sonra başlayacak (${sessionTime})`,
-        data: {
-          type: 'session_reminder',
-          sessionId: sessionId,
-          sessionTitle: sessionTitle,
-          sessionTime: sessionTime,
-        },
-        priority: 'default',
-        channelId: 'session_reminders',
+      // Send push notification
+      const notificationData = {
+        type: 'session_reminder',
+        sessionId,
+        sessionTitle,
+        sessionTime,
+        minutesBeforeSession,
       };
 
-      const response = await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Accept-encoding': 'gzip, deflate',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(message),
-      });
+      const success = await sendPushNotificationToUser(
+        userId,
+        'Ders Hatırlatması',
+        `"${sessionTitle}" dersiniz ${minutesBeforeSession} dakika sonra başlayacak (${sessionTime})`,
+        notificationData
+      );
 
-      const result = await response.json();
-      console.log('Session reminder notification sent:', result);
+      if (success) {
+        // Session reminder notification sent successfully
+      }
     } catch (error) {
       console.error('Error sending session reminder:', error);
     }
@@ -439,86 +386,59 @@ export class NotificationService {
   static async scheduleSessionReminders(session: Task) {
     try {
       if (!session.scheduled_date || !session.scheduled_start_time) {
-        console.log('Session missing date or time, cannot schedule reminders');
+        console.error('Session missing date or time, cannot schedule reminders');
         return;
       }
 
-      const sessionDate = new Date(session.scheduled_date);
+      // Parse session datetime
       const [hours, minutes] = session.scheduled_start_time.split(':').map(Number);
-      sessionDate.setHours(hours, minutes, 0, 0);
+      const sessionDateTime = new Date(session.scheduled_date);
+      sessionDateTime.setHours(hours, minutes, 0, 0);
 
       const now = new Date();
-      const sessionTimeMs = sessionDate.getTime();
       
       // Don't schedule reminders for past sessions
-      if (sessionTimeMs <= now.getTime()) {
-        console.log('Session is in the past, not scheduling reminders');
+      if (sessionDateTime <= now) {
+        console.error('Session is in the past, not scheduling reminders');
         return;
       }
 
-      // Schedule 24-hour reminder
-      const reminder24h = sessionTimeMs - (24 * 60 * 60 * 1000);
-      if (reminder24h > now.getTime()) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Koçluk Seansı Hatırlatması',
-            body: `${session.title} yarın ${session.scheduled_start_time} saatinde başlayacak`,
-            sound: 'default',
-            categoryIdentifier: 'session_reminder',
-            data: {
-              type: 'session_reminder',
-              sessionId: session.id,
-              sessionTitle: session.title,
-              sessionTime: session.scheduled_start_time,
-            },
-          },
-          trigger: new Date(reminder24h),
-        });
-        console.log('24-hour reminder scheduled for session:', session.id);
-      }
+      // Calculate reminder times
+      const reminderTimes = [
+        { minutes: 24 * 60, label: '24 saat' }, // 24 hours
+        { minutes: 60, label: '1 saat' },      // 1 hour
+        { minutes: 15, label: '15 dakika' },   // 15 minutes
+      ];
 
-      // Schedule 1-hour reminder
-      const reminder1h = sessionTimeMs - (60 * 60 * 1000);
-      if (reminder1h > now.getTime()) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Koçluk Seansı Hatırlatması',
-            body: `${session.title} 1 saat sonra başlayacak (${session.scheduled_start_time})`,
-            sound: 'default',
-            categoryIdentifier: 'session_reminder',
-            data: {
-              type: 'session_reminder',
-              sessionId: session.id,
-              sessionTitle: session.title,
-              sessionTime: session.scheduled_start_time,
+      for (const reminder of reminderTimes) {
+        const reminderTime = new Date(sessionDateTime.getTime() - (reminder.minutes * 60 * 1000));
+        
+        // Only schedule if reminder time is in the future
+        if (reminderTime > now) {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Ders Hatırlatması',
+              body: `"${session.title}" dersiniz ${reminder.label} sonra başlayacak`,
+              data: {
+                type: 'session_reminder',
+                sessionId: session.id,
+                sessionTitle: session.title,
+                sessionTime: session.scheduled_start_time,
+                minutesBeforeSession: reminder.minutes,
+              },
+              sound: 'default',
+              ...(Platform.OS === 'android' && {
+                channelId: 'session_reminders',
+              }),
             },
-          },
-          trigger: new Date(reminder1h),
-        });
-        console.log('1-hour reminder scheduled for session:', session.id);
-      }
-
-      // Schedule 15-minute reminder
-      const reminder15m = sessionTimeMs - (15 * 60 * 1000);
-      if (reminder15m > now.getTime()) {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Koçluk Seansı Yaklaşıyor!',
-            body: `${session.title} 15 dakika sonra başlayacak. Hazır olun!`,
-            sound: 'default',
-            categoryIdentifier: 'session_reminder',
-            data: {
-              type: 'session_reminder',
-              sessionId: session.id,
-              sessionTitle: session.title,
-              sessionTime: session.scheduled_start_time,
+            trigger: {
+              date: reminderTime,
             },
-          },
-          trigger: new Date(reminder15m),
-        });
-        console.log('15-minute reminder scheduled for session:', session.id);
+          });
+          
+          console.log(`${reminder.label} reminder scheduled for session:`, session.id);
+        }
       }
-
     } catch (error) {
       console.error('Error scheduling session reminders:', error);
     }
@@ -526,17 +446,17 @@ export class NotificationService {
 
   static async cancelSessionReminders(sessionId: string) {
     try {
-      // Get all scheduled notifications
-      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      
-      // Find and cancel notifications for this session
-      for (const notification of scheduledNotifications) {
-        const data = notification.content.data;
-        if (data?.type === 'session_reminder' && data?.sessionId === sessionId) {
-          await Notifications.cancelScheduledNotificationAsync(notification.identifier);
-          console.log('Cancelled reminder for session:', sessionId);
-        }
+      // Cancel all notifications for this session
+      const allNotifications = await Notifications.getAllScheduledNotificationsAsync();
+      const sessionNotifications = allNotifications.filter(notification => 
+        notification.content.data?.sessionId === sessionId
+      );
+
+      for (const notification of sessionNotifications) {
+        await Notifications.cancelScheduledNotificationAsync(notification.identifier);
       }
+      
+      console.log('Cancelled reminder for session:', sessionId);
     } catch (error) {
       console.error('Error cancelling session reminders:', error);
     }
@@ -544,12 +464,12 @@ export class NotificationService {
 
   static async sendCallNotification(studentId: string, coachName: string, callId: string) {
     try {
-      // Get student's device token
       if (!supabase) {
-        console.log('Supabase client not available');
+        console.error('Supabase client not available');
         return;
       }
-      
+
+      // Get student's device token
       const { data: tokenData } = await supabase
         .from('device_tokens')
         .select('token')
@@ -557,94 +477,75 @@ export class NotificationService {
         .single();
 
       if (!tokenData?.token) {
-        console.log('No device token found for student:', studentId);
+        console.error('No device token found for student:', studentId);
         return;
       }
 
-      // Send push notification via Expo Push Service
-      const message = {
-        to: tokenData.token,
-        sound: 'default',
-        title: 'Incoming Call',
-        body: `${coachName} is calling you`,
-        data: {
-          type: 'incoming_call',
-          callId: callId,
-          coachName: coachName,
-        },
-        priority: 'high',
-        channelId: 'calls',
+      // Send push notification
+      const notificationData = {
+        type: 'video_call_invite',
+        callId,
+        coachName,
+        timestamp: new Date().toISOString(),
       };
 
-      const response = await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Accept-encoding': 'gzip, deflate',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(message),
-      });
+      const success = await sendPushNotificationToUser(
+        studentId,
+        'Video Görüşme Daveti',
+        `${coachName} sizi video görüşmeye davet ediyor`,
+        notificationData
+      );
 
-      const result = await response.json();
-      console.log('Push notification sent:', result);
+      if (success) {
+        // Push notification sent successfully
+      }
     } catch (error) {
       console.error('Error sending push notification:', error);
     }
   }
 
   static setupNotificationListeners() {
-    // Handle notification when app is in foreground
-    const foregroundSubscription = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        console.log('Notification received in foreground:', notification);
-        const { type, callId, coachName, sessionId, taskId } = notification.request.content.data || {};
-        
-        if (type === 'incoming_call') {
-          // Handle incoming call notification
-          console.log('Handling incoming call from push notification');
-          // You can trigger your existing handleIncomingCall logic here
-        } else if (type === 'session_reminder') {
-          // Handle session reminder notification
-          console.log('Session reminder received:', sessionId);
-          // Could show an in-app alert or update the UI
-        } else if (type === 'new_coaching_session') {
-          // Handle new coaching session notification
-          console.log('New coaching session created:', taskId);
-          // Could refresh session list or show alert
-        } else if (type === 'session_updated') {
-          // Handle coaching session update notification
-          console.log('Coaching session updated:', taskId);
-          // Could refresh session list and show update alert
-        }
+    // Handle notifications when app is in foreground
+    const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notification received in foreground:', notification);
+      
+      // Handle specific notification types
+      if (notification.request.content.data?.type === 'video_call_invite') {
+        console.log('Handling incoming call from push notification');
+        // Handle incoming call
+      } else if (notification.request.content.data?.type === 'session_reminder') {
+        const sessionId = notification.request.content.data?.sessionId;
+        console.log('Session reminder received:', sessionId);
+      } else if (notification.request.content.data?.type === 'new_task') {
+        const taskId = notification.request.content.data?.taskId;
+        console.log('New coaching session created:', taskId);
+      } else if (notification.request.content.data?.type === 'task_update') {
+        const taskId = notification.request.content.data?.taskId;
+        console.log('Coaching session updated:', taskId);
       }
-    );
+    });
 
-    // Handle notification when app is backgrounded/closed
-    const backgroundSubscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        console.log('Notification response received:', response);
-        const { type, callId, coachName, sessionId, taskId } = response.notification.request.content.data || {};
-        
-        if (type === 'incoming_call') {
-          // Navigate to video call screen or show incoming call
-          console.log('User tapped call notification, opening app');
-          // You can use navigation to go to video call screen
-        } else if (type === 'session_reminder') {
-          // Navigate to home screen to show upcoming sessions
-          console.log('User tapped session reminder, opening app');
-          // You can use navigation to go to home screen
-        } else if (type === 'new_coaching_session' || type === 'session_updated') {
-          // Navigate to home screen to show updated sessions
-          console.log('User tapped session notification, opening home screen');
-          // You can use navigation to go to home screen
-        }
+    // Handle notification responses (when user taps on notification)
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('Notification response received:', response);
+      
+      // Handle specific responses
+      if (response.notification.request.content.data?.type === 'video_call_invite') {
+        console.log('User tapped call notification, opening app');
+        // Navigate to video call screen
+      } else if (response.notification.request.content.data?.type === 'session_reminder') {
+        console.log('User tapped session reminder, opening app');
+        // Navigate to session screen
+      } else {
+        console.log('User tapped session notification, opening home screen');
+        // Navigate to home screen
       }
-    );
+    });
 
+    // Return cleanup function
     return () => {
       foregroundSubscription.remove();
-      backgroundSubscription.remove();
+      responseSubscription.remove();
     };
   }
 }
