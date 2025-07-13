@@ -9,7 +9,6 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
 import { useStream } from '../contexts/StreamContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
@@ -184,17 +183,17 @@ export const VideoCallTabScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3B82F6" />
           <Text style={styles.loadingText}>Yükleniyor...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Video Görüşme</Text>
       </View>
@@ -317,7 +316,7 @@ export const VideoCallTabScreen: React.FC = () => {
           </View>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

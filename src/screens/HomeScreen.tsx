@@ -11,7 +11,6 @@ import {
   Platform,
   AppState,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { useAuth } from '../contexts/AuthContext';
 import { useStream } from '../contexts/StreamContext';
@@ -666,7 +665,7 @@ export const HomeScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <View style={styles.container}>
       <ScrollView 
         style={styles.scrollView}
         refreshControl={
@@ -803,10 +802,10 @@ export const HomeScreen: React.FC = () => {
             </Text>
           </View>
         )}
-      </ScrollView>
-    </SafeAreaView>
-  );
-};
+              </ScrollView>
+      </View>
+    );
+  };
 
 const styles = StyleSheet.create({
   container: {

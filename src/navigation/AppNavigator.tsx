@@ -19,7 +19,7 @@ const Tab = createBottomTabNavigator();
 
 const MainTabs: React.FC = () => {
   return (
-    <SafeAreaView style={styles.tabContainer} edges={['top']}>
+    <SafeAreaView style={styles.tabContainer} edges={['top', 'bottom']}>
       <StudentSelectionHeader />
       <Tab.Navigator
         screenOptions={{
