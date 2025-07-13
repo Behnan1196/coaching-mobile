@@ -114,7 +114,19 @@ Notifications.setNotificationHandler({
     if (Platform.OS === 'ios') {
       console.log('📱 [NOTIFICATION-HANDLER] iOS - handling foreground notification');
       
-      // For iOS, always show notifications in foreground with sound
+      // For video call invites on iOS, show with high priority
+      if (data?.type === 'video_call_invite' || data?.type === 'incoming_call') {
+        console.log('📱 [iOS] Video call notification - showing with sound and alert');
+        return {
+          shouldShowAlert: true,   // Show alert banner
+          shouldPlaySound: true,   // Play sound
+          shouldSetBadge: true,    // Set badge
+          priority: Notifications.AndroidNotificationPriority.HIGH, // High priority
+        };
+      }
+      
+      // For other notifications on iOS, also show with sound
+      console.log('📱 [iOS] Regular notification - showing with sound and alert');
       return {
         shouldShowAlert: true,   // Always show alert on iOS
         shouldPlaySound: true,   // Always play sound on iOS
@@ -195,9 +207,28 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
     // Request permission if not granted
     if (existingStatus !== 'granted') {
       console.log('📱 [NOTIFICATIONS] Requesting permissions...');
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-      console.log('📱 [NOTIFICATIONS] Permission request result:', status);
+      
+      // iOS-specific permission request with additional options
+      if (Platform.OS === 'ios') {
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+            allowDisplayInCarPlay: false,
+            allowCriticalAlerts: false,
+            provideAppNotificationSettings: false,
+            allowProvisional: false,
+            allowAnnouncements: false,
+          },
+        });
+        finalStatus = status;
+      } else {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      console.log('📱 [NOTIFICATIONS] Permission request result:', finalStatus);
     }
 
     if (finalStatus !== 'granted') {

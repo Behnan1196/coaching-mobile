@@ -189,9 +189,14 @@ export const HomeScreen: React.FC = () => {
         supabase.removeChannel(notificationChannel);
       }
       
-      // Create notification channel
+      // Create notification channel with iOS-specific configuration
       const channel = supabase
-        .channel(`user-${userProfile.id}`)
+        .channel(`user-${userProfile.id}`, {
+          config: {
+            broadcast: { self: false }, // Don't broadcast to self
+            presence: { key: userProfile.id }
+          }
+        })
         .on('broadcast', { event: 'new_notification' }, async (payload) => {
           try {
             console.log('📨 [NOTIFICATIONS] Real-time notification received:', payload);
@@ -210,6 +215,19 @@ export const HomeScreen: React.FC = () => {
             if (Platform.OS === 'ios') {
               const { status } = await Notifications.getPermissionsAsync();
               console.log('📱 [iOS-DEBUG] Current notification permissions:', status);
+              
+              // If permissions are not granted, try to request them again
+              if (status !== 'granted') {
+                console.log('📱 [iOS-DEBUG] Notification permissions not granted, requesting...');
+                const { status: newStatus } = await Notifications.requestPermissionsAsync({
+                  ios: {
+                    allowAlert: true,
+                    allowBadge: true,
+                    allowSound: true,
+                  },
+                });
+                console.log('📱 [iOS-DEBUG] New permission status:', newStatus);
+              }
             }
             
             // Use scheduleNotificationAsync with immediate trigger instead of deprecated presentNotificationAsync
@@ -226,7 +244,9 @@ export const HomeScreen: React.FC = () => {
               // iOS-specific settings
               ...(Platform.OS === 'ios' && {
                 badge: 1,
+                sound: 'default', // Explicitly set sound for iOS
                 categoryIdentifier: data?.type === 'video_call_invite' ? 'video_call' : 'general',
+                interruptionLevel: (data?.type === 'video_call_invite' ? 'timeSensitive' : 'active') as 'timeSensitive' | 'active',
               }),
             };
             
@@ -251,6 +271,22 @@ export const HomeScreen: React.FC = () => {
             console.log('✅ [NOTIFICATIONS] Successfully subscribed to real-time notifications');
           } else if (status === 'CHANNEL_ERROR') {
             console.error('❌ [NOTIFICATIONS] Error subscribing to real-time notifications');
+            // Try to resubscribe after a delay for iOS
+            if (Platform.OS === 'ios') {
+              setTimeout(() => {
+                console.log('🔄 [iOS] Attempting to resubscribe...');
+                setupRealtimeNotifications();
+              }, 3000);
+            }
+          } else if (status === 'TIMED_OUT') {
+            console.warn('⏰ [NOTIFICATIONS] Real-time notification channel timed out');
+            // Try to resubscribe after timeout
+            setTimeout(() => {
+              console.log('🔄 [NOTIFICATIONS] Attempting to resubscribe after timeout...');
+              setupRealtimeNotifications();
+            }, 5000);
+          } else if (status === 'CLOSED') {
+            console.log('🔒 [NOTIFICATIONS] Real-time notification channel closed');
           }
         });
       
