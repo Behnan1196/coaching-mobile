@@ -5,15 +5,15 @@ import { Platform } from 'react-native';
 import { supabase } from './supabase';
 import { Task } from '../types/database';
 
-// Set up notification channels for Android
+// Set up notification channels for Android and categories for iOS
 export const setupNotificationChannels = async () => {
   if (Platform.OS === 'android') {
     console.log('📱 [NOTIFICATIONS] Setting up Android notification channels...');
     
     // Default channel for general notifications
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Default',
-      importance: Notifications.AndroidImportance.HIGH, // Changed from DEFAULT to HIGH
+      name: 'Default Notifications',
+      importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#3B82F6',
       sound: 'default',
@@ -26,11 +26,11 @@ export const setupNotificationChannels = async () => {
 
     // High priority channel for calls and urgent notifications
     await Notifications.setNotificationChannelAsync('calls', {
-      name: 'Video Calls',
+      name: 'Video Calls & Invites',
       importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 500, 250, 500],
+      vibrationPattern: [0, 1000, 500, 1000], // Longer, more noticeable vibration
       lightColor: '#10B981',
-      sound: 'default', // Try default sound first to test if sound works at all
+      sound: 'default',
       enableLights: true,
       enableVibrate: true,
       showBadge: true,
@@ -53,6 +53,45 @@ export const setupNotificationChannels = async () => {
     });
 
     console.log('✅ [NOTIFICATIONS] Android notification channels configured');
+    
+    // Debug: Log current notification channels
+    try {
+      const channels = await Notifications.getNotificationChannelsAsync();
+      console.log('📱 [DEBUG] Current notification channels:', channels.map(c => ({
+        id: c.id,
+        name: c.name,
+        importance: c.importance,
+        sound: c.sound,
+        enableVibrate: c.enableVibrate,
+        vibrationPattern: c.vibrationPattern
+      })));
+    } catch (error) {
+      console.log('📱 [DEBUG] Could not get notification channels:', error);
+    }
+  } else if (Platform.OS === 'ios') {
+    console.log('📱 [NOTIFICATIONS] Setting up iOS notification categories...');
+    
+    // Set up notification categories for iOS
+    await Notifications.setNotificationCategoryAsync('video_call', [
+      {
+        identifier: 'accept',
+        buttonTitle: 'Accept',
+        options: {
+          opensAppToForeground: true,
+        },
+      },
+      {
+        identifier: 'decline',
+        buttonTitle: 'Decline',
+        options: {
+          opensAppToForeground: false,
+        },
+      },
+    ]);
+
+    await Notifications.setNotificationCategoryAsync('general', []);
+
+    console.log('✅ [NOTIFICATIONS] iOS notification categories configured');
   }
 };
 
@@ -65,51 +104,77 @@ Notifications.setNotificationHandler({
       title,
       body,
       data,
-      platform: Platform.OS
+      platform: Platform.OS,
+      timestamp: new Date().toISOString()
     });
     
     console.log('📱 [NOTIFICATION-HANDLER] Full notification object:', notification.request.content);
     
-    // For video call invites and incoming calls, show as proper notification with sound
-    if (data?.type === 'video_call_invite' || data?.type === 'incoming_call') {
-      console.log('📱 [NOTIFICATION-HANDLER] Video call notification - showing with sound');
+    // Platform-specific handling
+    if (Platform.OS === 'ios') {
+      console.log('📱 [NOTIFICATION-HANDLER] iOS - handling foreground notification');
+      
+      // For iOS, always show notifications in foreground with sound
       return {
-        shouldShowAlert: true,   // Show as proper notification
-        shouldPlaySound: true,   // Play sound
+        shouldShowAlert: true,   // Always show alert on iOS
+        shouldPlaySound: true,   // Always play sound on iOS
         shouldSetBadge: true,    // Set badge
-        priority: Notifications.AndroidNotificationPriority.HIGH,
       };
     }
     
-    // For session reminders, also show with sound
-    if (data?.type === 'session_reminder') {
-      console.log('📱 [NOTIFICATION-HANDLER] Session reminder - showing with sound');
+    // Android handling
+    if (Platform.OS === 'android') {
+      console.log('📱 [NOTIFICATION-HANDLER] Android - handling foreground notification');
+      
+      // For video call invites and incoming calls, show as proper notification with sound
+      if (data?.type === 'video_call_invite' || data?.type === 'incoming_call') {
+        console.log('📱 [NOTIFICATION-HANDLER] Video call notification - showing with sound');
+        return {
+          shouldShowAlert: true,   // Show as proper notification
+          shouldPlaySound: true,   // Play sound
+          shouldSetBadge: true,    // Set badge
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+        };
+      }
+      
+      // For session reminders, also show with sound
+      if (data?.type === 'session_reminder') {
+        console.log('📱 [NOTIFICATION-HANDLER] Session reminder - showing with sound');
+        return {
+          shouldShowAlert: true,   // Show as proper notification
+          shouldPlaySound: true,   // Play sound
+          shouldSetBadge: true,    // Set badge
+          priority: Notifications.AndroidNotificationPriority.DEFAULT,
+        };
+      }
+      
+      // For test notifications, also show with sound
+      if (data?.type === 'test_notification' || data?.type === 'test_cross_user') {
+        console.log('📱 [NOTIFICATION-HANDLER] Test notification - showing with sound');
+        return {
+          shouldShowAlert: true,   // Show as proper notification
+          shouldPlaySound: true,   // Play sound
+          shouldSetBadge: true,    // Set badge
+          priority: Notifications.AndroidNotificationPriority.DEFAULT,
+        };
+      }
+      
+      // For regular notifications, show as notification with sound
+      console.log('📱 [NOTIFICATION-HANDLER] Regular notification - showing with sound');
       return {
-        shouldShowAlert: true,   // Show as proper notification
+        shouldShowAlert: true,   // Show as proper notification (not just badge)
         shouldPlaySound: true,   // Play sound
         shouldSetBadge: true,    // Set badge
         priority: Notifications.AndroidNotificationPriority.DEFAULT,
       };
     }
     
-    // For test notifications, also show with sound
-    if (data?.type === 'test_notification' || data?.type === 'test_cross_user') {
-      console.log('📱 [NOTIFICATION-HANDLER] Test notification - showing with sound');
-      return {
-        shouldShowAlert: true,   // Show as proper notification
-        shouldPlaySound: true,   // Play sound
-        shouldSetBadge: true,    // Set badge
-        priority: Notifications.AndroidNotificationPriority.DEFAULT,
-      };
-    }
-    
-    // For regular notifications, show as notification with sound
-    console.log('📱 [NOTIFICATION-HANDLER] Regular notification - showing with sound');
+    // Fallback for other platforms
+    console.log('📱 [NOTIFICATION-HANDLER] Fallback - showing notification');
     return {
-      shouldShowAlert: true,   // Show as proper notification (not just badge)
-      shouldPlaySound: true,   // Play sound
-      shouldSetBadge: true,    // Set badge
-      priority: Notifications.AndroidNotificationPriority.DEFAULT,
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
     };
   },
 });

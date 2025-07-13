@@ -192,7 +192,7 @@ export const HomeScreen: React.FC = () => {
       // Create notification channel
       const channel = supabase
         .channel(`user-${userProfile.id}`)
-        .on('broadcast', { event: 'new_notification' }, (payload) => {
+        .on('broadcast', { event: 'new_notification' }, async (payload) => {
           try {
             console.log('📨 [NOTIFICATIONS] Real-time notification received:', payload);
             
@@ -202,21 +202,31 @@ export const HomeScreen: React.FC = () => {
               title,
               body,
               data,
-              platform: Platform.OS
+              platform: Platform.OS,
+              timestamp: new Date().toISOString()
             });
+            
+            // Debug: Check notification permissions on iOS
+            if (Platform.OS === 'ios') {
+              const { status } = await Notifications.getPermissionsAsync();
+              console.log('📱 [iOS-DEBUG] Current notification permissions:', status);
+            }
             
             // Use scheduleNotificationAsync with immediate trigger instead of deprecated presentNotificationAsync
             const notificationContent = {
               title: title || 'Bildirim',
               body: body || 'Yeni bildirim aldınız',
-              sound: data?.type === 'video_call_invite' ? 'default' : 'default', // Try using default sound for now
               data: data || {},
-              // Android-specific settings
+              // Set channel ID for Android
               ...(Platform.OS === 'android' && {
                 channelId: data?.type === 'video_call_invite' ? 'calls' : 'default',
                 priority: data?.type === 'video_call_invite' ? 'high' : 'default',
-                vibrate: data?.type === 'video_call_invite' ? [0, 500, 250, 500] : [0, 250, 250, 250],
                 color: data?.type === 'video_call_invite' ? '#10B981' : '#3B82F6',
+              }),
+              // iOS-specific settings
+              ...(Platform.OS === 'ios' && {
+                badge: 1,
+                categoryIdentifier: data?.type === 'video_call_invite' ? 'video_call' : 'general',
               }),
             };
             
