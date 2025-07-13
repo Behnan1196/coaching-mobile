@@ -2,13 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { CoachStudentProvider, useCoachStudent } from '../contexts/CoachStudentContext';
 import { useStream } from '../contexts/StreamContext';
 import { LoginScreen } from '../screens/LoginScreen';
 import { HomeScreen } from '../screens/HomeScreen';
-import { ChatScreen } from '../screens/ChatScreen';
-import { VideoCallTabScreen } from '../screens/VideoCallTabScreen';
+import { StudyPlanScreen } from '../screens/StudyPlanScreen';
+import { ChatTabScreen } from '../screens/ChatTabScreen';
+import { StatisticsScreen } from '../screens/StatisticsScreen';
+import { ToolsScreen } from '../screens/ToolsScreen';
 import { CoachStudentSelectionScreen } from '../screens/CoachStudentSelectionScreen';
 
 const Tab = createBottomTabNavigator();
@@ -29,7 +32,7 @@ const MainTabs: React.FC = () => {
           height: 60,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
         },
       }}
@@ -38,35 +41,49 @@ const MainTabs: React.FC = () => {
         name="Home"
         component={HomeScreen}
         options={{
-          title: 'Ana Sayfa',
-          tabBarIcon: ({ color }) => (
-            <View style={styles.tabIcon}>
-              <View style={[styles.homeIcon, { backgroundColor: color }]} />
-            </View>
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="StudyPlan"
+        component={StudyPlanScreen}
+        options={{
+          title: 'Study Plan',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
         name="Chat"
-        component={ChatScreen}
+        component={ChatTabScreen}
         options={{
-          title: 'Mesaj',
-          tabBarIcon: ({ color }) => (
-            <View style={styles.tabIcon}>
-              <View style={[styles.chatIcon, { backgroundColor: color }]} />
-            </View>
+          title: 'Chat',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="VideoCall"
-        component={VideoCallTabScreen}
+        name="Statistics"
+        component={StatisticsScreen}
         options={{
-          title: 'Video',
-          tabBarIcon: ({ color }) => (
-            <View style={styles.tabIcon}>
-              <View style={[styles.videoIcon, { backgroundColor: color }]} />
-            </View>
+          title: 'Statistics',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="stats-chart" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Tools"
+        component={ToolsScreen}
+        options={{
+          title: 'Tools',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="construct" size={size} color={color} />
           ),
         }}
       />
@@ -85,11 +102,11 @@ const AuthenticatedApp: React.FC = () => {
     console.log('🎯 [NAVIGATOR] Student selected state:', studentSelected);
   }, [studentSelected]);
 
-  // Auto-navigate to VideoCall tab when a call becomes active
+  // Auto-navigate to Chat tab when a call becomes active
   useEffect(() => {
     if (videoCall && navigationRef.current) {
-      console.log('🎯 [NAVIGATOR] Active call detected, navigating to VideoCall tab');
-      navigationRef.current.navigate('VideoCall' as never);
+      console.log('🎯 [NAVIGATOR] Active call detected, navigating to Chat tab');
+      navigationRef.current.navigate('Chat' as never);
     }
   }, [videoCall]);
 
@@ -164,26 +181,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
-  },
-  tabIcon: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 24,
-    height: 24,
-  },
-  homeIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-  },
-  chatIcon: {
-    width: 20,
-    height: 16,
-    borderRadius: 8,
-  },
-  videoIcon: {
-    width: 20,
-    height: 14,
-    borderRadius: 2,
   },
 }); 
