@@ -11,6 +11,7 @@ import {
   Platform,
   Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -104,11 +105,12 @@ export const LoginScreen: React.FC = () => {
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.content}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView 
+        style={styles.flex} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Koçluk Uygulaması</Text>
           <Text style={styles.subtitle}>Hesabınıza giriş yapın</Text>
@@ -167,6 +169,7 @@ export const LoginScreen: React.FC = () => {
         </View>
       </View>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -174,6 +177,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  flex: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,

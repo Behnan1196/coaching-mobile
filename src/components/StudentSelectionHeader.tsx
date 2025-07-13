@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { UserProfile } from '../types/database';
+import { UserProfileMenu } from './UserProfileMenu';
 
 interface StudentSelectionHeaderProps {
   onStudentChange?: (student: UserProfile | null) => void;
@@ -31,10 +32,7 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
   
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
-  // Only show for coaches
-  if (userProfile?.role !== 'coach') {
-    return null;
-  }
+  // Show for all authenticated users (header contains user profile menu)
 
   const handleStudentSelect = (student: UserProfile | null) => {
     if (student) {
@@ -76,16 +74,27 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.label}>Aktif Öğrenci:</Text>
-        <TouchableOpacity
-          style={styles.selector}
-          onPress={() => setDropdownVisible(true)}
-        >
-          <Text style={styles.selectorText}>
-            {selectedStudent?.full_name || 'Öğrenci seçiniz...'}
-          </Text>
-          <Ionicons name="chevron-down" size={20} color="#6B7280" />
-        </TouchableOpacity>
+        {userProfile?.role === 'coach' ? (
+          <>
+            <Text style={styles.label}>Aktif Öğrenci:</Text>
+            <TouchableOpacity
+              style={styles.selector}
+              onPress={() => setDropdownVisible(true)}
+            >
+              <Text style={styles.selectorText}>
+                {selectedStudent?.full_name || 'Öğrenci seçiniz...'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#6B7280" />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <View style={styles.studentView}>
+            <Text style={styles.welcomeText}>
+              Hoşgeldiniz, {userProfile?.full_name || 'Kullanıcı'}
+            </Text>
+          </View>
+        )}
+        <UserProfileMenu />
       </View>
 
       <Modal
@@ -170,6 +179,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  studentView: {
+    flex: 1,
+  },
+  welcomeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
   },
   label: {
     fontSize: 14,
