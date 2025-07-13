@@ -12,95 +12,92 @@ import { StudyPlanScreen } from '../screens/StudyPlanScreen';
 import { ChatTabScreen } from '../screens/ChatTabScreen';
 import { StatisticsScreen } from '../screens/StatisticsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
-import { CoachStudentSelectionScreen } from '../screens/CoachStudentSelectionScreen';
+import { StudentSelectionHeader } from '../components/StudentSelectionHeader';
 
 const Tab = createBottomTabNavigator();
 
 const MainTabs: React.FC = () => {
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: '#6B7280',
-        tabBarStyle: {
-          backgroundColor: 'white',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-        },
-      }}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
-          ),
+    <View style={styles.tabContainer}>
+      <StudentSelectionHeader />
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: '#3B82F6',
+          tabBarInactiveTintColor: '#6B7280',
+          tabBarStyle: {
+            backgroundColor: 'white',
+            borderTopWidth: 1,
+            borderTopColor: '#E5E7EB',
+            paddingBottom: 5,
+            paddingTop: 5,
+            height: 60,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+          },
         }}
-      />
-      <Tab.Screen
-        name="StudyPlan"
-        component={StudyPlanScreen}
-        options={{
-          title: 'Study Plan',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Chat"
-        component={ChatTabScreen}
-        options={{
-          title: 'Chat',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Statistics"
-        component={StatisticsScreen}
-        options={{
-          title: 'Statistics',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="stats-chart" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Tools"
-        component={ToolsScreen}
-        options={{
-          title: 'Tools',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="construct" size={size} color={color} />
-          ),
-        }}
-      />
-    </Tab.Navigator>
+      >
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="home" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="StudyPlan"
+          component={StudyPlanScreen}
+          options={{
+            title: 'Study Plan',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="calendar" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Chat"
+          component={ChatTabScreen}
+          options={{
+            title: 'Chat',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="chatbubbles" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Statistics"
+          component={StatisticsScreen}
+          options={{
+            title: 'Statistics',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="stats-chart" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Tools"
+          component={ToolsScreen}
+          options={{
+            title: 'Tools',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="construct" size={size} color={color} />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    </View>
   );
 };
 
 const AuthenticatedApp: React.FC = () => {
   const { userProfile } = useAuth();
   const { videoCall } = useStream();
-  const [studentSelected, setStudentSelected] = useState(false);
   const navigationRef = useRef<NavigationContainerRef<any>>(null);
-
-  // Debug: Log student selection state
-  useEffect(() => {
-    console.log('🎯 [NAVIGATOR] Student selected state:', studentSelected);
-  }, [studentSelected]);
 
   // Auto-navigate to Chat tab when a call becomes active
   useEffect(() => {
@@ -110,47 +107,11 @@ const AuthenticatedApp: React.FC = () => {
     }
   }, [videoCall]);
 
-  // Show main content based on user role
-  const renderMainContent = () => {
-    // For students, go directly to main tabs
-    if (userProfile?.role === 'student') {
-      return (
-        <NavigationContainer ref={navigationRef}>
-          <MainTabs />
-        </NavigationContainer>
-      );
-    }
-
-    // For coaches, check if a student is selected
-    if (userProfile?.role === 'coach') {
-      if (!studentSelected) {
-        return (
-          <CoachStudentSelectionScreen
-            onStudentSelected={() => {
-              console.log('🎯 [NAVIGATOR] onStudentSelected callback triggered');
-              setStudentSelected(true);
-              console.log('🎯 [NAVIGATOR] Student selected state set to true');
-            }}
-          />
-        );
-      }
-
-      return (
-        <NavigationContainer ref={navigationRef}>
-          <MainTabs />
-        </NavigationContainer>
-      );
-    }
-
-    // For other roles or undefined role, show main tabs
-    return (
-      <NavigationContainer ref={navigationRef}>
-        <MainTabs />
-      </NavigationContainer>
-    );
-  };
-
-  return renderMainContent();
+  return (
+    <NavigationContainer ref={navigationRef}>
+      <MainTabs />
+    </NavigationContainer>
+  );
 };
 
 export const AppNavigator: React.FC = () => {
@@ -180,6 +141,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  tabContainer: {
+    flex: 1,
     backgroundColor: '#F9FAFB',
   },
 }); 
