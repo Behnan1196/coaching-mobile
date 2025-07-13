@@ -678,9 +678,6 @@ export const HomeScreen: React.FC = () => {
             <Text style={styles.welcomeText}>Merhaba,</Text>
             <Text style={styles.nameText}>{userProfile?.full_name}</Text>
           </View>
-          <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
-            <Text style={styles.signOutText}>Çıkış</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Coach Info (for students) */}
@@ -844,16 +841,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1F2937',
     marginTop: 2,
-  },
-  signOutButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#EF4444',
-    borderRadius: 8,
-  },
-  signOutText: {
-    color: '#FFF',
-    fontWeight: '600',
   },
   coachCard: {
     margin: 20,
