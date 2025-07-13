@@ -157,7 +157,7 @@ export const ChatScreen: React.FC = () => {
     
     try {
       return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['bottom']}>
           <OverlayProvider>
             <Chat client={chatClient}>
               <Channel channel={chatChannel}>
@@ -176,7 +176,7 @@ export const ChatScreen: React.FC = () => {
     } catch (error) {
       console.error('Error rendering chat interface:', error);
       return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['bottom']}>
           <View style={styles.header}>
             <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
           </View>

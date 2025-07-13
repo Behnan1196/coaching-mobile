@@ -194,7 +194,7 @@ export const VideoCallTabScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.header}>
         <Text style={styles.title}>Video Görüşme</Text>
       </View>

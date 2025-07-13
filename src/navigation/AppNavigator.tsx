@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +19,7 @@ const Tab = createBottomTabNavigator();
 
 const MainTabs: React.FC = () => {
   return (
-    <View style={styles.tabContainer}>
+    <SafeAreaView style={styles.tabContainer} edges={['top']}>
       <StudentSelectionHeader />
       <Tab.Navigator
         screenOptions={{
@@ -90,7 +91,7 @@ const MainTabs: React.FC = () => {
           }}
         />
       </Tab.Navigator>
-    </View>
+    </SafeAreaView>
   );
 };
 
