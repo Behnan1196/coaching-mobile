@@ -61,17 +61,31 @@ export const HomeScreen: React.FC = () => {
     }
   }, [userProfile, assignedCoach, selectedStudent]);
 
-  // Handle app state changes for presence
+  // Handle app state changes for presence and notifications
   useEffect(() => {
     const handleAppStateChange = (nextAppState: string) => {
+      console.log('📱 [HOME] App state changed to:', nextAppState);
+      
       if (userProfile) {
         PresenceService.handleAppStateChange(nextAppState, userProfile);
+        
+        // On iOS, reconnect notifications when app becomes active
+        if (Platform.OS === 'ios' && nextAppState === 'active') {
+          console.log('📱 [iOS] App became active, checking notification connection...');
+          // Small delay to let the app fully activate
+          setTimeout(() => {
+            if (!notificationChannel || notificationChannel.state !== 'joined') {
+              console.log('📱 [iOS] Notification channel not connected, reconnecting...');
+              setupRealtimeNotifications();
+            }
+          }, 1000);
+        }
       }
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [userProfile]);
+  }, [userProfile, notificationChannel]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -186,15 +200,26 @@ export const HomeScreen: React.FC = () => {
       
       // Clean up existing channel
       if (notificationChannel) {
+        console.log('🧹 [NOTIFICATIONS] Cleaning up existing channel');
         supabase.removeChannel(notificationChannel);
+        setNotificationChannel(null);
       }
       
-      // Create notification channel with iOS-specific configuration
+      // Create notification channel with better connection management
+      const channelName = `user-notifications-${userProfile.id}`;
+      console.log('📡 [NOTIFICATIONS] Creating channel:', channelName);
+      
       const channel = supabase
-        .channel(`user-${userProfile.id}`, {
+        .channel(channelName, {
           config: {
-            broadcast: { self: false }, // Don't broadcast to self
-            presence: { key: userProfile.id }
+            broadcast: { self: false },
+            presence: { key: userProfile.id },
+            // Better connection handling for iOS
+            ...(Platform.OS === 'ios' && {
+              private: false,
+              heartbeat_interval: 30000, // 30 seconds
+              timeout: 10000, // 10 seconds
+            })
           }
         })
         .on('broadcast', { event: 'new_notification' }, async (payload) => {
@@ -252,14 +277,62 @@ export const HomeScreen: React.FC = () => {
             
             console.log('📨 [NOTIFICATIONS] Scheduling notification with content:', notificationContent);
             
-            Notifications.scheduleNotificationAsync({
-              content: notificationContent,
-              trigger: null, // Show immediately
-            }).then(() => {
-              console.log('✅ [NOTIFICATIONS] Real-time notification scheduled successfully');
-            }).catch((error) => {
-              console.error('❌ [NOTIFICATIONS] Error scheduling notification:', error);
-            });
+            // For iOS, when app is active, we need to show notifications differently
+            if (Platform.OS === 'ios') {
+              // Check if app is active
+              const appState = AppState.currentState;
+              console.log('📱 [iOS] Current app state:', appState);
+              
+              if (appState === 'active') {
+                console.log('📱 [iOS] App is active, showing alert instead of scheduled notification');
+                
+                // Show an alert for video call invites when app is active
+                if (data?.type === 'video_call_invite') {
+                  Alert.alert(
+                    title || 'Video Görüşme Daveti',
+                    body || 'Video görüşme daveti aldınız',
+                    [
+                      {
+                        text: 'Tamam',
+                        style: 'default',
+                      }
+                    ],
+                    { cancelable: true }
+                  );
+                } else {
+                  // For other notifications, just schedule normally
+                  Notifications.scheduleNotificationAsync({
+                    content: notificationContent,
+                    trigger: null,
+                  }).then(() => {
+                    console.log('✅ [iOS] Regular notification scheduled');
+                  }).catch((error) => {
+                    console.error('❌ [iOS] Error scheduling notification:', error);
+                  });
+                }
+              } else {
+                // App is not active, schedule notification normally
+                console.log('📱 [iOS] App not active, scheduling notification normally');
+                Notifications.scheduleNotificationAsync({
+                  content: notificationContent,
+                  trigger: null,
+                }).then(() => {
+                  console.log('✅ [iOS] Background notification scheduled');
+                }).catch((error) => {
+                  console.error('❌ [iOS] Error scheduling background notification:', error);
+                });
+              }
+            } else {
+              // Android - schedule notification normally
+              Notifications.scheduleNotificationAsync({
+                content: notificationContent,
+                trigger: null, // Show immediately
+              }).then(() => {
+                console.log('✅ [NOTIFICATIONS] Real-time notification scheduled successfully');
+              }).catch((error) => {
+                console.error('❌ [NOTIFICATIONS] Error scheduling notification:', error);
+              });
+            }
             
           } catch (error) {
             console.error('❌ [NOTIFICATIONS] Error handling real-time notification:', error);
@@ -271,22 +344,26 @@ export const HomeScreen: React.FC = () => {
             console.log('✅ [NOTIFICATIONS] Successfully subscribed to real-time notifications');
           } else if (status === 'CHANNEL_ERROR') {
             console.error('❌ [NOTIFICATIONS] Error subscribing to real-time notifications');
-            // Try to resubscribe after a delay for iOS
-            if (Platform.OS === 'ios') {
-              setTimeout(() => {
-                console.log('🔄 [iOS] Attempting to resubscribe...');
-                setupRealtimeNotifications();
-              }, 3000);
-            }
+            // Better retry logic with exponential backoff
+            const retryDelay = Platform.OS === 'ios' ? 2000 : 1000;
+            setTimeout(() => {
+              console.log(`🔄 [${Platform.OS.toUpperCase()}] Attempting to resubscribe...`);
+              setupRealtimeNotifications();
+            }, retryDelay);
           } else if (status === 'TIMED_OUT') {
             console.warn('⏰ [NOTIFICATIONS] Real-time notification channel timed out');
-            // Try to resubscribe after timeout
+            // Retry after timeout with longer delay
             setTimeout(() => {
               console.log('🔄 [NOTIFICATIONS] Attempting to resubscribe after timeout...');
               setupRealtimeNotifications();
-            }, 5000);
+            }, 3000);
           } else if (status === 'CLOSED') {
             console.log('🔒 [NOTIFICATIONS] Real-time notification channel closed');
+            // Retry connection if it was closed unexpectedly
+            setTimeout(() => {
+              console.log('🔄 [NOTIFICATIONS] Reconnecting after channel closed...');
+              setupRealtimeNotifications();
+            }, 2000);
           }
         });
       
