@@ -245,18 +245,19 @@ export const sendPushNotificationToUser = async (
   data: any = {}
 ): Promise<boolean> => {
   try {
-    const apiUrl = `${Constants.expoConfig?.extra?.supabaseUrl}/functions/v1/push-notification`;
+    // Use the web app's API endpoint instead of Supabase Edge Function
+    const webAppUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+    const apiUrl = `${webAppUrl}/api/notifications/send`;
     
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Constants.expoConfig?.extra?.supabaseAnonKey}`,
       },
       body: JSON.stringify({
         userId,
         title,
-        body,
+        body: body,
         data,
       }),
     });
