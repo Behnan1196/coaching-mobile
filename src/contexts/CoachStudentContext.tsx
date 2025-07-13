@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
 import { useAuth } from './AuthContext';
@@ -85,7 +85,10 @@ export const CoachStudentProvider: React.FC<CoachStudentProviderProps> = ({ chil
   };
 
   const selectStudent = (student: UserProfile) => {
+    console.log('🎯 [CONTEXT] selectStudent called with:', student);
+    console.log('🎯 [CONTEXT] Setting selected student:', student.full_name);
     setSelectedStudent(student);
+    console.log('🎯 [CONTEXT] Selected student state updated');
   };
 
   useEffect(() => {

@@ -36,8 +36,12 @@ export const CoachStudentSelectionScreen: React.FC<CoachStudentSelectionScreenPr
   }, [userProfile]);
 
   const handleStudentSelect = (student: UserProfile) => {
+    console.log('🎯 [STUDENT SELECTION] Student selected:', student);
+    console.log('🎯 [STUDENT SELECTION] Student name:', student.full_name);
+    console.log('🎯 [STUDENT SELECTION] Student ID:', student.id);
     selectStudent(student);
-    onStudentSelected?.();
+    console.log('🎯 [STUDENT SELECTION] selectStudent called, triggering onStudentSelected');
+    onStudentSelected();
   };
 
   const handleSignOut = async () => {

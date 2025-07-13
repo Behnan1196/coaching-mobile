@@ -72,6 +72,7 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
       setChatError(null);
 
       if (isDemoMode()) {
+        console.log('⚠️ [STREAM] Running in demo mode - video calling and chat disabled');
         setIsStreamReady(true);
         setVideoLoading(false);
         setChatLoading(false);
@@ -99,6 +100,8 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
       setVideoClient(videoClientInstance);
       setChatClient(chatClientInstance);
       setIsStreamReady(true);
+      
+      console.log('✅ [STREAM] Video and chat clients initialized successfully');
     } catch (error) {
       console.error('❌ [STREAM] Failed to initialize stream clients:', error);
       setVideoError('Failed to initialize video client');
@@ -110,6 +113,8 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
   };
 
   const cleanupStream = () => {
+    console.log('🧹 [STREAM] Cleaning up Stream resources');
+    
     if (videoClient) {
       videoClient.disconnectUser();
       setVideoClient(null);
@@ -127,122 +132,138 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
 
   const initializeChatChannel = async (partnerId: string, partnerName: string) => {
     try {
+      setChatLoading(true);
       setChatError(null);
-      
+
       if (isDemoMode()) {
+        console.log('⚠️ [CHAT] Running in demo mode - chat disabled');
         return;
       }
 
-      if (!chatClient || !user) {
-        throw new Error('Chat client not initialized');
+      if (!chatClient || !user || !userProfile) {
+        throw new Error('Chat client not ready or user not authenticated');
       }
 
-      // Create channel ID (sorted for consistency)
-      const channelId = `coaching-${[user.id, partnerId].sort().join('-')}`;
-      
-      // Create or get existing channel
-      const channel = chatClient.channel('messaging', channelId, {
-        members: [user.id, partnerId],
+      // Create Stream user object
+      const streamUser = formatStreamUser({
+        id: user.id,
+        full_name: userProfile.full_name,
+        email: user.email || userProfile.email || ''
       });
-
-      // Create the channel if it doesn't exist
-      await channel.create();
+      
+      // Create or get chat channel using existing chat client
+      const channel = await createChatChannel(chatClient, streamUser.id, partnerId, streamUser.name, partnerName);
       
       setChatChannel(channel);
+      
+      console.log('✅ [CHAT] Chat channel initialized successfully');
     } catch (error) {
-      console.error('❌ [STREAM] Failed to initialize chat channel:', error);
+      console.error('❌ [CHAT] Failed to initialize chat channel:', error);
       setChatError('Failed to initialize chat channel');
+    } finally {
+      setChatLoading(false);
     }
   };
 
   const initializeVideoCall = async (partnerId: string) => {
     try {
-      setVideoError(null);
-      
-      if (isDemoMode()) {
-        return null;
-      }
-
       if (!videoClient || !user) {
         throw new Error('Video client not initialized');
       }
 
-      // Create call ID (sorted for consistency)
-      const callId = `coaching-${[user.id, partnerId].sort().join('-')}`;
+      if (isDemoMode()) {
+        console.log('⚠️ [VIDEO CALL] Demo mode - creating mock call');
+        // Create a mock call object for demo purposes
+        const mockCall = {
+          id: 'demo-call',
+          join: async () => console.log('Demo call joined'),
+          leave: async () => console.log('Demo call left'),
+        } as any;
+        setVideoCall(mockCall);
+        return mockCall;
+      }
+
+      // Create unique call ID for this coach-student pair
+      const callId = createVideoCallId(user.id, partnerId);
+      console.log(`📹 [VIDEO CALL] Creating call with ID: ${callId}`);
       
+      // Create the call
       const call = videoClient.call('default', callId);
       
-      // Get or create the call
+      // Create or get the call with both users as members
       await call.getOrCreate({
-        ring: false,
         data: {
-          custom: {
-            coaching_session: true,
-            coach_id: user.role === 'coach' ? user.id : partnerId,
-            student_id: user.role === 'student' ? user.id : partnerId,
-          },
+          members: [
+            { user_id: user.id },
+            { user_id: partnerId },
+          ],
         },
       });
-
+      
       setVideoCall(call);
+      console.log('✅ [VIDEO CALL] Call initialized successfully');
+      
       return call;
     } catch (error) {
-      console.error('❌ [STREAM] Failed to initialize video call:', error);
-      setVideoError('Failed to initialize video call');
-      return null;
+      console.error('❌ [VIDEO CALL] Failed to initialize call:', error);
+      throw error;
     }
   };
 
   const joinVideoCall = async (callId: string) => {
     try {
-      setVideoError(null);
-      
-      if (isDemoMode()) {
-        return;
-      }
-
       if (!videoClient) {
         throw new Error('Video client not initialized');
       }
 
+      console.log(`📹 [JOIN CALL] Joining call: ${callId}`);
+      
+      // Get the call and join it
       const call = videoClient.call('default', callId);
       await call.join();
+      
       setVideoCall(call);
+      console.log('✅ [JOIN CALL] Successfully joined call');
     } catch (error) {
-      console.error('❌ [STREAM] Failed to join video call:', error);
-      setVideoError('Failed to join video call');
+      console.error('❌ [JOIN CALL] Failed to join call:', error);
+      throw error;
     }
   };
 
   const startVideoCall = async (callToStart?: Call) => {
     try {
-      setVideoError(null);
-      
+      const call = callToStart || videoCall;
+      if (!call) {
+        throw new Error('No video call to start');
+      }
+
       if (isDemoMode()) {
+        console.log('⚠️ [START CALL] Demo mode - call start simulated');
         return;
       }
 
-      const call = callToStart || videoCall;
-      if (!call) {
-        throw new Error('No call to start');
-      }
-
+      console.log('🎬 [START CALL] Starting video call...');
       await call.join();
-      setVideoCall(call);
+      console.log('✅ [START CALL] Successfully started call');
     } catch (error) {
-      console.error('❌ [STREAM] Failed to start video call:', error);
-      setVideoError('Failed to start video call');
+      console.error('❌ [START CALL] Failed to start call:', error);
+      throw error;
     }
   };
 
   const endVideoCall = async () => {
     try {
-      if (videoCall) {
-        await videoCall.leave();
-        setVideoCall(null);
+      if (!videoCall) {
+        return;
       }
+
+      console.log('🔚 [END CALL] Ending video call...');
+      await videoCall.leave();
+      setVideoCall(null);
+      console.log('✅ [END CALL] Successfully ended call');
     } catch (error) {
-      console.error('❌ [STREAM] Failed to end video call:', error);
+      console.error('❌ [END CALL] Failed to end call:', error);
+      throw error;
     }
   };
 
