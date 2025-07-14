@@ -1933,12 +1933,6 @@ const styles = StyleSheet.create({
   scoresSection: {
     marginTop: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
-  },
   scoreRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2198,9 +2192,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
   },
 }); 
