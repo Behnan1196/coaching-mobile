@@ -147,8 +147,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       newErrors.resource_id = 'Kaynak türü görevler için bir kaynak seçmelisiniz';
     }
 
-    // Validate mock exam selection for exam tasks
-    if ((formData.task_type === 'exam' || formData.task_type === 'practice') && !formData.mock_exam_id) {
+    // Validate mock exam selection for exam tasks only (optional for practice)
+    if (formData.task_type === 'exam' && !formData.mock_exam_id) {
       newErrors.mock_exam_id = 'Sınav türü görevler için bir deneme sınavı seçmelisiniz';
     }
 
@@ -425,7 +425,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {/* Mock Exam Selection - For exam and practice task types */}
             {(formData.task_type === 'exam' || formData.task_type === 'practice') && (
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Deneme Sınavı *</Text>
+                <Text style={styles.label}>Deneme Sınavı {formData.task_type === 'exam' ? '*' : ''}</Text>
                 <TouchableOpacity
                   style={[styles.dropdownButton, errors.mock_exam_id && styles.dropdownButtonError]}
                   onPress={() => setShowMockExamDropdown(true)}
