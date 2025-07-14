@@ -54,7 +54,7 @@ const MainTabs: React.FC = () => {
           name="StudyPlan"
           component={StudyPlanScreen}
           options={{
-            title: 'Study Plan',
+            title: 'Çalışma Planı',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="calendar" size={size} color={color} />
             ),
