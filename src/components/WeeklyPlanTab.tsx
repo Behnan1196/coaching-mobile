@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { Task, Subject, Topic, Resource, TaskWithRelations } from '../types/database';
 import { TaskCard } from './TaskCard';
+import { TaskModal } from './TaskModal';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +29,9 @@ export const WeeklyPlanTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const currentUser = userProfile?.role === 'student' ? userProfile : selectedStudent;
 
@@ -223,6 +227,32 @@ export const WeeklyPlanTab: React.FC = () => {
     );
   };
 
+  const handleTaskDelete = (taskId: string) => {
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+  };
+
+  const handleTaskEdit = (task: Task) => {
+    setEditingTask(task);
+    setSelectedDate(new Date(task.scheduled_date!));
+    setShowTaskModal(true);
+  };
+
+  const handleAddTask = (date: Date) => {
+    setEditingTask(null);
+    setSelectedDate(date);
+    setShowTaskModal(true);
+  };
+
+  const handleTaskSaved = () => {
+    loadWeeklyTasks();
+  };
+
+  const handleCloseModal = () => {
+    setShowTaskModal(false);
+    setEditingTask(null);
+    setSelectedDate(null);
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
     loadWeeklyTasks();
@@ -338,21 +368,32 @@ export const WeeklyPlanTab: React.FC = () => {
                   </Text>
                 </View>
                 
-                {total > 0 && (
-                  <View style={styles.dayStats}>
-                    <Text style={[styles.statsText, isToday && styles.todayText]}>
-                      {completed}/{total}
-                    </Text>
-                    <View style={styles.miniProgressBar}>
-                      <View 
-                        style={[
-                          styles.miniProgressFill, 
-                          { width: `${(completed / total) * 100}%` }
-                        ]} 
-                      />
+                <View style={styles.dayHeaderRight}>
+                  {total > 0 && (
+                    <View style={styles.dayStats}>
+                      <Text style={[styles.statsText, isToday && styles.todayText]}>
+                        {completed}/{total}
+                      </Text>
+                      <View style={styles.miniProgressBar}>
+                        <View 
+                          style={[
+                            styles.miniProgressFill, 
+                            { width: `${(completed / total) * 100}%` }
+                          ]} 
+                        />
+                      </View>
                     </View>
-                  </View>
-                )}
+                  )}
+                  
+                  {userProfile?.role === 'coach' && selectedStudent && (
+                    <TouchableOpacity
+                      style={styles.addTaskButton}
+                      onPress={() => handleAddTask(date)}
+                    >
+                      <Text style={styles.addTaskButtonText}>+</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
 
               <View style={styles.dayTasks}>
@@ -369,6 +410,10 @@ export const WeeklyPlanTab: React.FC = () => {
                       topic={getTopicById(task.topic_id)}
                       resource={getResourceById(task.resource_id)}
                       onTaskUpdate={handleTaskUpdate}
+                      onTaskDelete={handleTaskDelete}
+                      onTaskEdit={handleTaskEdit}
+                      userRole={userProfile?.role}
+                      userId={userProfile?.id}
                       compact={true}
                     />
                   ))
@@ -378,6 +423,15 @@ export const WeeklyPlanTab: React.FC = () => {
           );
         })}
       </ScrollView>
+      
+      {/* Task Modal */}
+      <TaskModal
+        visible={showTaskModal}
+        onClose={handleCloseModal}
+        task={editingTask}
+        selectedDate={selectedDate || undefined}
+        onTaskSaved={handleTaskSaved}
+      />
     </View>
   );
 };
@@ -445,6 +499,24 @@ const styles = StyleSheet.create({
   },
   dayInfo: {
     flex: 1,
+  },
+  dayHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  addTaskButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addTaskButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
   },
   dayName: {
     fontSize: 16,

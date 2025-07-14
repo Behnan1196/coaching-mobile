@@ -7,8 +7,9 @@ import {
   Alert,
   Dimensions
 } from 'react-native';
-import { Task, Subject, Topic, Resource } from '../types/database';
+import { Task, Subject, Topic, Resource, UserRole } from '../types/database';
 import { supabase } from '../lib/supabase';
+import { deleteTask, toggleTaskCompletion } from '../utils/taskUtils';
 
 interface TaskCardProps {
   task: Task;
@@ -16,6 +17,10 @@ interface TaskCardProps {
   topic?: Topic;
   resource?: Resource;
   onTaskUpdate?: (updatedTask: Task) => void;
+  onTaskDelete?: (taskId: string) => void;
+  onTaskEdit?: (task: Task) => void;
+  userRole?: UserRole;
+  userId?: string;
   compact?: boolean;
 }
 
@@ -27,6 +32,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   topic,
   resource,
   onTaskUpdate,
+  onTaskDelete,
+  onTaskEdit,
+  userRole,
+  userId,
   compact = false
 }) => {
   const getTaskTypeColor = (taskType: string) => {
@@ -74,40 +83,30 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   const handleToggleComplete = async () => {
-    if (!task || !supabase) return;
+    if (!task) return;
 
-    try {
-      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-      const updates: any = {
-        status: newStatus,
-        updated_at: new Date().toISOString()
-      };
-
-      if (newStatus === 'completed') {
-        updates.completed_at = new Date().toISOString();
-      } else {
-        updates.completed_at = null;
-      }
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .update(updates)
-        .eq('id', task.id)
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      if (data && data.length > 0 && onTaskUpdate) {
-        onTaskUpdate(data[0]);
-      }
-    } catch (error) {
-      console.error('Error updating task:', error);
-      Alert.alert('Hata', 'Görev güncellenirken bir hata oluştu');
+    const updatedTask = await toggleTaskCompletion(task);
+    if (updatedTask && onTaskUpdate) {
+      onTaskUpdate(updatedTask);
     }
   };
 
+  const handleEdit = () => {
+    if (onTaskEdit) {
+      onTaskEdit(task);
+    }
+  };
+
+  const handleDelete = async () => {
+    const deleted = await deleteTask(task);
+    if (deleted && onTaskDelete) {
+      onTaskDelete(task.id);
+    }
+  };
+
+  // Check if user can edit/delete this task
+  const canEditTask = userRole === 'coach' && task.assigned_by === userId;
+  const canCompleteTask = userRole === 'student' && task.assigned_to === userId || userRole === 'coach';
   const isCompleted = task.status === 'completed';
   const taskTypeColor = getTaskTypeColor(task.task_type);
 
@@ -117,14 +116,34 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         <View style={[styles.taskTypeChip, { backgroundColor: taskTypeColor }]}>
           <Text style={styles.taskTypeText}>{getTaskTypeText(task.task_type)}</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.statusButton, isCompleted && styles.completedButton]}
-          onPress={handleToggleComplete}
-        >
-          <Text style={[styles.statusButtonText, isCompleted && styles.completedButtonText]}>
-            {isCompleted ? '✓' : '○'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          {canEditTask && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleEdit}
+            >
+              <Text style={styles.actionButtonText}>✏️</Text>
+            </TouchableOpacity>
+          )}
+          {canEditTask && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleDelete}
+            >
+              <Text style={styles.actionButtonText}>🗑️</Text>
+            </TouchableOpacity>
+          )}
+          {canCompleteTask && (
+            <TouchableOpacity
+              style={[styles.statusButton, isCompleted && styles.completedButton]}
+              onPress={handleToggleComplete}
+            >
+              <Text style={[styles.statusButtonText, isCompleted && styles.completedButtonText]}>
+                {isCompleted ? '✓' : '○'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <View style={styles.taskContent}>
@@ -191,6 +210,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  actionButtonText: {
+    fontSize: 14,
   },
   taskTypeChip: {
     paddingHorizontal: 12,

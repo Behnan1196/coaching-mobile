@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { Task } from '../types/database';
+import { TaskModal } from './TaskModal';
 
 const { width } = Dimensions.get('window');
 
@@ -36,6 +37,9 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const currentUser = userProfile?.role === 'student' ? userProfile : selectedStudent;
 
@@ -210,8 +214,35 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
     return tasks.filter(task => task.scheduled_date === dateStr);
   };
 
+  const handleAddTask = (date: Date) => {
+    setEditingTask(null);
+    setSelectedDate(date);
+    setShowTaskModal(true);
+  };
+
+  const handleTaskSaved = () => {
+    loadMonthlyTasks();
+  };
+
+  const handleCloseModal = () => {
+    setShowTaskModal(false);
+    setEditingTask(null);
+    setSelectedDate(null);
+  };
+
   const handleDayPress = (dayData: DayData) => {
-    if (onNavigateToWeek) {
+    if (userProfile?.role === 'coach' && selectedStudent) {
+      // For coaches, show options to add task or navigate to week
+      Alert.alert(
+        'Seçenekler',
+        'Bu gün için ne yapmak istiyorsunuz?',
+        [
+          { text: 'İptal', style: 'cancel' },
+          { text: 'Görev Ekle', onPress: () => handleAddTask(dayData.date) },
+          { text: 'Haftalık Görünüm', onPress: () => onNavigateToWeek && onNavigateToWeek(dayData.date) },
+        ]
+      );
+    } else if (onNavigateToWeek) {
       onNavigateToWeek(dayData.date);
     }
   };
@@ -392,6 +423,15 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
           </View>
         </View>
       </ScrollView>
+      
+      {/* Task Modal */}
+      <TaskModal
+        visible={showTaskModal}
+        onClose={handleCloseModal}
+        task={editingTask}
+        selectedDate={selectedDate || undefined}
+        onTaskSaved={handleTaskSaved}
+      />
     </View>
   );
 };

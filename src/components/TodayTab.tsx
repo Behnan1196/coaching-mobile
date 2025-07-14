@@ -6,13 +6,15 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
-  Alert
+  Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { Task, Subject, Topic, Resource, TaskWithRelations } from '../types/database';
 import { TaskCard } from './TaskCard';
+import { TaskModal } from './TaskModal';
 
 export const TodayTab: React.FC = () => {
   const { userProfile } = useAuth();
@@ -23,6 +25,8 @@ export const TodayTab: React.FC = () => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const currentUser = userProfile?.role === 'student' ? userProfile : selectedStudent;
 
@@ -194,6 +198,29 @@ export const TodayTab: React.FC = () => {
     );
   };
 
+  const handleTaskDelete = (taskId: string) => {
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+  };
+
+  const handleTaskEdit = (task: Task) => {
+    setEditingTask(task);
+    setShowTaskModal(true);
+  };
+
+  const handleAddTask = () => {
+    setEditingTask(null);
+    setShowTaskModal(true);
+  };
+
+  const handleTaskSaved = () => {
+    loadTodayTasks();
+  };
+
+  const handleCloseModal = () => {
+    setShowTaskModal(false);
+    setEditingTask(null);
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
     loadTodayTasks();
@@ -294,10 +321,34 @@ export const TodayTab: React.FC = () => {
               topic={getTopicById(task.topic_id)}
               resource={getResourceById(task.resource_id)}
               onTaskUpdate={handleTaskUpdate}
+              onTaskDelete={handleTaskDelete}
+              onTaskEdit={handleTaskEdit}
+              userRole={userProfile?.role}
+              userId={userProfile?.id}
             />
           ))
         )}
       </ScrollView>
+      
+      {/* Floating Action Button for Coaches */}
+      {userProfile?.role === 'coach' && selectedStudent && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={handleAddTask}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Task Modal */}
+      <TaskModal
+        visible={showTaskModal}
+        onClose={handleCloseModal}
+        task={editingTask}
+        selectedDate={new Date()}
+        onTaskSaved={handleTaskSaved}
+      />
     </View>
   );
 };
@@ -378,5 +429,26 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  fabText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: 'white',
   },
 }); 
