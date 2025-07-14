@@ -8,8 +8,8 @@ import {
   Modal,
   StyleSheet,
   Alert,
+  FlatList,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { Task, TaskType, Subject, Topic, Resource, MockExam } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,6 +33,12 @@ interface TaskFormData {
   scheduled_start_time: string;
   estimated_duration: number;
   problem_count: number;
+}
+
+interface DropdownItem {
+  id: string;
+  name: string;
+  value: string;
 }
 
 export const TaskModal: React.FC<TaskModalProps> = ({
@@ -63,6 +69,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [mockExams, setMockExams] = useState<MockExam[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Dropdown state
+  const [showTaskTypeDropdown, setShowTaskTypeDropdown] = useState(false);
+  const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
+  const [showTopicDropdown, setShowTopicDropdown] = useState(false);
+  const [showResourceDropdown, setShowResourceDropdown] = useState(false);
+  const [showMockExamDropdown, setShowMockExamDropdown] = useState(false);
 
   // Load reference data
   useEffect(() => {
@@ -240,6 +253,26 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
   };
 
+  const getSelectedSubjectName = (): string => {
+    const selected = subjects.find(s => s.id === formData.subject_id);
+    return selected ? selected.name : 'Ders seçiniz...';
+  };
+
+  const getSelectedTopicName = (): string => {
+    const selected = topics.find(t => t.id === formData.topic_id);
+    return selected ? selected.name : 'Konu seçiniz...';
+  };
+
+  const getSelectedResourceName = (): string => {
+    const selected = resources.find(r => r.id === formData.resource_id);
+    return selected ? `${selected.name} (${selected.category.toUpperCase()})` : 'Kaynak seçiniz...';
+  };
+
+  const getSelectedMockExamName = (): string => {
+    const selected = mockExams.find(m => m.id === formData.mock_exam_id);
+    return selected ? selected.name : 'Deneme sınavı seçiniz...';
+  };
+
   const filteredTopics = topics.filter(topic => 
     !formData.subject_id || topic.subject_id === formData.subject_id
   );
@@ -250,6 +283,50 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
   const filteredMockExams = mockExams.filter(mockExam => 
     !formData.subject_id || mockExam.subject_id === formData.subject_id
+  );
+
+  const taskTypeOptions: DropdownItem[] = [
+    { id: 'study', name: 'Çalışma', value: 'study' },
+    { id: 'practice', name: 'Soru Çözme', value: 'practice' },
+    { id: 'exam', name: 'Sınav', value: 'exam' },
+    { id: 'review', name: 'Tekrar', value: 'review' },
+    { id: 'resource', name: 'Kaynak', value: 'resource' },
+    { id: 'coaching_session', name: 'Koçluk Seansı', value: 'coaching_session' },
+  ];
+
+  const renderDropdown = (
+    items: DropdownItem[],
+    onSelect: (value: string) => void,
+    onClose: () => void,
+    visible: boolean
+  ) => (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity style={styles.dropdownOverlay} onPress={onClose}>
+        <View style={styles.dropdownContainer}>
+          <FlatList
+            data={items}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={() => {
+                  onSelect(item.value);
+                  onClose();
+                }}
+              >
+                <Text style={styles.dropdownItemText}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </TouchableOpacity>
+    </Modal>
   );
 
   return (
@@ -278,70 +355,50 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {/* 1. Görev Türü * */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>Görev Türü *</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={formData.task_type}
-                  style={styles.picker}
-                  onValueChange={(itemValue: TaskType) => {
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      task_type: itemValue,
-                      // Clear dependent fields when task type changes
-                      resource_id: itemValue === 'resource' ? prev.resource_id : '',
-                      mock_exam_id: ['exam', 'practice'].includes(itemValue) ? prev.mock_exam_id : '',
-                      problem_count: itemValue === 'practice' ? prev.problem_count : 10,
-                    }));
-                  }}
-                >
-                  <Picker.Item label="Çalışma" value="study" />
-                  <Picker.Item label="Soru Çözme" value="practice" />
-                  <Picker.Item label="Sınav" value="exam" />
-                  <Picker.Item label="Tekrar" value="review" />
-                  <Picker.Item label="Kaynak" value="resource" />
-                  <Picker.Item label="Koçluk Seansı" value="coaching_session" />
-                </Picker>
-              </View>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setShowTaskTypeDropdown(true)}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {getTaskTypeText(formData.task_type)}
+                </Text>
+                <Text style={styles.dropdownArrow}>▼</Text>
+              </TouchableOpacity>
             </View>
 
             {/* 2. Ders */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>Ders</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={formData.subject_id}
-                  style={styles.picker}
-                  onValueChange={(itemValue: string) => {
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      subject_id: itemValue,
-                      topic_id: '', // Reset topic when subject changes
-                    }));
-                  }}
-                >
-                  <Picker.Item label="Ders seçiniz..." value="" />
-                  {subjects.map(subject => (
-                    <Picker.Item key={subject.id} label={subject.name} value={subject.id} />
-                  ))}
-                </Picker>
-              </View>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setShowSubjectDropdown(true)}
+              >
+                <Text style={[
+                  styles.dropdownButtonText,
+                  !formData.subject_id && styles.placeholderText
+                ]}>
+                  {getSelectedSubjectName()}
+                </Text>
+                <Text style={styles.dropdownArrow}>▼</Text>
+              </TouchableOpacity>
             </View>
 
             {/* 3. Konu - Appears if ders is selected */}
             {formData.subject_id && (
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Konu</Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={formData.topic_id}
-                    style={styles.picker}
-                    onValueChange={(itemValue: string) => setFormData(prev => ({ ...prev, topic_id: itemValue }))}
-                  >
-                    <Picker.Item label="Konu seçiniz..." value="" />
-                    {filteredTopics.map(topic => (
-                      <Picker.Item key={topic.id} label={topic.name} value={topic.id} />
-                    ))}
-                  </Picker>
-                </View>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setShowTopicDropdown(true)}
+                >
+                  <Text style={[
+                    styles.dropdownButtonText,
+                    !formData.topic_id && styles.placeholderText
+                  ]}>
+                    {getSelectedTopicName()}
+                  </Text>
+                  <Text style={styles.dropdownArrow}>▼</Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -349,22 +406,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {formData.task_type === 'resource' && (
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Kaynak Seçimi *</Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={formData.resource_id}
-                    style={styles.picker}
-                    onValueChange={(itemValue: string) => setFormData(prev => ({ ...prev, resource_id: itemValue }))}
-                  >
-                    <Picker.Item label="Kaynak seçiniz..." value="" />
-                    {filteredResources.map(resource => (
-                      <Picker.Item 
-                        key={resource.id} 
-                        label={`${resource.name} (${resource.category.toUpperCase()})`} 
-                        value={resource.id} 
-                      />
-                    ))}
-                  </Picker>
-                </View>
+                <TouchableOpacity
+                  style={[styles.dropdownButton, errors.resource_id && styles.dropdownButtonError]}
+                  onPress={() => setShowResourceDropdown(true)}
+                >
+                  <Text style={[
+                    styles.dropdownButtonText,
+                    !formData.resource_id && styles.placeholderText
+                  ]}>
+                    {getSelectedResourceName()}
+                  </Text>
+                  <Text style={styles.dropdownArrow}>▼</Text>
+                </TouchableOpacity>
                 {errors.resource_id && <Text style={styles.errorText}>{errors.resource_id}</Text>}
               </View>
             )}
@@ -373,18 +426,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {(formData.task_type === 'exam' || formData.task_type === 'practice') && (
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Deneme Sınavı *</Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={formData.mock_exam_id}
-                    style={styles.picker}
-                    onValueChange={(itemValue: string) => setFormData(prev => ({ ...prev, mock_exam_id: itemValue }))}
-                  >
-                    <Picker.Item label="Deneme sınavı seçiniz..." value="" />
-                    {filteredMockExams.map(mockExam => (
-                      <Picker.Item key={mockExam.id} label={mockExam.name} value={mockExam.id} />
-                    ))}
-                  </Picker>
-                </View>
+                <TouchableOpacity
+                  style={[styles.dropdownButton, errors.mock_exam_id && styles.dropdownButtonError]}
+                  onPress={() => setShowMockExamDropdown(true)}
+                >
+                  <Text style={[
+                    styles.dropdownButtonText,
+                    !formData.mock_exam_id && styles.placeholderText
+                  ]}>
+                    {getSelectedMockExamName()}
+                  </Text>
+                  <Text style={styles.dropdownArrow}>▼</Text>
+                </TouchableOpacity>
                 {errors.mock_exam_id && <Text style={styles.errorText}>{errors.mock_exam_id}</Text>}
               </View>
             )}
@@ -475,6 +528,90 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </View>
           </View>
         </ScrollView>
+
+        {/* Dropdown Modals */}
+        {renderDropdown(
+          taskTypeOptions,
+          (value) => {
+            setFormData(prev => ({ 
+              ...prev, 
+              task_type: value as TaskType,
+              resource_id: value === 'resource' ? prev.resource_id : '',
+              mock_exam_id: ['exam', 'practice'].includes(value) ? prev.mock_exam_id : '',
+              problem_count: value === 'practice' ? prev.problem_count : 10,
+            }));
+          },
+          () => setShowTaskTypeDropdown(false),
+          showTaskTypeDropdown
+        )}
+
+        {renderDropdown(
+          [
+            { id: '', name: 'Ders seçiniz...', value: '' },
+            ...subjects.map(subject => ({
+              id: subject.id,
+              name: subject.name,
+              value: subject.id,
+            }))
+          ],
+          (value) => {
+            setFormData(prev => ({ 
+              ...prev, 
+              subject_id: value,
+              topic_id: '', // Reset topic when subject changes
+            }));
+          },
+          () => setShowSubjectDropdown(false),
+          showSubjectDropdown
+        )}
+
+        {renderDropdown(
+          [
+            { id: '', name: 'Konu seçiniz...', value: '' },
+            ...filteredTopics.map(topic => ({
+              id: topic.id,
+              name: topic.name,
+              value: topic.id,
+            }))
+          ],
+          (value) => {
+            setFormData(prev => ({ ...prev, topic_id: value }));
+          },
+          () => setShowTopicDropdown(false),
+          showTopicDropdown
+        )}
+
+        {renderDropdown(
+          [
+            { id: '', name: 'Kaynak seçiniz...', value: '' },
+            ...filteredResources.map(resource => ({
+              id: resource.id,
+              name: `${resource.name} (${resource.category.toUpperCase()})`,
+              value: resource.id,
+            }))
+          ],
+          (value) => {
+            setFormData(prev => ({ ...prev, resource_id: value }));
+          },
+          () => setShowResourceDropdown(false),
+          showResourceDropdown
+        )}
+
+        {renderDropdown(
+          [
+            { id: '', name: 'Deneme sınavı seçiniz...', value: '' },
+            ...filteredMockExams.map(mockExam => ({
+              id: mockExam.id,
+              name: mockExam.name,
+              value: mockExam.id,
+            }))
+          ],
+          (value) => {
+            setFormData(prev => ({ ...prev, mock_exam_id: value }));
+          },
+          () => setShowMockExamDropdown(false),
+          showMockExamDropdown
+        )}
       </View>
     </Modal>
   );
@@ -553,15 +690,60 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: '#EF4444',
   },
-  pickerContainer: {
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 8,
+    padding: 12,
     backgroundColor: 'white',
-    overflow: 'hidden',
+    minHeight: 50,
   },
-  picker: {
-    height: 50,
+  dropdownButtonError: {
+    borderColor: '#EF4444',
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    color: '#111827',
+    flex: 1,
+  },
+  placeholderText: {
+    color: '#9CA3AF',
+  },
+  dropdownArrow: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 8,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownContainer: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    minWidth: 280,
+    maxWidth: '90%',
+    maxHeight: '70%',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  dropdownItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#111827',
   },
   errorText: {
     color: '#EF4444',
