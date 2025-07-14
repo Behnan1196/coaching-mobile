@@ -140,6 +140,51 @@ export interface WebPushSubscription {
 }
 
 // Extended types with relations
+export interface Goal {
+  id: string
+  student_id: string
+  coach_id: string
+  goal_type: 'tyt_target' | 'ayt_target' | 'university_target' | 'department_target' | 'study_hours' | 'custom'
+  title: string
+  description?: string
+  target_value?: string
+  current_value?: string
+  target_date?: string
+  priority: 'low' | 'medium' | 'high'
+  status: 'active' | 'completed' | 'paused' | 'cancelled'
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ProfileForm {
+  full_name: string
+  email: string
+  phone: string
+  department: string
+  school: string
+  tutoring_center: string
+  target_university: string
+  target_department: string
+  yks_score: string
+  start_date: string
+  parent_name: string
+  parent_phone: string
+  address: string
+  notes: string
+}
+
+export interface GoalForm {
+  goal_type: 'tyt_target' | 'ayt_target' | 'university_target' | 'department_target' | 'study_hours' | 'custom'
+  title: string
+  description: string
+  target_value: string
+  current_value: string
+  target_date: string
+  priority: 'low' | 'medium' | 'high'
+  status: 'active' | 'completed' | 'paused' | 'cancelled'
+}
+
 export interface UserProfileWithStats extends UserProfile {
   task_count?: number
   completed_tasks?: number
@@ -221,6 +266,11 @@ export type Database = {
         Row: WebPushSubscription
         Insert: Omit<WebPushSubscription, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<WebPushSubscription, 'id' | 'created_at' | 'updated_at'>>
+      }
+      goals: {
+        Row: Goal
+        Insert: Omit<Goal, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Goal, 'id' | 'created_at' | 'updated_at'>>
       }
     }
     Views: {
