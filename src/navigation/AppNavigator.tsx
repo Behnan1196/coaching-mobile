@@ -74,7 +74,7 @@ const MainTabs: React.FC = () => {
           name="Statistics"
           component={StatisticsScreen}
           options={{
-            title: 'Statistics',
+            title: 'Gelişimim',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="stats-chart" size={size} color={color} />
             ),
