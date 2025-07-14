@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, ActivityIndicator, Dimensions } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-// @ts-ignore
-import { LineChart, BarChart, PieChart, ProgressCircle, YAxis, XAxis, Grid } from 'react-native-svg-charts';
-import { Circle, G, Line, Text as SvgText } from 'react-native-svg';
-// @ts-ignore
-import * as shape from 'd3-shape';
+import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
@@ -355,61 +351,68 @@ const StatisticsScreen: React.FC = () => {
           <View style={styles.chartContainer}>
             <Text style={styles.chartTitle}>Haftalık Görev Tamamlama</Text>
             <View style={styles.chartContent}>
-              <YAxis
-                data={statistics.weeklyProgress.map(p => p.completedTasks)}
-                contentInset={{ top: 20, bottom: 20 }}
-                svg={{ fontSize: 10, fill: '#6B7280' }}
-                numberOfTicks={4}
-                // @ts-ignore
-                formatLabel={(value) => `${value}`}
-              />
               <BarChart
-                style={{ flex: 1, marginLeft: 16 }}
-                data={statistics.weeklyProgress.map(p => p.completedTasks)}
-                svg={{ fill: '#3B82F6' }}
-                contentInset={{ top: 20, bottom: 20 }}
-                spacing={0.2}
-              >
-                <Grid />
-              </BarChart>
+                data={{
+                  labels: statistics.weeklyProgress.map(p => p.day.substring(0, 3)),
+                  datasets: [{
+                    data: statistics.weeklyProgress.map(p => p.completedTasks)
+                  }]
+                }}
+                width={Dimensions.get('window').width - 60}
+                height={200}
+                yAxisLabel=""
+                yAxisSuffix=""
+                chartConfig={{
+                  backgroundColor: '#ffffff',
+                  backgroundGradientFrom: '#ffffff',
+                  backgroundGradientTo: '#ffffff',
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+                  style: {
+                    borderRadius: 16
+                  }
+                }}
+                style={{
+                  marginVertical: 8,
+                  borderRadius: 16
+                }}
+              />
             </View>
-            <XAxis
-              style={{ marginHorizontal: 16 }}
-              data={statistics.weeklyProgress}
-              formatLabel={(value, index) => statistics.weeklyProgress[index]?.day.substring(0, 3) || ''}
-              contentInset={{ left: 16, right: 16 }}
-              svg={{ fontSize: 10, fill: '#6B7280' }}
-            />
           </View>
 
           {/* Study Hours Chart */}
           <View style={styles.chartContainer}>
             <Text style={styles.chartTitle}>Haftalık Çalışma Saatleri</Text>
             <View style={styles.chartContent}>
-              <YAxis
-                data={statistics.weeklyProgress.map(p => p.studyHours)}
-                contentInset={{ top: 20, bottom: 20 }}
-                svg={{ fontSize: 10, fill: '#6B7280' }}
-                numberOfTicks={4}
-                formatLabel={(value: any) => `${value.toFixed(1)}h`}
-              />
               <LineChart
-                style={{ flex: 1, marginLeft: 16 }}
-                data={statistics.weeklyProgress.map(p => p.studyHours)}
-                svg={{ stroke: '#10B981', strokeWidth: 2 }}
-                contentInset={{ top: 20, bottom: 20 }}
-                curve={shape.curveNatural}
-              >
-                <Grid />
-              </LineChart>
+                data={{
+                  labels: statistics.weeklyProgress.map(p => p.day.substring(0, 3)),
+                  datasets: [{
+                    data: statistics.weeklyProgress.map(p => p.studyHours)
+                  }]
+                }}
+                width={Dimensions.get('window').width - 60}
+                height={200}
+                yAxisLabel=""
+                yAxisSuffix="h"
+                chartConfig={{
+                  backgroundColor: '#ffffff',
+                  backgroundGradientFrom: '#ffffff',
+                  backgroundGradientTo: '#ffffff',
+                  decimalPlaces: 1,
+                  color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+                  style: {
+                    borderRadius: 16
+                  }
+                }}
+                style={{
+                  marginVertical: 8,
+                  borderRadius: 16
+                }}
+              />
             </View>
-            <XAxis
-              style={{ marginHorizontal: 16 }}
-              data={statistics.weeklyProgress}
-              formatLabel={(value, index) => statistics.weeklyProgress[index]?.day.substring(0, 3) || ''}
-              contentInset={{ left: 16, right: 16 }}
-              svg={{ fontSize: 10, fill: '#6B7280' }}
-            />
           </View>
 
           {/* Subject Statistics */}
@@ -501,30 +504,34 @@ const StatisticsScreen: React.FC = () => {
             <View style={styles.chartContainer}>
               <Text style={styles.chartTitle}>Aylık Görev Tamamlama</Text>
               <View style={styles.chartContent}>
-                <YAxis
-                  data={statistics.monthlyProgress.map(p => p.completedTasks)}
-                  contentInset={{ top: 20, bottom: 20 }}
-                  svg={{ fontSize: 10, fill: '#6B7280' }}
-                  numberOfTicks={4}
-                  formatLabel={(value: any) => `${value}`}
-                />
                 <BarChart
-                  style={{ flex: 1, marginLeft: 16 }}
-                  data={statistics.monthlyProgress.map(p => p.completedTasks)}
-                  svg={{ fill: '#3B82F6' }}
-                  contentInset={{ top: 20, bottom: 20 }}
-                  spacing={0.2}
-                >
-                  <Grid />
-                </BarChart>
+                  data={{
+                    labels: statistics.monthlyProgress.map((p, index) => `H${index + 1}`),
+                    datasets: [{
+                      data: statistics.monthlyProgress.map(p => p.completedTasks)
+                    }]
+                  }}
+                  width={Dimensions.get('window').width - 60}
+                  height={200}
+                  yAxisLabel=""
+                  yAxisSuffix=""
+                  chartConfig={{
+                    backgroundColor: '#ffffff',
+                    backgroundGradientFrom: '#ffffff',
+                    backgroundGradientTo: '#ffffff',
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+                    style: {
+                      borderRadius: 16
+                    }
+                  }}
+                  style={{
+                    marginVertical: 8,
+                    borderRadius: 16
+                  }}
+                />
               </View>
-              <XAxis
-                style={{ marginHorizontal: 16 }}
-                data={statistics.monthlyProgress}
-                formatLabel={(value, index) => `H${index + 1}`}
-                contentInset={{ left: 16, right: 16 }}
-                svg={{ fontSize: 10, fill: '#6B7280' }}
-              />
             </View>
           )}
 
@@ -534,24 +541,24 @@ const StatisticsScreen: React.FC = () => {
               <Text style={styles.chartTitle}>Görev Türü Dağılımı</Text>
               <View style={styles.pieChartContainer}>
                 <PieChart
-                  style={{ height: 200 }}
                   data={statistics.taskTypeStats.map(stat => ({
-                    value: stat.count,
-                    svg: { fill: stat.color },
-                    key: stat.taskType
+                    name: stat.label,
+                    population: stat.count,
+                    color: stat.color,
+                    legendFontColor: '#333333',
+                    legendFontSize: 12,
                   }))}
-                  innerRadius={20}
-                  padAngle={0.01}
+                  width={Dimensions.get('window').width - 60}
+                  height={200}
+                  chartConfig={{
+                    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                  }}
+                  accessor="population"
+                  backgroundColor="transparent"
+                  paddingLeft="15"
+                  absolute
                 />
-              </View>
-              <View style={styles.legendContainer}>
-                {statistics.taskTypeStats.map((stat, index) => (
-                  <View key={stat.taskType} style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: stat.color }]} />
-                    <Text style={styles.legendText}>{stat.label}</Text>
-                    <Text style={styles.legendValue}>{stat.count}</Text>
-                  </View>
-                ))}
               </View>
             </View>
           )}
