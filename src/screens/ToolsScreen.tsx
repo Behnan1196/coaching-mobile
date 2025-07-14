@@ -15,19 +15,35 @@ import {
 } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useAuth } from '../contexts/AuthContext';
+import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
 import { UserProfile, Goal, ProfileForm, GoalForm } from '../types/database';
 
 const Tab = createMaterialTopTabNavigator();
 
 const BilgilerimScreen = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
+  const { selectedStudent } = useCoachStudent();
   
   // Early return if supabase is not available
   if (!supabase) {
     return (
       <View style={styles.centered}>
         <Text>Veritabanı bağlantısı yapılandırılmamış</Text>
+      </View>
+    );
+  }
+
+  // Determine which student profile to work with
+  const targetStudent = userProfile?.role === 'coach' ? selectedStudent : userProfile;
+
+  // Show message if coach hasn't selected a student
+  if (userProfile?.role === 'coach' && !selectedStudent) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.noStudentText}>
+          Lütfen önce bir öğrenci seçin
+        </Text>
       </View>
     );
   }
@@ -66,20 +82,20 @@ const BilgilerimScreen = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (targetStudent) {
       loadProfile();
       loadGoals();
     }
-  }, [user]);
+  }, [targetStudent]);
 
   const loadProfile = async () => {
-    if (!user?.id || !supabase) return;
+    if (!targetStudent?.id || !supabase) return;
     
     try {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', targetStudent.id)
         .single();
 
       if (error) {
@@ -112,13 +128,13 @@ const BilgilerimScreen = () => {
   };
 
   const loadGoals = async () => {
-    if (!user?.id || !supabase) return;
+    if (!targetStudent?.id || !supabase) return;
     
     try {
       const { data, error } = await supabase
         .from('student_goals')
         .select('*')
-        .eq('student_id', user.id)
+        .eq('student_id', targetStudent.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -140,7 +156,7 @@ const BilgilerimScreen = () => {
   };
 
   const saveProfile = async () => {
-    if (!profile || !user?.id || !supabase) return;
+    if (!profile || !targetStudent?.id || !supabase) return;
 
     setSaving(true);
     try {
@@ -163,7 +179,7 @@ const BilgilerimScreen = () => {
       const { error } = await supabase
         .from('user_profiles')
         .update(updateData)
-        .eq('id', user.id);
+        .eq('id', targetStudent.id);
 
       if (error) {
         Alert.alert('Hata', 'Profil güncellenirken hata oluştu');
@@ -227,6 +243,11 @@ const BilgilerimScreen = () => {
       return;
     }
 
+    if (!targetStudent) {
+      Alert.alert('Hata', 'Öğrenci bilgisi mevcut değil');
+      return;
+    }
+
     try {
       if (editingGoal) {
         const { error } = await supabase
@@ -253,8 +274,8 @@ const BilgilerimScreen = () => {
         const { error } = await supabase
           .from('student_goals')
           .insert({
-            student_id: user?.id,
-            coach_id: user?.id, // Will be updated by coach
+            student_id: targetStudent.id,
+            coach_id: user?.id, // Coach or student who created the goal
             goal_type: goalForm.goal_type,
             title: goalForm.title,
             description: goalForm.description,
@@ -263,7 +284,8 @@ const BilgilerimScreen = () => {
             target_date: goalForm.target_date,
             priority: goalForm.priority,
             status: goalForm.status,
-            is_active: true
+            is_active: true,
+            created_by: user?.id
           });
 
         if (error) {
@@ -1025,5 +1047,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  noStudentText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginHorizontal: 20,
   },
 }); 
