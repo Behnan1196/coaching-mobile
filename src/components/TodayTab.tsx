@@ -33,6 +33,71 @@ export const TodayTab: React.FC = () => {
     }
   }, [currentUser]);
 
+  // Setup real-time subscription for task updates
+  useEffect(() => {
+    if (!currentUser || !supabase) return;
+
+    console.log(`📡 [TODAY] Setting up real-time subscription for user: ${currentUser.id}`);
+    
+    const subscription = supabase
+      .channel(`today-task-updates-${currentUser.id}`, {
+        config: {
+          broadcast: { self: false },
+          presence: { key: userProfile?.id || currentUser.id }
+        }
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `assigned_to=eq.${currentUser.id}`
+        },
+        (payload) => {
+          console.log('📡 [TODAY] Real-time task update received:', payload);
+          
+          const today = new Date().toISOString().split('T')[0];
+          
+          if (payload.eventType === 'UPDATE') {
+            console.log('📝 [TODAY] Updating task:', payload.new.id);
+            setTasks(prev => prev.map(task => 
+              task.id === payload.new.id 
+                ? { ...task, ...payload.new, completed_at: payload.new.completed_at || undefined }
+                : task
+            ));
+          } else if (payload.eventType === 'INSERT') {
+            console.log('➕ [TODAY] New task inserted:', payload.new.id);
+            // Check if the new task is for today
+            if (payload.new.scheduled_date === today) {
+              setTasks(prev => [...prev, {
+                ...payload.new,
+                completed_at: payload.new.completed_at || undefined
+              } as any]);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            console.log('🗑️ [TODAY] Task deleted:', payload.old.id);
+            setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`📊 [TODAY] Subscription status:`, status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [TODAY] Real-time subscription active');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ [TODAY] Real-time subscription error');
+        }
+      });
+
+    return () => {
+      console.log('🧹 [TODAY] Cleaning up real-time subscription');
+      if (supabase) {
+        supabase.removeChannel(subscription);
+      }
+    };
+  }, [currentUser, userProfile]);
+
   const loadTodayTasks = async () => {
     if (!currentUser || !supabase) return;
 
@@ -58,7 +123,8 @@ export const TodayTab: React.FC = () => {
         `)
         .eq('assigned_to', currentUser.id)
         .eq('scheduled_date', today)
-        .order('scheduled_start_time', { ascending: true });
+        .order('scheduled_date', { ascending: true })
+        .order('created_at', { ascending: true });
 
       // For coaches: load tasks they assigned to the selected student
       // For students: load tasks assigned to them (by any coach)
