@@ -112,11 +112,11 @@ const BilgilerimScreen = () => {
   };
 
   const loadGoals = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !supabase) return;
     
     try {
       const { data, error } = await supabase
-        .from('goals')
+        .from('student_goals')
         .select('*')
         .eq('student_id', user.id)
         .eq('is_active', true)
@@ -140,7 +140,7 @@ const BilgilerimScreen = () => {
   };
 
   const saveProfile = async () => {
-    if (!profile || !user?.id) return;
+    if (!profile || !user?.id || !supabase) return;
 
     setSaving(true);
     try {
@@ -222,10 +222,15 @@ const BilgilerimScreen = () => {
       return;
     }
 
+    if (!supabase) {
+      Alert.alert('Hata', 'Veritabanı bağlantısı mevcut değil');
+      return;
+    }
+
     try {
       if (editingGoal) {
         const { error } = await supabase
-          .from('goals')
+          .from('student_goals')
           .update({
             goal_type: goalForm.goal_type,
             title: goalForm.title,
@@ -246,7 +251,7 @@ const BilgilerimScreen = () => {
         Alert.alert('Başarılı', 'Hedef başarıyla güncellendi');
       } else {
         const { error } = await supabase
-          .from('goals')
+          .from('student_goals')
           .insert({
             student_id: user?.id,
             coach_id: user?.id, // Will be updated by coach
@@ -287,9 +292,14 @@ const BilgilerimScreen = () => {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
+            if (!supabase) {
+              Alert.alert('Hata', 'Veritabanı bağlantısı mevcut değil');
+              return;
+            }
+            
             try {
               const { error } = await supabase
-                .from('goals')
+                .from('student_goals')
                 .update({ is_active: false })
                 .eq('id', goal.id);
 

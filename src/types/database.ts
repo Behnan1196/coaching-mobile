@@ -267,7 +267,7 @@ export type Database = {
         Insert: Omit<WebPushSubscription, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<WebPushSubscription, 'id' | 'created_at' | 'updated_at'>>
       }
-      goals: {
+      student_goals: {
         Row: Goal
         Insert: Omit<Goal, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Goal, 'id' | 'created_at' | 'updated_at'>>
