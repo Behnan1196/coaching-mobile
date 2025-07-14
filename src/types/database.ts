@@ -157,6 +157,99 @@ export interface Goal {
   updated_at: string
 }
 
+export interface MockExamResult {
+  id: string
+  student_id: string
+  coach_id: string
+  exam_type: 'TYT' | 'AYT' | 'Tarama'
+  exam_date: string
+  exam_name: string
+  exam_duration?: number
+  
+  // TYT Scores - Türkçe
+  tyt_turkce_correct?: number
+  tyt_turkce_wrong?: number
+  tyt_turkce_net?: number
+
+  // TYT Scores - Matematik
+  tyt_matematik_correct?: number
+  tyt_matematik_wrong?: number
+  tyt_matematik_net?: number
+  tyt_geometri_correct?: number
+  tyt_geometri_wrong?: number
+  tyt_geometri_net?: number
+
+  // TYT Scores - Sosyal Bilimler
+  tyt_tarih_correct?: number
+  tyt_tarih_wrong?: number
+  tyt_tarih_net?: number
+  tyt_cografya_correct?: number
+  tyt_cografya_wrong?: number
+  tyt_cografya_net?: number
+  tyt_felsefe_correct?: number
+  tyt_felsefe_wrong?: number
+  tyt_felsefe_net?: number
+  tyt_din_correct?: number
+  tyt_din_wrong?: number
+  tyt_din_net?: number
+
+  // TYT Scores - Fen Bilimleri
+  tyt_fizik_correct?: number
+  tyt_fizik_wrong?: number
+  tyt_fizik_net?: number
+  tyt_kimya_correct?: number
+  tyt_kimya_wrong?: number
+  tyt_kimya_net?: number
+  tyt_biyoloji_correct?: number
+  tyt_biyoloji_wrong?: number
+  tyt_biyoloji_net?: number
+
+  // TYT Group Totals
+  tyt_total_net?: number
+  tyt_matematik_total_net?: number
+  tyt_sosyal_total_net?: number
+  tyt_fen_total_net?: number
+  
+  // AYT Scores
+  ayt_matematik_correct?: number
+  ayt_matematik_wrong?: number
+  ayt_matematik_net?: number
+  ayt_geometri_correct?: number
+  ayt_geometri_wrong?: number
+  ayt_geometri_net?: number
+  ayt_total_net?: number
+  
+  // Tarama Scores
+  tarama_lessons?: Array<{
+    subject: string
+    question_count: number
+    correct: number
+    wrong: number
+    net: number
+  }>
+  tarama_total_net?: number
+  
+  notes?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface EducationalLink {
+  id: string
+  title: string
+  description?: string
+  url: string
+  category: string
+  icon_letter?: string
+  icon_color: string
+  display_order: number
+  is_active: boolean
+  target_audience: string
+  created_at: string
+  updated_at: string
+}
+
 export interface ProfileForm {
   full_name: string
   email: string
@@ -271,6 +364,16 @@ export type Database = {
         Row: Goal
         Insert: Omit<Goal, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Goal, 'id' | 'created_at' | 'updated_at'>>
+      }
+      mock_exam_results: {
+        Row: MockExamResult
+        Insert: Omit<MockExamResult, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<MockExamResult, 'id' | 'created_at' | 'updated_at'>>
+      }
+      educational_links: {
+        Row: EducationalLink
+        Insert: Omit<EducationalLink, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<EducationalLink, 'id' | 'created_at' | 'updated_at'>>
       }
     }
     Views: {

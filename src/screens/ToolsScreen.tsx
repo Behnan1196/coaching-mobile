@@ -11,13 +11,15 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  RefreshControl
+  RefreshControl,
+  Linking,
+  Dimensions
 } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
-import { UserProfile, Goal, ProfileForm, GoalForm } from '../types/database';
+import { UserProfile, Goal, ProfileForm, GoalForm, MockExamResult, EducationalLink } from '../types/database';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -693,26 +695,833 @@ const BilgilerimScreen = () => {
   );
 };
 
-const MockExamsScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Mock Exams</Text>
-    <Text style={styles.placeholder}>Mock exam content will go here</Text>
-  </View>
-);
+// Mock Exams Screen Implementation
+const MockExamsScreen = () => {
+  const { user, userProfile } = useAuth();
+  const { selectedStudent } = useCoachStudent();
+  const targetStudent = userProfile?.role === 'coach' ? selectedStudent : userProfile;
 
-const UsefulLinksScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Useful Links</Text>
-    <Text style={styles.placeholder}>Useful links and resources will go here</Text>
-  </View>
-);
+  const [mockExamResults, setMockExamResults] = useState<MockExamResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showExamModal, setShowExamModal] = useState(false);
+  const [editingExam, setEditingExam] = useState<MockExamResult | null>(null);
+  const [examModalTab, setExamModalTab] = useState<'TYT' | 'AYT' | 'Tarama'>('TYT');
+  const [examForm, setExamForm] = useState({
+    exam_type: 'TYT' as 'TYT' | 'AYT' | 'Tarama',
+    exam_date: '',
+    exam_name: '',
+    exam_duration: 180,
+    tyt_turkce_correct: 0,
+    tyt_turkce_wrong: 0,
+    tyt_matematik_correct: 0,
+    tyt_matematik_wrong: 0,
+    tyt_geometri_correct: 0,
+    tyt_geometri_wrong: 0,
+    tyt_tarih_correct: 0,
+    tyt_tarih_wrong: 0,
+    tyt_cografya_correct: 0,
+    tyt_cografya_wrong: 0,
+    tyt_felsefe_correct: 0,
+    tyt_felsefe_wrong: 0,
+    tyt_din_correct: 0,
+    tyt_din_wrong: 0,
+    tyt_fizik_correct: 0,
+    tyt_fizik_wrong: 0,
+    tyt_kimya_correct: 0,
+    tyt_kimya_wrong: 0,
+    tyt_biyoloji_correct: 0,
+    tyt_biyoloji_wrong: 0,
+    ayt_matematik_correct: 0,
+    ayt_matematik_wrong: 0,
+    ayt_geometri_correct: 0,
+    ayt_geometri_wrong: 0,
+    tarama_lessons: [] as Array<{ subject: string; question_count: number; correct: number; wrong: number; net: number }>,
+    notes: ''
+  });
 
-const PomodoroTimerScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Pomodoro Timer</Text>
-    <Text style={styles.placeholder}>Pomodoro timer will go here</Text>
-  </View>
-);
+  if (userProfile?.role === 'coach' && !selectedStudent) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.noStudentText}>Lütfen önce bir öğrenci seçin</Text>
+      </View>
+    );
+  }
+
+  const loadMockExamResults = async () => {
+    if (!targetStudent?.id || !supabase) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('mock_exam_results')
+        .select('*')
+        .eq('student_id', targetStudent.id)
+        .eq('is_active', true)
+        .order('exam_date', { ascending: false });
+
+      if (error) {
+        console.error('Error loading mock exam results:', error);
+        return;
+      }
+
+      setMockExamResults(data || []);
+    } catch (error) {
+      console.error('Error loading mock exam results:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefreshExams = async () => {
+    setRefreshing(true);
+    await loadMockExamResults();
+    setRefreshing(false);
+  };
+
+  React.useEffect(() => {
+    if (targetStudent) {
+      loadMockExamResults();
+    }
+  }, [targetStudent]);
+
+  const openExamModal = () => {
+    setEditingExam(null);
+    setExamForm({
+      exam_type: 'TYT',
+      exam_date: '',
+      exam_name: '',
+      exam_duration: 180,
+      tyt_turkce_correct: 0,
+      tyt_turkce_wrong: 0,
+      tyt_matematik_correct: 0,
+      tyt_matematik_wrong: 0,
+      tyt_geometri_correct: 0,
+      tyt_geometri_wrong: 0,
+      tyt_tarih_correct: 0,
+      tyt_tarih_wrong: 0,
+      tyt_cografya_correct: 0,
+      tyt_cografya_wrong: 0,
+      tyt_felsefe_correct: 0,
+      tyt_felsefe_wrong: 0,
+      tyt_din_correct: 0,
+      tyt_din_wrong: 0,
+      tyt_fizik_correct: 0,
+      tyt_fizik_wrong: 0,
+      tyt_kimya_correct: 0,
+      tyt_kimya_wrong: 0,
+      tyt_biyoloji_correct: 0,
+      tyt_biyoloji_wrong: 0,
+      ayt_matematik_correct: 0,
+      ayt_matematik_wrong: 0,
+      ayt_geometri_correct: 0,
+      ayt_geometri_wrong: 0,
+      tarama_lessons: [],
+      notes: ''
+    });
+    setExamModalTab('TYT');
+    setShowExamModal(true);
+  };
+
+  const closeExamModal = () => {
+    setShowExamModal(false);
+    setEditingExam(null);
+  };
+
+  const saveExamResult = async () => {
+    if (!targetStudent || !user || !examForm.exam_name.trim() || !examForm.exam_date) {
+      Alert.alert('Hata', 'Sınav adı ve tarihi gereklidir.');
+      return;
+    }
+
+    if (!supabase) {
+      Alert.alert('Hata', 'Veritabanı bağlantısı mevcut değil');
+      return;
+    }
+
+    try {
+      const examData = {
+        student_id: targetStudent.id,
+        coach_id: user.id,
+        exam_type: examForm.exam_type,
+        exam_date: examForm.exam_date,
+        exam_name: examForm.exam_name.trim(),
+        exam_duration: examForm.exam_duration,
+        notes: examForm.notes.trim() || null,
+        is_active: true,
+        ...(examForm.exam_type === 'TYT' && {
+          tyt_turkce_correct: examForm.tyt_turkce_correct,
+          tyt_turkce_wrong: examForm.tyt_turkce_wrong,
+          tyt_matematik_correct: examForm.tyt_matematik_correct,
+          tyt_matematik_wrong: examForm.tyt_matematik_wrong,
+          tyt_geometri_correct: examForm.tyt_geometri_correct,
+          tyt_geometri_wrong: examForm.tyt_geometri_wrong,
+          tyt_tarih_correct: examForm.tyt_tarih_correct,
+          tyt_tarih_wrong: examForm.tyt_tarih_wrong,
+          tyt_cografya_correct: examForm.tyt_cografya_correct,
+          tyt_cografya_wrong: examForm.tyt_cografya_wrong,
+          tyt_felsefe_correct: examForm.tyt_felsefe_correct,
+          tyt_felsefe_wrong: examForm.tyt_felsefe_wrong,
+          tyt_din_correct: examForm.tyt_din_correct,
+          tyt_din_wrong: examForm.tyt_din_wrong,
+          tyt_fizik_correct: examForm.tyt_fizik_correct,
+          tyt_fizik_wrong: examForm.tyt_fizik_wrong,
+          tyt_kimya_correct: examForm.tyt_kimya_correct,
+          tyt_kimya_wrong: examForm.tyt_kimya_wrong,
+          tyt_biyoloji_correct: examForm.tyt_biyoloji_correct,
+          tyt_biyoloji_wrong: examForm.tyt_biyoloji_wrong,
+        }),
+        ...(examForm.exam_type === 'AYT' && {
+          ayt_matematik_correct: examForm.ayt_matematik_correct,
+          ayt_matematik_wrong: examForm.ayt_matematik_wrong,
+          ayt_geometri_correct: examForm.ayt_geometri_correct,
+          ayt_geometri_wrong: examForm.ayt_geometri_wrong,
+        }),
+        ...(examForm.exam_type === 'Tarama' && {
+          tarama_lessons: examForm.tarama_lessons,
+        })
+      };
+
+      if (editingExam) {
+        const { error } = await supabase
+          .from('mock_exam_results')
+          .update(examData)
+          .eq('id', editingExam.id);
+
+        if (error) throw error;
+        Alert.alert('Başarılı', 'Sınav sonucu güncellendi');
+      } else {
+        const { error } = await supabase
+          .from('mock_exam_results')
+          .insert([examData]);
+
+        if (error) throw error;
+        Alert.alert('Başarılı', 'Sınav sonucu eklendi');
+      }
+
+      await loadMockExamResults();
+      closeExamModal();
+    } catch (error) {
+      console.error('Error saving exam result:', error);
+      Alert.alert('Hata', 'Sınav sonucu kaydedilirken hata oluştu');
+    }
+  };
+
+  const deleteExamResult = async (exam: MockExamResult) => {
+    Alert.alert(
+      'Sınav Sonucunu Sil',
+      'Bu sınav sonucunu silmek istediğinizden emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            if (!supabase) return;
+            
+            try {
+              const { error } = await supabase
+                .from('mock_exam_results')
+                .update({ is_active: false })
+                .eq('id', exam.id);
+
+              if (error) throw error;
+              
+              setMockExamResults(prev => prev.filter(e => e.id !== exam.id));
+              Alert.alert('Başarılı', 'Sınav sonucu silindi');
+            } catch (error) {
+              console.error('Error deleting exam result:', error);
+              Alert.alert('Hata', 'Sınav sonucu silinirken hata oluştu');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <Text>Sınav sonuçları yükleniyor...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.tabContent}>
+      <View style={styles.header}>
+        <Text style={styles.tabTitle}>📝 Deneme Sınavları</Text>
+        {userProfile?.role === 'coach' && (
+          <TouchableOpacity style={styles.addButton} onPress={openExamModal}>
+            <Text style={styles.addButtonText}>+ Sınav Ekle</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefreshExams} />}
+      >
+        {mockExamResults.length > 0 ? (
+          mockExamResults.map((result) => (
+            <View key={result.id} style={styles.examCard}>
+              <View style={styles.examHeader}>
+                <View>
+                  <Text style={styles.examName}>{result.exam_name}</Text>
+                  <Text style={styles.examDate}>
+                    {new Date(result.exam_date).toLocaleDateString('tr-TR')} • {result.exam_type}
+                  </Text>
+                </View>
+                {userProfile?.role === 'coach' && (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deleteExamResult(result)}
+                  >
+                    <Text style={styles.deleteButtonText}>Sil</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              <View style={styles.examScores}>
+                {result.exam_type === 'TYT' && (
+                  <>
+                    <Text style={styles.scoreText}>Toplam Net: {result.tyt_total_net?.toFixed(1) || '0.0'}</Text>
+                    <Text style={styles.scoreDetail}>Türkçe: {((result.tyt_turkce_correct || 0) - (result.tyt_turkce_wrong || 0) * 0.25).toFixed(1)}</Text>
+                    <Text style={styles.scoreDetail}>Matematik: {((result.tyt_matematik_correct || 0) - (result.tyt_matematik_wrong || 0) * 0.25).toFixed(1)}</Text>
+                  </>
+                )}
+                
+                {result.exam_type === 'AYT' && (
+                  <>
+                    <Text style={styles.scoreText}>Toplam Net: {result.ayt_total_net?.toFixed(1) || '0.0'}</Text>
+                    <Text style={styles.scoreDetail}>Matematik: {((result.ayt_matematik_correct || 0) - (result.ayt_matematik_wrong || 0) * 0.25).toFixed(1)}</Text>
+                  </>
+                )}
+                
+                {result.exam_type === 'Tarama' && (
+                  <Text style={styles.scoreText}>Toplam Net: {result.tarama_total_net?.toFixed(1) || '0.0'}</Text>
+                )}
+              </View>
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>Henüz sınav sonucu yok</Text>
+            {userProfile?.role === 'coach' && (
+              <TouchableOpacity style={styles.addButton} onPress={openExamModal}>
+                <Text style={styles.addButtonText}>İlk Sınavı Ekle</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Exam Modal */}
+      {showExamModal && (
+        <Modal visible={showExamModal} animationType="slide" presentationStyle="pageSheet">
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={closeExamModal}>
+                <Text style={styles.modalCloseButton}>İptal</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Sınav Sonucu</Text>
+              <TouchableOpacity onPress={saveExamResult}>
+                <Text style={styles.modalSaveButton}>Kaydet</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.form}>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Sınav Adı *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={examForm.exam_name}
+                    onChangeText={(text) => setExamForm(prev => ({ ...prev, exam_name: text }))}
+                    placeholder="Örn: TYT Deneme 1"
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Tarih *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={examForm.exam_date}
+                    onChangeText={(text) => setExamForm(prev => ({ ...prev, exam_date: text }))}
+                    placeholder="YYYY-MM-DD"
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Sınav Türü</Text>
+                  <View style={styles.examTypeButtons}>
+                    {['TYT', 'AYT', 'Tarama'].map(type => (
+                      <TouchableOpacity
+                        key={type}
+                        style={[
+                          styles.examTypeButton,
+                          examForm.exam_type === type && styles.examTypeButtonActive
+                        ]}
+                        onPress={() => setExamForm(prev => ({ ...prev, exam_type: type as any }))}
+                      >
+                        <Text style={[
+                          styles.examTypeButtonText,
+                          examForm.exam_type === type && styles.examTypeButtonTextActive
+                        ]}>
+                          {type}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                {/* TYT Scores */}
+                {examForm.exam_type === 'TYT' && (
+                  <View style={styles.scoresSection}>
+                    <Text style={styles.sectionTitle}>TYT Puanları</Text>
+                    {[
+                      { key: 'turkce', label: 'Türkçe' },
+                      { key: 'matematik', label: 'Matematik' },
+                      { key: 'geometri', label: 'Geometri' },
+                      { key: 'tarih', label: 'Tarih' },
+                      { key: 'cografya', label: 'Coğrafya' },
+                      { key: 'felsefe', label: 'Felsefe' },
+                      { key: 'din', label: 'DKAB' },
+                      { key: 'fizik', label: 'Fizik' },
+                      { key: 'kimya', label: 'Kimya' },
+                      { key: 'biyoloji', label: 'Biyoloji' }
+                    ].map(subject => (
+                      <View key={subject.key} style={styles.scoreRow}>
+                        <Text style={styles.scoreLabel}>{subject.label}</Text>
+                        <View style={styles.scoreInputs}>
+                          <TextInput
+                            style={styles.scoreInput}
+                            placeholder="Doğru"
+                            keyboardType="numeric"
+                            value={String(examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] || 0)}
+                            onChangeText={(text) => setExamForm(prev => ({
+                              ...prev,
+                              [`tyt_${subject.key}_correct`]: parseInt(text) || 0
+                            }))}
+                          />
+                          <TextInput
+                            style={styles.scoreInput}
+                            placeholder="Yanlış"
+                            keyboardType="numeric"
+                            value={String(examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] || 0)}
+                            onChangeText={(text) => setExamForm(prev => ({
+                              ...prev,
+                              [`tyt_${subject.key}_wrong`]: parseInt(text) || 0
+                            }))}
+                          />
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* AYT Scores */}
+                {examForm.exam_type === 'AYT' && (
+                  <View style={styles.scoresSection}>
+                    <Text style={styles.sectionTitle}>AYT Puanları</Text>
+                    {[
+                      { key: 'matematik', label: 'Matematik' },
+                      { key: 'geometri', label: 'Geometri' }
+                    ].map(subject => (
+                      <View key={subject.key} style={styles.scoreRow}>
+                        <Text style={styles.scoreLabel}>{subject.label}</Text>
+                        <View style={styles.scoreInputs}>
+                          <TextInput
+                            style={styles.scoreInput}
+                            placeholder="Doğru"
+                            keyboardType="numeric"
+                            value={String(examForm[`ayt_${subject.key}_correct` as keyof typeof examForm] || 0)}
+                            onChangeText={(text) => setExamForm(prev => ({
+                              ...prev,
+                              [`ayt_${subject.key}_correct`]: parseInt(text) || 0
+                            }))}
+                          />
+                          <TextInput
+                            style={styles.scoreInput}
+                            placeholder="Yanlış"
+                            keyboardType="numeric"
+                            value={String(examForm[`ayt_${subject.key}_wrong` as keyof typeof examForm] || 0)}
+                            onChangeText={(text) => setExamForm(prev => ({
+                              ...prev,
+                              [`ayt_${subject.key}_wrong`]: parseInt(text) || 0
+                            }))}
+                          />
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Notlar</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={examForm.notes}
+                    onChangeText={(text) => setExamForm(prev => ({ ...prev, notes: text }))}
+                    placeholder="Sınav hakkında notlar..."
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
+    </View>
+  );
+};
+
+// Useful Links Screen Implementation
+const UsefulLinksScreen = () => {
+  const [educationalLinks, setEducationalLinks] = useState<EducationalLink[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+  const categories = [
+    { value: 'all', label: 'Tümü' },
+    { value: 'general', label: 'Genel' },
+    { value: 'official', label: 'Resmi' },
+    { value: 'educational', label: 'Eğitim' },
+    { value: 'video', label: 'Video' },
+    { value: 'practice', label: 'Pratik' }
+  ];
+
+  const loadEducationalLinks = async () => {
+    if (!supabase) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('educational_links')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Error loading educational links:', error);
+        return;
+      }
+
+      setEducationalLinks(data || []);
+    } catch (error) {
+      console.error('Error loading educational links:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefreshLinks = async () => {
+    setRefreshing(true);
+    await loadEducationalLinks();
+    setRefreshing(false);
+  };
+
+  React.useEffect(() => {
+    loadEducationalLinks();
+  }, []);
+
+  const openLink = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Hata', 'Bu link açılamadı');
+      }
+    } catch (error) {
+      console.error('Error opening link:', error);
+      Alert.alert('Hata', 'Link açılırken hata oluştu');
+    }
+  };
+
+  const getIconColor = (color: string) => {
+    const colors: { [key: string]: string } = {
+      blue: '#3B82F6',
+      green: '#10B981',
+      red: '#EF4444',
+      purple: '#8B5CF6',
+      orange: '#F59E0B',
+      indigo: '#6366F1'
+    };
+    return colors[color] || colors.blue;
+  };
+
+  const filteredLinks = categoryFilter === 'all' 
+    ? educationalLinks 
+    : educationalLinks.filter(link => link.category === categoryFilter);
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <Text>Linkler yükleniyor...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.tabContent}>
+      <Text style={styles.tabTitle}>🔗 Yararlı Linkler</Text>
+      
+      {/* Category Filter */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryFilter}>
+        {categories.map(category => (
+          <TouchableOpacity
+            key={category.value}
+            style={[
+              styles.categoryButton,
+              categoryFilter === category.value && styles.categoryButtonActive
+            ]}
+            onPress={() => setCategoryFilter(category.value)}
+          >
+            <Text style={[
+              styles.categoryButtonText,
+              categoryFilter === category.value && styles.categoryButtonTextActive
+            ]}>
+              {category.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefreshLinks} />}
+      >
+        {filteredLinks.length > 0 ? (
+          filteredLinks.map((link) => (
+            <TouchableOpacity
+              key={link.id}
+              style={styles.linkCard}
+              onPress={() => openLink(link.url)}
+            >
+              <View style={styles.linkHeader}>
+                <View style={[styles.linkIcon, { backgroundColor: getIconColor(link.icon_color) }]}>
+                  <Text style={styles.linkIconText}>
+                    {link.icon_letter || link.title.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.linkContent}>
+                  <Text style={styles.linkTitle}>{link.title}</Text>
+                  {link.description && (
+                    <Text style={styles.linkDescription}>{link.description}</Text>
+                  )}
+                  <Text style={styles.linkCategory}>{link.category}</Text>
+                </View>
+                <Text style={styles.linkArrow}>→</Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              {categoryFilter === 'all' ? 'Henüz link yok' : 'Bu kategoride link bulunamadı'}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+};
+
+// Pomodoro Timer Screen Implementation
+const PomodoroTimerScreen = () => {
+  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
+  const [isRunning, setIsRunning] = useState(false);
+  const [isBreak, setIsBreak] = useState(false);
+  const [workDuration, setWorkDuration] = useState(25);
+  const [breakDuration, setBreakDuration] = useState(5);
+  const [showSettings, setShowSettings] = useState(false);
+
+  React.useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prevTime) => prevTime - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setIsRunning(false);
+      if (!isBreak) {
+        // Work session completed
+        Alert.alert('🎉 Çalışma Tamamlandı!', 'Mola zamanı! 5 dakika dinlenin.', [
+          { text: 'Mola Başlat', onPress: () => {
+            setTimeLeft(breakDuration * 60);
+            setIsBreak(true);
+            setIsRunning(true);
+          }}
+        ]);
+      } else {
+        // Break completed
+        Alert.alert('💪 Mola Bitti!', 'Çalışmaya devam etmeye hazır mısınız?', [
+          { text: 'Çalışmaya Başla', onPress: () => {
+            setTimeLeft(workDuration * 60);
+            setIsBreak(false);
+            setIsRunning(true);
+          }}
+        ]);
+      }
+    }
+
+    return () => clearInterval(interval);
+  }, [isRunning, timeLeft, isBreak, workDuration, breakDuration]);
+
+  const toggleTimer = () => {
+    setIsRunning(!isRunning);
+  };
+
+  const resetTimer = () => {
+    setIsRunning(false);
+    setTimeLeft(isBreak ? breakDuration * 60 : workDuration * 60);
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getProgress = () => {
+    const totalTime = isBreak ? breakDuration * 60 : workDuration * 60;
+    return 1 - (timeLeft / totalTime);
+  };
+
+  return (
+    <View style={styles.tabContent}>
+      <View style={styles.pomodoroHeader}>
+        <Text style={styles.tabTitle}>🍅 Pomodoro Timer</Text>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => setShowSettings(true)}
+        >
+          <Text style={styles.settingsButtonText}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.timerContainer}>
+        {/* Timer Circle */}
+        <View style={styles.timerCircle}>
+          <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+          <Text style={styles.timerLabel}>
+            {isBreak ? 'Mola Zamanı' : 'Çalışma Zamanı'}
+          </Text>
+        </View>
+
+        {/* Progress Bar */}
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBar, { width: `${getProgress() * 100}%` }]} />
+        </View>
+
+        {/* Timer Controls */}
+        <View style={styles.timerControls}>
+          <TouchableOpacity
+            style={[styles.timerButton, styles.resetButton]}
+            onPress={resetTimer}
+          >
+            <Text style={styles.timerButtonText}>🔄 Sıfırla</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.timerButton, 
+              styles.playButton,
+              isRunning && styles.pauseButton
+            ]}
+            onPress={toggleTimer}
+          >
+            <Text style={styles.timerButtonText}>
+              {isRunning ? '⏸️ Duraklat' : '▶️ Başlat'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Timer Stats */}
+        <View style={styles.timerStats}>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Çalışma Süresi</Text>
+            <Text style={styles.statValue}>{workDuration} dk</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Mola Süresi</Text>
+            <Text style={styles.statValue}>{breakDuration} dk</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <Modal visible={showSettings} animationType="slide" transparent>
+          <View style={styles.settingsModalContainer}>
+            <View style={styles.settingsModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Timer Ayarları</Text>
+                <TouchableOpacity onPress={() => setShowSettings(false)}>
+                  <Text style={styles.modalCloseButton}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.settingsContent}>
+                <View style={styles.settingItem}>
+                  <Text style={styles.settingLabel}>Çalışma Süresi (dakika)</Text>
+                  <View style={styles.settingInputContainer}>
+                    <TouchableOpacity
+                      style={styles.settingButton}
+                      onPress={() => setWorkDuration(Math.max(5, workDuration - 5))}
+                    >
+                      <Text style={styles.settingButtonText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.settingValue}>{workDuration}</Text>
+                    <TouchableOpacity
+                      style={styles.settingButton}
+                      onPress={() => setWorkDuration(Math.min(60, workDuration + 5))}
+                    >
+                      <Text style={styles.settingButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.settingItem}>
+                  <Text style={styles.settingLabel}>Mola Süresi (dakika)</Text>
+                  <View style={styles.settingInputContainer}>
+                    <TouchableOpacity
+                      style={styles.settingButton}
+                      onPress={() => setBreakDuration(Math.max(1, breakDuration - 1))}
+                    >
+                      <Text style={styles.settingButtonText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.settingValue}>{breakDuration}</Text>
+                    <TouchableOpacity
+                      style={styles.settingButton}
+                      onPress={() => setBreakDuration(Math.min(30, breakDuration + 1))}
+                    >
+                      <Text style={styles.settingButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.applyButton}
+                  onPress={() => {
+                    if (!isRunning) {
+                      setTimeLeft(isBreak ? breakDuration * 60 : workDuration * 60);
+                    }
+                    setShowSettings(false);
+                  }}
+                >
+                  <Text style={styles.applyButtonText}>Uygula</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </View>
+  );
+};
 
 export const ToolsScreen: React.FC = () => {
   return (
@@ -1053,5 +1862,345 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginHorizontal: 20,
+  },
+  // Mock Exams Styles
+  examCard: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  examHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  examName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  examDate: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  examScores: {
+    marginTop: 8,
+  },
+  scoreText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2563eb',
+    marginBottom: 4,
+  },
+  scoreDetail: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  examTypeButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  examTypeButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginHorizontal: 4,
+    alignItems: 'center',
+  },
+  examTypeButtonActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  examTypeButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  examTypeButtonTextActive: {
+    color: 'white',
+  },
+  scoresSection: {
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#333',
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  scoreLabel: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+  },
+  scoreInputs: {
+    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  scoreInput: {
+    width: 60,
+    height: 36,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    marginLeft: 8,
+    textAlign: 'center',
+  },
+  // Links Styles
+  categoryFilter: {
+    marginBottom: 16,
+  },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    marginRight: 8,
+  },
+  categoryButtonActive: {
+    backgroundColor: '#2563eb',
+  },
+  categoryButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  categoryButtonTextActive: {
+    color: 'white',
+  },
+  linkCard: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  linkHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  linkIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  linkIconText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  linkContent: {
+    flex: 1,
+  },
+  linkTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  linkDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  linkCategory: {
+    fontSize: 12,
+    color: '#999',
+    textTransform: 'capitalize',
+  },
+  linkArrow: {
+    fontSize: 18,
+    color: '#2563eb',
+    marginLeft: 12,
+  },
+  // Pomodoro Timer Styles
+  pomodoroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  settingsButton: {
+    padding: 8,
+  },
+  settingsButtonText: {
+    fontSize: 20,
+  },
+  timerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  timerCircle: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#f0f9ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+    borderWidth: 4,
+    borderColor: '#2563eb',
+  },
+  timerText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+  timerLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 8,
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 4,
+    marginBottom: 30,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#2563eb',
+    borderRadius: 4,
+  },
+  timerControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 30,
+  },
+  timerButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  resetButton: {
+    backgroundColor: '#f5f5f5',
+  },
+  playButton: {
+    backgroundColor: '#10b981',
+  },
+  pauseButton: {
+    backgroundColor: '#f59e0b',
+  },
+  timerButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  timerStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+  // Settings Modal Styles
+  settingsModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  settingsModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 400,
+    padding: 20,
+  },
+  settingsContent: {
+    marginTop: 20,
+  },
+  settingItem: {
+    marginBottom: 20,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  settingInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#2563eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingButtonText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  settingValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginHorizontal: 20,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  applyButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
   },
 }); 
