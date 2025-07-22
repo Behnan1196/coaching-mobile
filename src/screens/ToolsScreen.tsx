@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
@@ -353,16 +354,16 @@ const BilgilerimScreen = () => {
         <Text style={styles.goalTitle}>{item.title}</Text>
         <View style={styles.goalActions}>
           <TouchableOpacity
-            style={styles.editButton}
+            style={styles.goalEditButton}
             onPress={() => openEditGoalModal(item)}
           >
-            <Text style={styles.editButtonText}>✏️</Text>
+            <Ionicons name="create-outline" size={18} color="#3B82F6" />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={styles.goalDeleteButton}
             onPress={() => deleteGoal(item)}
           >
-            <Text style={styles.deleteButtonText}>🗑️</Text>
+            <Ionicons name="trash-outline" size={18} color="#EF4444" />
           </TouchableOpacity>
         </View>
       </View>
@@ -1031,8 +1032,8 @@ const MockExamsScreen = () => {
       return;
     }
 
-    // Generate default exam name if not provided
-    const examName = examForm.exam_name.trim() || `${examForm.exam_type} Sınavı - ${new Date(examForm.exam_date).toLocaleDateString('tr-TR')}`;
+    // Use empty string if exam name is not provided (matches web behavior)
+    const examName = examForm.exam_name.trim() || '';
 
     try {
       const examData = {
@@ -1205,16 +1206,16 @@ const MockExamsScreen = () => {
                 </View>
                 <View style={styles.examActions}>
                   <TouchableOpacity
-                    style={styles.editButton}
+                    style={styles.examEditButton}
                     onPress={() => openEditExamModal(result)}
                   >
-                    <Text style={styles.editButtonText}>Düzenle</Text>
+                    <Ionicons name="create-outline" size={16} color="#3B82F6" />
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.deleteButton}
+                    style={styles.examDeleteButton}
                     onPress={() => deleteExamResult(result)}
                   >
-                    <Text style={styles.deleteButtonText}>Sil</Text>
+                    <Ionicons name="trash-outline" size={16} color="#EF4444" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -2296,21 +2297,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  editButton: {
+  goalEditButton: {
     marginLeft: 10,
     padding: 5,
   },
-  editButtonText: {
-    fontSize: 18,
-    color: '#3B82F6',
-  },
-  deleteButton: {
-    marginLeft: 10,
-    padding: 5,
-  },
-  deleteButtonText: {
-    fontSize: 18,
-    color: '#EF4444',
+  goalDeleteButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#FEF2F2',
   },
   goalDescription: {
     fontSize: 14,
@@ -2484,17 +2478,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  editButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  examEditButton: {
+    padding: 8,
     borderRadius: 6,
     marginRight: 8,
+    backgroundColor: '#F3F4F6',
   },
-  editButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
+  examDeleteButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#FEF2F2',
   },
   examName: {
     fontSize: 16,
