@@ -328,7 +328,7 @@ const StatisticsScreen: React.FC = () => {
               </View>
               <View style={styles.statContent}>
                 <Text style={styles.statLabel}>Bu Hafta Tamamlanan</Text>
-                <Text style={styles.statValue}>{Math.round(statistics.taskCompletionRate)}%</Text>
+                <Text style={styles.statValue}>%{Math.round(statistics.taskCompletionRate)}</Text>
                 <Text style={styles.statSubtext}>
                   {statistics.completedTasks}/{statistics.totalTasks} görev
                 </Text>
@@ -341,7 +341,7 @@ const StatisticsScreen: React.FC = () => {
               </View>
               <View style={styles.statContent}>
                 <Text style={styles.statLabel}>Toplam Çalışma Saati</Text>
-                <Text style={styles.statValue}>{statistics.totalStudyHours.toFixed(1)}h</Text>
+                <Text style={styles.statValue}>{statistics.totalStudyHours.toFixed(1)} saat</Text>
                 <Text style={styles.statSubtext}>Bu hafta tahmini</Text>
               </View>
             </View>
@@ -480,7 +480,7 @@ const StatisticsScreen: React.FC = () => {
               </View>
               <View style={styles.statContent}>
                 <Text style={styles.statLabel}>Bu Ay Tamamlanan</Text>
-                <Text style={styles.statValue}>{Math.round(statistics.taskCompletionRate)}%</Text>
+                <Text style={styles.statValue}>%{Math.round(statistics.taskCompletionRate)}</Text>
                 <Text style={styles.statSubtext}>
                   {statistics.completedTasks}/{statistics.totalTasks} görev
                 </Text>
@@ -493,7 +493,7 @@ const StatisticsScreen: React.FC = () => {
               </View>
               <View style={styles.statContent}>
                 <Text style={styles.statLabel}>Toplam Çalışma Saati</Text>
-                <Text style={styles.statValue}>{statistics.totalStudyHours.toFixed(1)}h</Text>
+                <Text style={styles.statValue}>{statistics.totalStudyHours.toFixed(1)} saat</Text>
                 <Text style={styles.statSubtext}>Bu ay toplam</Text>
               </View>
             </View>
