@@ -130,14 +130,8 @@ export const TodayTab: React.FC = () => {
         .order('scheduled_date', { ascending: true })
         .order('created_at', { ascending: true });
 
-      // For coaches: load tasks they assigned to the selected student
-      // For students: load tasks assigned to them (by any coach)
-      if (userProfile?.role === 'coach') {
-        console.log('📱 [TODAY] Loading tasks assigned by coach:', userProfile.id);
-        query = query.eq('assigned_by', userProfile.id);
-      } else {
-        console.log('📱 [TODAY] Loading all tasks assigned to student:', currentUser.id);
-      }
+      // Both coaches and students see all tasks assigned to the student, regardless of who created them
+      console.log('📱 [TODAY] Loading all tasks assigned to student:', currentUser.id);
 
       const { data, error } = await query;
 

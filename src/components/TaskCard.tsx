@@ -105,7 +105,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   // Check if user can edit/delete this task
-  const canEditTask = userRole === 'coach' && task.assigned_by === userId;
+  // Coaches can edit any task they can see (filtering ensures only appropriate tasks are shown)
+  // Students cannot edit tasks, only complete them
+  const canEditTask = userRole === 'coach';
   const canCompleteTask = userRole === 'student' && task.assigned_to === userId || userRole === 'coach';
   const isCompleted = task.status === 'completed';
   const taskTypeColor = getTaskTypeColor(task.task_type);
