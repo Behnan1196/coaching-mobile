@@ -479,11 +479,11 @@ const StatisticsScreen: React.FC = () => {
                           >
                                                       {/* Tasks completion ratio in center (bigger) */}
                           {totalTasks > 0 ? (
-                            <Text style={[styles.performanceDayText, { fontSize: 9, textAlign: 'center', fontWeight: 'bold' }]}>
+                            <Text style={[styles.performanceDayText, { fontSize: 11, textAlign: 'center', fontWeight: 'bold' }]}>
                               {completedTasks}/{totalTasks}
                             </Text>
                           ) : (
-                            <Text style={[styles.performanceDayText, { fontSize: 8, textAlign: 'center' }]}>
+                            <Text style={[styles.performanceDayText, { fontSize: 10, textAlign: 'center' }]}>
                               {date.getDate()}
                             </Text>
                           )}
@@ -494,7 +494,7 @@ const StatisticsScreen: React.FC = () => {
                               position: 'absolute',
                               bottom: 2,
                               right: 2,
-                              fontSize: 6,
+                              fontSize: 8,
                               color: 'white',
                               fontWeight: '600',
                             }}>
