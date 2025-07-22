@@ -31,6 +31,57 @@ const StatisticsScreen: React.FC = () => {
     }
   }, [userProfile, selectedStudent, currentWeek]);
 
+  // Real-time subscription for task updates
+  useEffect(() => {
+    if (!userProfile || !supabase) return;
+
+    const targetUserId = userProfile?.role === 'student' ? userProfile.id : selectedStudent?.id;
+    if (!targetUserId) return;
+
+    console.log('🔄 Setting up real-time subscription for statistics:', targetUserId);
+    
+    const subscription = supabase
+      .channel(`statistics-updates-${targetUserId}`, {
+        config: {
+          broadcast: { self: false },
+          presence: { key: userProfile.id }
+        }
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `assigned_to=eq.${targetUserId}`
+        },
+        (payload) => {
+          console.log('📊 Real-time task update for statistics:', payload);
+          
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+            console.log('📈 Refreshing statistics due to task change');
+            // Reload statistics when tasks change
+            loadStatistics();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📊 Statistics subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Statistics real-time subscription active');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Statistics real-time subscription error');
+        }
+      });
+
+    return () => {
+      console.log('🧹 Cleaning up statistics real-time subscription');
+      if (supabase) {
+        supabase.removeChannel(subscription);
+      }
+    };
+  }, [userProfile, selectedStudent]);
+
   const loadStatistics = async () => {
     try {
       const targetUserId = userProfile?.role === 'student' ? userProfile.id : selectedStudent?.id;
@@ -59,8 +110,8 @@ const StatisticsScreen: React.FC = () => {
         .from('tasks')
         .select('*')
         .eq('assigned_to', targetUserId)
-        .gte('scheduled_date', monthStart.toISOString().split('T')[0])
-        .lte('scheduled_date', monthEnd.toISOString().split('T')[0])
+        .gte('scheduled_date', formatDateForDB(monthStart))
+        .lte('scheduled_date', formatDateForDB(monthEnd))
         .order('scheduled_date');
 
       if (error) throw error;
@@ -82,6 +133,13 @@ const StatisticsScreen: React.FC = () => {
     start.setDate(diff);
     start.setHours(0, 0, 0, 0);
     return start;
+  };
+
+  const formatDateForDB = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
