@@ -451,11 +451,18 @@ const StatisticsScreen: React.FC = () => {
                         const totalTasks = dayTasks.length;
                         const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
                         
-                        let bgColor = '#E5E7EB';
-                        if (completionRate >= 80) bgColor = '#10B981';
-                        else if (completionRate >= 60) bgColor = '#F59E0B';
-                        else if (completionRate >= 40) bgColor = '#F97316';
-                        else if (completionRate > 0) bgColor = '#EF4444';
+                        let bgColor = '#E5E7EB'; // Default for no tasks
+                        if (totalTasks === 0) {
+                          bgColor = '#E5E7EB'; // Gray for no tasks
+                        } else if (completionRate >= 80) {
+                          bgColor = '#10B981'; // Green for excellent (80%+)
+                        } else if (completionRate >= 60) {
+                          bgColor = '#F59E0B'; // Yellow for good (60%+)
+                        } else if (completionRate >= 40) {
+                          bgColor = '#F97316'; // Orange for moderate (40%+)
+                        } else {
+                          bgColor = '#EF4444'; // Red for poor completion or 0% (but tasks exist)
+                        }
                         
                         return (
                           <View 
@@ -496,11 +503,18 @@ const StatisticsScreen: React.FC = () => {
                       const totalTasks = dayTasks.length;
                       const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
                       
-                      let bgColor = '#E5E7EB';
-                      if (completionRate >= 80) bgColor = '#10B981';
-                      else if (completionRate >= 60) bgColor = '#F59E0B';
-                      else if (completionRate >= 40) bgColor = '#F97316';
-                      else if (completionRate > 0) bgColor = '#EF4444';
+                      let bgColor = '#E5E7EB'; // Default for no tasks
+                      if (totalTasks === 0) {
+                        bgColor = '#E5E7EB'; // Gray for no tasks
+                      } else if (completionRate >= 80) {
+                        bgColor = '#10B981'; // Green for excellent (80%+)
+                      } else if (completionRate >= 60) {
+                        bgColor = '#F59E0B'; // Yellow for good (60%+)
+                      } else if (completionRate >= 40) {
+                        bgColor = '#F97316'; // Orange for moderate (40%+)
+                      } else {
+                        bgColor = '#EF4444'; // Red for poor completion or 0% (but tasks exist)
+                      }
                       
                       return (
                         <View 
@@ -531,6 +545,14 @@ const StatisticsScreen: React.FC = () => {
                     <View style={styles.legendItem}>
                       <View style={[styles.legendColor, { backgroundColor: '#F97316' }]} />
                       <Text style={styles.legendText}>Orta (40%+)</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendColor, { backgroundColor: '#EF4444' }]} />
+                      <Text style={styles.legendText}>Düşük (0-39%)</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendColor, { backgroundColor: '#E5E7EB' }]} />
+                      <Text style={styles.legendText}>Görev Yok</Text>
                     </View>
                   </View>
                 </>
