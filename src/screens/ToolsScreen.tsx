@@ -15,6 +15,7 @@ import {
   Linking,
   Dimensions
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
@@ -712,6 +713,8 @@ const MockExamsScreen = () => {
   const [examModalTab, setExamModalTab] = useState<'TYT' | 'AYT' | 'Tarama'>('TYT');
   const [selectedTaramaSubject, setSelectedTaramaSubject] = useState('');
   const [selectedTaramaQuestionCount, setSelectedTaramaQuestionCount] = useState(10);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTaramaSubjectPicker, setShowTaramaSubjectPicker] = useState(false);
   const [examForm, setExamForm] = useState({
     exam_type: 'TYT' as 'TYT' | 'AYT' | 'Tarama',
     exam_date: '',
@@ -744,6 +747,16 @@ const MockExamsScreen = () => {
     tarama_lessons: [] as Array<{ subject: string; question_count: number; correct: number; wrong: number }>,
     notes: ''
   });
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setExamForm(prev => ({
+        ...prev,
+        exam_date: selectedDate.toISOString().split('T')[0]
+      }));
+    }
+  };
 
   // useEffect hook must be before conditional logic
   React.useEffect(() => {
@@ -1167,7 +1180,7 @@ const MockExamsScreen = () => {
   }
 
   return (
-    <View style={styles.tabContent}>
+    <View style={styles.mockExamsContainer}>
       <View style={styles.headerRow}>
         <Text style={styles.tabTitle}>📊 Sınav Sonuçları</Text>
         <TouchableOpacity style={styles.headerButton} onPress={openExamModal}>
@@ -1350,13 +1363,24 @@ const MockExamsScreen = () => {
 
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Sınav Tarihi *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={examForm.exam_date}
-                    onChangeText={(text) => setExamForm(prev => ({ ...prev, exam_date: text }))}
-                    placeholder="YYYY-MM-DD"
-                  />
+                  <TouchableOpacity 
+                    style={styles.datePickerButton} 
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Text style={styles.datePickerText}>
+                      {examForm.exam_date || 'Tarih seçin'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
+
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={examForm.exam_date ? new Date(examForm.exam_date) : new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onDateChange}
+                  />
+                )}
 
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Süre (dakika)</Text>
@@ -1645,14 +1669,14 @@ const MockExamsScreen = () => {
                       <View style={styles.addLessonForm}>
                         <View style={styles.pickerContainer}>
                           <Text style={styles.label}>Ders</Text>
-                          <View style={styles.picker}>
-                            <TextInput
-                              style={styles.input}
-                              placeholder="Ders adı girin..."
-                              value={selectedTaramaSubject}
-                              onChangeText={setSelectedTaramaSubject}
-                            />
-                          </View>
+                          <TouchableOpacity
+                            style={styles.pickerButton}
+                            onPress={() => setShowTaramaSubjectPicker(true)}
+                          >
+                            <Text style={styles.pickerButtonText}>
+                              {selectedTaramaSubject || 'Ders seçin...'}
+                            </Text>
+                          </TouchableOpacity>
                         </View>
                         <View style={styles.inputContainer}>
                           <Text style={styles.label}>Soru Sayısı</Text>
@@ -1673,6 +1697,36 @@ const MockExamsScreen = () => {
                         </TouchableOpacity>
                       </View>
                     </View>
+
+                    {/* Subject Picker Modal for Tarama */}
+                    {showTaramaSubjectPicker && (
+                      <Modal visible={true} transparent={true} animationType="slide">
+                        <View style={styles.modalOverlay}>
+                          <View style={styles.modalContainer}>
+                            <View style={styles.modalHeader}>
+                              <Text style={styles.modalTitle}>Ders Seçin</Text>
+                              <TouchableOpacity onPress={() => setShowTaramaSubjectPicker(false)}>
+                                <Text style={styles.modalCloseButton}>✕</Text>
+                              </TouchableOpacity>
+                            </View>
+                            <ScrollView style={styles.modalContent}>
+                              {subjects.map((subject) => (
+                                <TouchableOpacity
+                                  key={subject.id}
+                                  style={styles.subjectOption}
+                                  onPress={() => {
+                                    setSelectedTaramaSubject(subject.name);
+                                    setShowTaramaSubjectPicker(false);
+                                  }}
+                                >
+                                  <Text style={styles.subjectOptionText}>{subject.name}</Text>
+                                </TouchableOpacity>
+                              ))}
+                            </ScrollView>
+                          </View>
+                        </View>
+                      </Modal>
+                    )}
 
                     {/* Existing Lessons */}
                     {examForm.tarama_lessons.length > 0 && (
@@ -2954,5 +3008,55 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  mockExamsContainer: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  datePickerButton: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#111827',
+    textAlign: 'center',
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: '#111827',
+  },
+  pickerButton: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#111827',
+    textAlign: 'center',
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    color: '#111827',
+  },
+  subjectOption: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  subjectOptionText: {
+    fontSize: 16,
+    color: '#111827',
+  },
+  scoresSection: {
+    marginBottom: 20,
+  },
+  subjectGroup: {
+    marginBottom: 20,
+  },
+  subjectTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
 }); 
