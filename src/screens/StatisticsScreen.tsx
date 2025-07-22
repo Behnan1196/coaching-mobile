@@ -454,14 +454,12 @@ const StatisticsScreen: React.FC = () => {
                         let bgColor = '#E5E7EB'; // Default for no tasks
                         if (totalTasks === 0) {
                           bgColor = '#E5E7EB'; // Gray for no tasks
-                        } else if (completionRate >= 80) {
-                          bgColor = '#10B981'; // Green for excellent (80%+)
-                        } else if (completionRate >= 60) {
-                          bgColor = '#F59E0B'; // Yellow for good (60%+)
-                        } else if (completionRate >= 40) {
-                          bgColor = '#F97316'; // Orange for moderate (40%+)
+                        } else if (completionRate === 100) {
+                          bgColor = '#10B981'; // Green for 100% completion
+                        } else if (completionRate >= 20) {
+                          bgColor = '#F59E0B'; // Yellow for 20%+ completion
                         } else {
-                          bgColor = '#EF4444'; // Red for poor completion or 0% (but tasks exist)
+                          bgColor = '#EF4444'; // Red for 0-20% completion
                         }
                         
                         return (
@@ -472,9 +470,14 @@ const StatisticsScreen: React.FC = () => {
                               { backgroundColor: bgColor }
                             ]}
                           >
-                            <Text style={styles.performanceDayText}>
-                              {date.getDate()}
+                                                      <Text style={[styles.performanceDayText, { fontSize: 8, textAlign: 'center' }]}>
+                            {date.getDate()}
+                          </Text>
+                          {totalTasks > 0 && (
+                            <Text style={[styles.performanceDayText, { fontSize: 6, textAlign: 'center', marginTop: 1 }]}>
+                              {completedTasks}/{totalTasks}
                             </Text>
+                          )}
                           </View>
                         );
                       });
@@ -506,14 +509,12 @@ const StatisticsScreen: React.FC = () => {
                       let bgColor = '#E5E7EB'; // Default for no tasks
                       if (totalTasks === 0) {
                         bgColor = '#E5E7EB'; // Gray for no tasks
-                      } else if (completionRate >= 80) {
-                        bgColor = '#10B981'; // Green for excellent (80%+)
-                      } else if (completionRate >= 60) {
-                        bgColor = '#F59E0B'; // Yellow for good (60%+)
-                      } else if (completionRate >= 40) {
-                        bgColor = '#F97316'; // Orange for moderate (40%+)
+                      } else if (completionRate === 100) {
+                        bgColor = '#10B981'; // Green for 100% completion
+                      } else if (completionRate >= 20) {
+                        bgColor = '#F59E0B'; // Yellow for 20%+ completion
                       } else {
-                        bgColor = '#EF4444'; // Red for poor completion or 0% (but tasks exist)
+                        bgColor = '#EF4444'; // Red for 0-20% completion
                       }
                       
                       return (
@@ -524,36 +525,17 @@ const StatisticsScreen: React.FC = () => {
                             { backgroundColor: bgColor }
                           ]}
                         >
-                          <Text style={styles.performanceDayText}>
-                            {totalTasks > 0 ? Math.round(completionRate) + '%' : ''}
+                          <Text style={[styles.performanceDayText, { fontSize: 8, textAlign: 'center' }]}>
+                            {dayDate.getDate()}
                           </Text>
+                          {totalTasks > 0 && (
+                            <Text style={[styles.performanceDayText, { fontSize: 6, textAlign: 'center', marginTop: 1 }]}>
+                              {completedTasks}/{totalTasks}
+                            </Text>
+                          )}
                         </View>
                       );
                     })}
-                  </View>
-                  
-                  {/* Legend */}
-                  <View style={styles.performanceLegend}>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendColor, { backgroundColor: '#10B981' }]} />
-                      <Text style={styles.legendText}>Mükemmel (80%+)</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendColor, { backgroundColor: '#F59E0B' }]} />
-                      <Text style={styles.legendText}>İyi (60%+)</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendColor, { backgroundColor: '#F97316' }]} />
-                      <Text style={styles.legendText}>Orta (40%+)</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendColor, { backgroundColor: '#EF4444' }]} />
-                      <Text style={styles.legendText}>Düşük (0-39%)</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendColor, { backgroundColor: '#E5E7EB' }]} />
-                      <Text style={styles.legendText}>Görev Yok</Text>
-                    </View>
                   </View>
                 </>
               )}
@@ -811,28 +793,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: 'white',
-  },
-  performanceLegend: {
-    marginTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
-    marginRight: 4,
-  },
-  legendText: {
-    fontSize: 11,
-    color: '#F97316',
-    fontWeight: '500',
   },
 });
 
