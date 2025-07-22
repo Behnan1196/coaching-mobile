@@ -704,11 +704,14 @@ const MockExamsScreen = () => {
   
   // All hooks must be called before any conditional logic
   const [mockExamResults, setMockExamResults] = useState<MockExamResult[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showExamModal, setShowExamModal] = useState(false);
   const [editingExam, setEditingExam] = useState<MockExamResult | null>(null);
   const [examModalTab, setExamModalTab] = useState<'TYT' | 'AYT' | 'Tarama'>('TYT');
+  const [selectedTaramaSubject, setSelectedTaramaSubject] = useState('');
+  const [selectedTaramaQuestionCount, setSelectedTaramaQuestionCount] = useState(10);
   const [examForm, setExamForm] = useState({
     exam_type: 'TYT' as 'TYT' | 'AYT' | 'Tarama',
     exam_date: '',
@@ -738,7 +741,7 @@ const MockExamsScreen = () => {
     ayt_matematik_wrong: 0,
     ayt_geometri_correct: 0,
     ayt_geometri_wrong: 0,
-    tarama_lessons: [] as Array<{ subject: string; question_count: number; correct: number; wrong: number; net: number }>,
+    tarama_lessons: [] as Array<{ subject: string; question_count: number; correct: number; wrong: number }>,
     notes: ''
   });
 
@@ -747,6 +750,7 @@ const MockExamsScreen = () => {
     const targetStudent = userProfile?.role === 'coach' ? selectedStudent : userProfile;
     if (targetStudent) {
       loadMockExamResults();
+      loadSubjects();
     }
   }, [userProfile, selectedStudent]);
 
@@ -754,6 +758,27 @@ const MockExamsScreen = () => {
   const targetStudent = userProfile?.role === 'coach' ? selectedStudent : userProfile;
 
   // Define functions after hooks
+  const loadSubjects = async () => {
+    if (!supabase) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) {
+        console.error('Error loading subjects:', error);
+        return;
+      }
+
+      setSubjects(data || []);
+    } catch (error) {
+      console.error('Error loading subjects:', error);
+    }
+  };
+
   const loadMockExamResults = async () => {
     if (!targetStudent?.id || !supabase) return;
     
@@ -795,9 +820,10 @@ const MockExamsScreen = () => {
 
   const openExamModal = () => {
     setEditingExam(null);
+    const today = new Date().toISOString().split('T')[0];
     setExamForm({
       exam_type: 'TYT',
-      exam_date: '',
+      exam_date: today,
       exam_name: '',
       exam_duration: 180,
       tyt_turkce_correct: 0,
@@ -828,17 +854,162 @@ const MockExamsScreen = () => {
       notes: ''
     });
     setExamModalTab('TYT');
+    setSelectedTaramaSubject('');
+    setSelectedTaramaQuestionCount(10);
+    setShowExamModal(true);
+  };
+
+  const openEditExamModal = (examResult: MockExamResult) => {
+    setEditingExam(examResult);
+    setExamForm({
+      exam_type: examResult.exam_type,
+      exam_date: examResult.exam_date,
+      exam_name: examResult.exam_name,
+      exam_duration: examResult.exam_duration || 180,
+      
+      // TYT Scores - Türkçe
+      tyt_turkce_correct: examResult.tyt_turkce_correct || 0,
+      tyt_turkce_wrong: examResult.tyt_turkce_wrong || 0,
+      
+      // TYT Scores - Matematik
+      tyt_matematik_correct: examResult.tyt_matematik_correct || 0,
+      tyt_matematik_wrong: examResult.tyt_matematik_wrong || 0,
+      tyt_geometri_correct: examResult.tyt_geometri_correct || 0,
+      tyt_geometri_wrong: examResult.tyt_geometri_wrong || 0,
+      
+      // TYT Scores - Sosyal Bilimler
+      tyt_tarih_correct: examResult.tyt_tarih_correct || 0,
+      tyt_tarih_wrong: examResult.tyt_tarih_wrong || 0,
+      tyt_cografya_correct: examResult.tyt_cografya_correct || 0,
+      tyt_cografya_wrong: examResult.tyt_cografya_wrong || 0,
+      tyt_felsefe_correct: examResult.tyt_felsefe_correct || 0,
+      tyt_felsefe_wrong: examResult.tyt_felsefe_wrong || 0,
+      tyt_din_correct: examResult.tyt_din_correct || 0,
+      tyt_din_wrong: examResult.tyt_din_wrong || 0,
+      
+      // TYT Scores - Fen Bilimleri
+      tyt_fizik_correct: examResult.tyt_fizik_correct || 0,
+      tyt_fizik_wrong: examResult.tyt_fizik_wrong || 0,
+      tyt_kimya_correct: examResult.tyt_kimya_correct || 0,
+      tyt_kimya_wrong: examResult.tyt_kimya_wrong || 0,
+      tyt_biyoloji_correct: examResult.tyt_biyoloji_correct || 0,
+      tyt_biyoloji_wrong: examResult.tyt_biyoloji_wrong || 0,
+      
+      // AYT Scores
+      ayt_matematik_correct: examResult.ayt_matematik_correct || 0,
+      ayt_matematik_wrong: examResult.ayt_matematik_wrong || 0,
+      ayt_geometri_correct: examResult.ayt_geometri_correct || 0,
+      ayt_geometri_wrong: examResult.ayt_geometri_wrong || 0,
+      
+      // Tarama Scores
+      tarama_lessons: examResult.tarama_lessons || [],
+      
+      notes: examResult.notes || ''
+    });
+    setExamModalTab(examResult.exam_type);
+    setSelectedTaramaSubject('');
+    setSelectedTaramaQuestionCount(10);
     setShowExamModal(true);
   };
 
   const closeExamModal = () => {
     setShowExamModal(false);
     setEditingExam(null);
+    setExamModalTab('TYT');
+    setSelectedTaramaSubject('');
+    setSelectedTaramaQuestionCount(10);
+  };
+
+  // Calculation helpers
+  const calculateNet = (correct: number, wrong: number) => {
+    return correct - (wrong * 0.25);
+  };
+
+  const calculateTYTTotals = () => {
+    const matematikTotal = calculateNet(examForm.tyt_matematik_correct, examForm.tyt_matematik_wrong) +
+                          calculateNet(examForm.tyt_geometri_correct, examForm.tyt_geometri_wrong);
+    
+    const sosyalTotal = calculateNet(examForm.tyt_tarih_correct, examForm.tyt_tarih_wrong) +
+                      calculateNet(examForm.tyt_cografya_correct, examForm.tyt_cografya_wrong) +
+                      calculateNet(examForm.tyt_felsefe_correct, examForm.tyt_felsefe_wrong) +
+                      calculateNet(examForm.tyt_din_correct, examForm.tyt_din_wrong);
+    
+    const fenTotal = calculateNet(examForm.tyt_fizik_correct, examForm.tyt_fizik_wrong) +
+                    calculateNet(examForm.tyt_kimya_correct, examForm.tyt_kimya_wrong) +
+                    calculateNet(examForm.tyt_biyoloji_correct, examForm.tyt_biyoloji_wrong);
+    
+    const turkceNet = calculateNet(examForm.tyt_turkce_correct, examForm.tyt_turkce_wrong);
+    
+    const overallTotal = turkceNet + matematikTotal + sosyalTotal + fenTotal;
+    
+    return {
+      turkce: turkceNet,
+      matematik: matematikTotal,
+      sosyal: sosyalTotal,
+      fen: fenTotal,
+      overall: overallTotal
+    };
+  };
+
+  const calculateAYTTotal = () => {
+    return calculateNet(examForm.ayt_matematik_correct, examForm.ayt_matematik_wrong) +
+           calculateNet(examForm.ayt_geometri_correct, examForm.ayt_geometri_wrong);
+  };
+
+  const calculateTaramaTotal = () => {
+    return examForm.tarama_lessons.reduce((sum, lesson) => 
+      sum + calculateNet(lesson.correct, lesson.wrong), 0
+    );
+  };
+
+  const addTaramaLesson = () => {
+    if (!selectedTaramaSubject || selectedTaramaQuestionCount <= 0) {
+      Alert.alert('Hata', 'Lütfen ders ve soru sayısı seçin');
+      return;
+    }
+
+    // Check if subject already exists
+    const exists = examForm.tarama_lessons.find(lesson => lesson.subject === selectedTaramaSubject);
+    if (exists) {
+      Alert.alert('Hata', 'Bu ders zaten eklenmiş');
+      return;
+    }
+
+    const newLesson = {
+      subject: selectedTaramaSubject,
+      question_count: selectedTaramaQuestionCount,
+      correct: 0,
+      wrong: 0
+    };
+
+    setExamForm(prev => ({
+      ...prev,
+      tarama_lessons: [...prev.tarama_lessons, newLesson]
+    }));
+
+    setSelectedTaramaSubject('');
+    setSelectedTaramaQuestionCount(10);
+  };
+
+  const removeTaramaLesson = (index: number) => {
+    setExamForm(prev => ({
+      ...prev,
+      tarama_lessons: prev.tarama_lessons.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateTaramaLesson = (index: number, field: 'correct' | 'wrong', value: number) => {
+    setExamForm(prev => ({
+      ...prev,
+      tarama_lessons: prev.tarama_lessons.map((lesson, i) => 
+        i === index ? { ...lesson, [field]: Math.max(0, Math.min(lesson.question_count, value)) } : lesson
+      )
+    }));
   };
 
   const saveExamResult = async () => {
-    if (!targetStudent || !user || !examForm.exam_name.trim() || !examForm.exam_date) {
-      Alert.alert('Hata', 'Sınav adı ve tarihi gereklidir.');
+    if (!targetStudent || !user || !examForm.exam_date) {
+      Alert.alert('Hata', 'Sınav tarihi gereklidir.');
       return;
     }
 
@@ -847,17 +1018,21 @@ const MockExamsScreen = () => {
       return;
     }
 
+    // Generate default exam name if not provided
+    const examName = examForm.exam_name.trim() || `${examForm.exam_type} Sınavı - ${new Date(examForm.exam_date).toLocaleDateString('tr-TR')}`;
+
     try {
       const examData = {
         student_id: targetStudent.id,
         coach_id: user.id,
         exam_type: examForm.exam_type,
         exam_date: examForm.exam_date,
-        exam_name: examForm.exam_name.trim(),
+        exam_name: examName,
         exam_duration: examForm.exam_duration,
         notes: examForm.notes.trim() || null,
         is_active: true,
         ...(examForm.exam_type === 'TYT' && {
+          // TYT Raw scores
           tyt_turkce_correct: examForm.tyt_turkce_correct,
           tyt_turkce_wrong: examForm.tyt_turkce_wrong,
           tyt_matematik_correct: examForm.tyt_matematik_correct,
@@ -878,15 +1053,51 @@ const MockExamsScreen = () => {
           tyt_kimya_wrong: examForm.tyt_kimya_wrong,
           tyt_biyoloji_correct: examForm.tyt_biyoloji_correct,
           tyt_biyoloji_wrong: examForm.tyt_biyoloji_wrong,
+          
+          // TYT Net scores
+          tyt_turkce_net: calculateNet(examForm.tyt_turkce_correct, examForm.tyt_turkce_wrong),
+          tyt_matematik_net: calculateNet(examForm.tyt_matematik_correct, examForm.tyt_matematik_wrong),
+          tyt_geometri_net: calculateNet(examForm.tyt_geometri_correct, examForm.tyt_geometri_wrong),
+          tyt_tarih_net: calculateNet(examForm.tyt_tarih_correct, examForm.tyt_tarih_wrong),
+          tyt_cografya_net: calculateNet(examForm.tyt_cografya_correct, examForm.tyt_cografya_wrong),
+          tyt_felsefe_net: calculateNet(examForm.tyt_felsefe_correct, examForm.tyt_felsefe_wrong),
+          tyt_din_net: calculateNet(examForm.tyt_din_correct, examForm.tyt_din_wrong),
+          tyt_fizik_net: calculateNet(examForm.tyt_fizik_correct, examForm.tyt_fizik_wrong),
+          tyt_kimya_net: calculateNet(examForm.tyt_kimya_correct, examForm.tyt_kimya_wrong),
+          tyt_biyoloji_net: calculateNet(examForm.tyt_biyoloji_correct, examForm.tyt_biyoloji_wrong),
+          
+          // TYT Totals
+          ...(() => {
+            const totals = calculateTYTTotals();
+            return {
+              tyt_total_net: totals.overall,
+              tyt_matematik_total_net: totals.matematik,
+              tyt_sosyal_total_net: totals.sosyal,
+              tyt_fen_total_net: totals.fen
+            };
+          })()
         }),
         ...(examForm.exam_type === 'AYT' && {
+          // AYT Raw scores
           ayt_matematik_correct: examForm.ayt_matematik_correct,
           ayt_matematik_wrong: examForm.ayt_matematik_wrong,
           ayt_geometri_correct: examForm.ayt_geometri_correct,
           ayt_geometri_wrong: examForm.ayt_geometri_wrong,
+          
+          // AYT Net scores
+          ayt_matematik_net: calculateNet(examForm.ayt_matematik_correct, examForm.ayt_matematik_wrong),
+          ayt_geometri_net: calculateNet(examForm.ayt_geometri_correct, examForm.ayt_geometri_wrong),
+          
+          // AYT Total
+          ayt_total_net: calculateAYTTotal()
         }),
         ...(examForm.exam_type === 'Tarama' && {
-          tarama_lessons: examForm.tarama_lessons,
+          // Tarama lessons with nets
+          tarama_lessons: examForm.tarama_lessons.map(lesson => ({
+            ...lesson,
+            net: calculateNet(lesson.correct, lesson.wrong)
+          })),
+          tarama_total_net: calculateTaramaTotal()
         })
       };
 
@@ -957,57 +1168,148 @@ const MockExamsScreen = () => {
 
   return (
     <View style={styles.tabContent}>
-      <View style={styles.header}>
-        <Text style={styles.tabTitle}>📝 Deneme Sınavları</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.tabTitle}>📊 Sınav Sonuçları</Text>
         {userProfile?.role === 'coach' && (
-          <TouchableOpacity style={styles.addButton} onPress={openExamModal}>
-            <Text style={styles.addButtonText}>+ Sınav Ekle</Text>
+          <TouchableOpacity style={styles.headerButton} onPress={openExamModal}>
+            <Text style={styles.headerButtonText}>+ Sınav Ekle</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <ScrollView
-        style={styles.scrollView}
+        style={styles.fullWidthScrollView}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefreshExams} />}
       >
         {mockExamResults.length > 0 ? (
           mockExamResults.map((result) => (
-            <View key={result.id} style={styles.examCard}>
+            <View key={result.id} style={styles.fullWidthExamCard}>
               <View style={styles.examHeader}>
-                <View>
+                <View style={styles.examInfo}>
                   <Text style={styles.examName}>{result.exam_name}</Text>
                   <Text style={styles.examDate}>
                     {new Date(result.exam_date).toLocaleDateString('tr-TR')} • {result.exam_type}
+                    {result.exam_duration && ` • ${result.exam_duration} dk`}
                   </Text>
                 </View>
                 {userProfile?.role === 'coach' && (
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => deleteExamResult(result)}
-                  >
-                    <Text style={styles.deleteButtonText}>Sil</Text>
-                  </TouchableOpacity>
+                  <View style={styles.examActions}>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => openEditExamModal(result)}
+                    >
+                      <Text style={styles.editButtonText}>Düzenle</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => deleteExamResult(result)}
+                    >
+                      <Text style={styles.deleteButtonText}>Sil</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
               
               <View style={styles.examScores}>
                 {result.exam_type === 'TYT' && (
                   <>
-                    <Text style={styles.scoreText}>Toplam Net: {result.tyt_total_net?.toFixed(1) || '0.0'}</Text>
-                    <Text style={styles.scoreDetail}>Türkçe: {((result.tyt_turkce_correct || 0) - (result.tyt_turkce_wrong || 0) * 0.25).toFixed(1)}</Text>
-                    <Text style={styles.scoreDetail}>Matematik: {((result.tyt_matematik_correct || 0) - (result.tyt_matematik_wrong || 0) * 0.25).toFixed(1)}</Text>
+                    <Text style={styles.scoreTitle}>TYT Sonuçları</Text>
+                    <View style={styles.scoreGrid}>
+                      <View style={styles.scoreItem}>
+                        <Text style={styles.scoreLabel}>Türkçe</Text>
+                        <Text style={styles.scoreValue}>
+                          {result.tyt_turkce_net?.toFixed(1) || '0.0'}
+                        </Text>
+                      </View>
+                      <View style={styles.scoreItem}>
+                        <Text style={styles.scoreLabel}>Matematik</Text>
+                        <Text style={styles.scoreValue}>
+                          {result.tyt_matematik_total_net?.toFixed(1) || '0.0'}
+                        </Text>
+                      </View>
+                      <View style={styles.scoreItem}>
+                        <Text style={styles.scoreLabel}>Sosyal</Text>
+                        <Text style={styles.scoreValue}>
+                          {result.tyt_sosyal_total_net?.toFixed(1) || '0.0'}
+                        </Text>
+                      </View>
+                      <View style={styles.scoreItem}>
+                        <Text style={styles.scoreLabel}>Fen</Text>
+                        <Text style={styles.scoreValue}>
+                          {result.tyt_fen_total_net?.toFixed(1) || '0.0'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.totalScore}>
+                      <Text style={styles.totalLabel}>Toplam Net:</Text>
+                      <Text style={styles.totalValue}>
+                        {result.tyt_total_net?.toFixed(1) || '0.0'}
+                      </Text>
+                    </View>
                   </>
                 )}
                 
                 {result.exam_type === 'AYT' && (
                   <>
-                    <Text style={styles.scoreText}>Toplam Net: {result.ayt_total_net?.toFixed(1) || '0.0'}</Text>
-                    <Text style={styles.scoreDetail}>Matematik: {((result.ayt_matematik_correct || 0) - (result.ayt_matematik_wrong || 0) * 0.25).toFixed(1)}</Text>
+                    <Text style={styles.scoreTitle}>AYT Sonuçları</Text>
+                    <View style={styles.scoreGrid}>
+                      <View style={styles.scoreItem}>
+                        <Text style={styles.scoreLabel}>Matematik</Text>
+                        <Text style={styles.scoreValue}>
+                          {result.ayt_matematik_net?.toFixed(1) || '0.0'}
+                        </Text>
+                      </View>
+                      <View style={styles.scoreItem}>
+                        <Text style={styles.scoreLabel}>Geometri</Text>
+                        <Text style={styles.scoreValue}>
+                          {result.ayt_geometri_net?.toFixed(1) || '0.0'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.totalScore}>
+                      <Text style={styles.totalLabel}>Toplam Net:</Text>
+                      <Text style={styles.totalValue}>
+                        {result.ayt_total_net?.toFixed(1) || '0.0'}
+                      </Text>
+                    </View>
                   </>
                 )}
-                
+
                 {result.exam_type === 'Tarama' && (
-                  <Text style={styles.scoreText}>Toplam Net: {result.tarama_total_net?.toFixed(1) || '0.0'}</Text>
+                  <>
+                    <Text style={styles.scoreTitle}>Tarama Sonuçları</Text>
+                    {result.tarama_lessons && result.tarama_lessons.length > 0 ? (
+                      <>
+                        <View style={styles.taramaLessons}>
+                          {result.tarama_lessons.map((lesson: any, index: number) => (
+                            <View key={index} style={styles.taramaLesson}>
+                              <Text style={styles.taramaLessonName}>
+                                {lesson.subject} ({lesson.question_count} soru)
+                              </Text>
+                              <Text style={styles.taramaLessonScore}>
+                                {lesson.correct}D / {lesson.wrong}Y • Net: {lesson.net?.toFixed(1) || '0.0'}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                        <View style={styles.totalScore}>
+                          <Text style={styles.totalLabel}>Toplam Net:</Text>
+                          <Text style={styles.totalValue}>
+                            {result.tarama_total_net?.toFixed(1) || '0.0'}
+                          </Text>
+                        </View>
+                      </>
+                    ) : (
+                      <Text style={styles.noData}>Ders bilgisi mevcut değil</Text>
+                    )}
+                  </>
+                )}
+
+                {result.notes && (
+                  <View style={styles.notesSection}>
+                    <Text style={styles.notesLabel}>Notlar:</Text>
+                    <Text style={styles.notesText}>{result.notes}</Text>
+                  </View>
                 )}
               </View>
             </View>
@@ -1041,22 +1343,33 @@ const MockExamsScreen = () => {
             <ScrollView style={styles.modalContent}>
               <View style={styles.form}>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Sınav Adı *</Text>
+                  <Text style={styles.label}>Sınav Adı</Text>
                   <TextInput
                     style={styles.input}
                     value={examForm.exam_name}
                     onChangeText={(text) => setExamForm(prev => ({ ...prev, exam_name: text }))}
-                    placeholder="Örn: TYT Deneme 1"
+                    placeholder="Sınav adı (isteğe bağlı)"
                   />
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Tarih *</Text>
+                  <Text style={styles.label}>Sınav Tarihi *</Text>
                   <TextInput
                     style={styles.input}
                     value={examForm.exam_date}
                     onChangeText={(text) => setExamForm(prev => ({ ...prev, exam_date: text }))}
                     placeholder="YYYY-MM-DD"
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Süre (dakika)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={String(examForm.exam_duration)}
+                    onChangeText={(text) => setExamForm(prev => ({ ...prev, exam_duration: parseInt(text) || 180 }))}
+                    placeholder="180"
+                    keyboardType="numeric"
                   />
                 </View>
 
@@ -1068,13 +1381,13 @@ const MockExamsScreen = () => {
                         key={type}
                         style={[
                           styles.examTypeButton,
-                          examForm.exam_type === type && styles.examTypeButtonActive
+                          examForm.exam_type === type && styles.activeExamTypeButton
                         ]}
                         onPress={() => setExamForm(prev => ({ ...prev, exam_type: type as any }))}
                       >
                         <Text style={[
                           styles.examTypeButtonText,
-                          examForm.exam_type === type && styles.examTypeButtonTextActive
+                          examForm.exam_type === type && styles.activeExamTypeButtonText
                         ]}>
                           {type}
                         </Text>
@@ -1087,44 +1400,191 @@ const MockExamsScreen = () => {
                 {examForm.exam_type === 'TYT' && (
                   <View style={styles.scoresSection}>
                     <Text style={styles.sectionTitle}>TYT Puanları</Text>
-                    {[
-                      { key: 'turkce', label: 'Türkçe' },
-                      { key: 'matematik', label: 'Matematik' },
-                      { key: 'geometri', label: 'Geometri' },
-                      { key: 'tarih', label: 'Tarih' },
-                      { key: 'cografya', label: 'Coğrafya' },
-                      { key: 'felsefe', label: 'Felsefe' },
-                      { key: 'din', label: 'DKAB' },
-                      { key: 'fizik', label: 'Fizik' },
-                      { key: 'kimya', label: 'Kimya' },
-                      { key: 'biyoloji', label: 'Biyoloji' }
-                    ].map(subject => (
-                      <View key={subject.key} style={styles.scoreRow}>
-                        <Text style={styles.scoreLabel}>{subject.label}</Text>
-                        <View style={styles.scoreInputs}>
-                          <TextInput
-                            style={styles.scoreInput}
-                            placeholder="Doğru"
-                            keyboardType="numeric"
-                            value={String(examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] || 0)}
-                            onChangeText={(text) => setExamForm(prev => ({
-                              ...prev,
-                              [`tyt_${subject.key}_correct`]: parseInt(text) || 0
-                            }))}
-                          />
-                          <TextInput
-                            style={styles.scoreInput}
-                            placeholder="Yanlış"
-                            keyboardType="numeric"
-                            value={String(examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] || 0)}
-                            onChangeText={(text) => setExamForm(prev => ({
-                              ...prev,
-                              [`tyt_${subject.key}_wrong`]: parseInt(text) || 0
-                            }))}
-                          />
+                    
+                    {/* Türkçe */}
+                    <View style={styles.subjectGroup}>
+                      <Text style={styles.subjectTitle}>📖 Türkçe (40)</Text>
+                      {[
+                        { key: 'turkce', label: 'Türkçe' }
+                      ].map(subject => (
+                        <View key={subject.key} style={styles.scoreRow}>
+                          <Text style={styles.scoreLabel}>{subject.label}</Text>
+                          <View style={styles.scoreInputs}>
+                            <TextInput
+                              style={styles.scoreInput}
+                              placeholder="Doğru"
+                              keyboardType="numeric"
+                              value={String(examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] || 0)}
+                              onChangeText={(text) => setExamForm(prev => ({
+                                ...prev,
+                                [`tyt_${subject.key}_correct`]: Math.max(0, Math.min(40, parseInt(text) || 0))
+                              }))}
+                            />
+                            <TextInput
+                              style={styles.scoreInput}
+                              placeholder="Yanlış"
+                              keyboardType="numeric"
+                              value={String(examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] || 0)}
+                              onChangeText={(text) => setExamForm(prev => ({
+                                ...prev,
+                                [`tyt_${subject.key}_wrong`]: Math.max(0, Math.min(40, parseInt(text) || 0))
+                              }))}
+                            />
+                          </View>
+                          <Text style={styles.netScore}>
+                            Net: {calculateNet(
+                              examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
+                              examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
+                            ).toFixed(1)}
+                          </Text>
                         </View>
-                      </View>
-                    ))}
+                      ))}
+                      <Text style={styles.groupTotal}>
+                        Türkçe Net: {calculateTYTTotals().turkce.toFixed(1)}
+                      </Text>
+                    </View>
+                    
+                    {/* Matematik */}
+                    <View style={styles.subjectGroup}>
+                      <Text style={styles.subjectTitle}>🔢 Matematik (30)</Text>
+                      {[
+                        { key: 'matematik', label: 'Matematik' },
+                        { key: 'geometri', label: 'Geometri' }
+                      ].map(subject => (
+                        <View key={subject.key} style={styles.scoreRow}>
+                          <Text style={styles.scoreLabel}>{subject.label}</Text>
+                          <View style={styles.scoreInputs}>
+                            <TextInput
+                              style={styles.scoreInput}
+                              placeholder="Doğru"
+                              keyboardType="numeric"
+                              value={String(examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] || 0)}
+                              onChangeText={(text) => setExamForm(prev => ({
+                                ...prev,
+                                [`tyt_${subject.key}_correct`]: Math.max(0, Math.min(subject.key === 'matematik' ? 20 : 10, parseInt(text) || 0))
+                              }))}
+                            />
+                            <TextInput
+                              style={styles.scoreInput}
+                              placeholder="Yanlış"
+                              keyboardType="numeric"
+                              value={String(examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] || 0)}
+                              onChangeText={(text) => setExamForm(prev => ({
+                                ...prev,
+                                [`tyt_${subject.key}_wrong`]: Math.max(0, Math.min(subject.key === 'matematik' ? 20 : 10, parseInt(text) || 0))
+                              }))}
+                            />
+                          </View>
+                          <Text style={styles.netScore}>
+                            Net: {calculateNet(
+                              examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
+                              examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
+                            ).toFixed(1)}
+                          </Text>
+                        </View>
+                      ))}
+                      <Text style={styles.groupTotal}>
+                        Matematik Net: {calculateTYTTotals().matematik.toFixed(1)}
+                      </Text>
+                    </View>
+
+                    {/* Sosyal Bilimler */}
+                    <View style={styles.subjectGroup}>
+                      <Text style={styles.subjectTitle}>🏛️ Sosyal Bilimler (20)</Text>
+                      {[
+                        { key: 'tarih', label: 'Tarih' },
+                        { key: 'cografya', label: 'Coğrafya' },
+                        { key: 'felsefe', label: 'Felsefe' },
+                        { key: 'din', label: 'Din' }
+                      ].map(subject => (
+                        <View key={subject.key} style={styles.scoreRow}>
+                          <Text style={styles.scoreLabel}>{subject.label}</Text>
+                          <View style={styles.scoreInputs}>
+                            <TextInput
+                              style={styles.scoreInput}
+                              placeholder="Doğru"
+                              keyboardType="numeric"
+                              value={String(examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] || 0)}
+                              onChangeText={(text) => setExamForm(prev => ({
+                                ...prev,
+                                [`tyt_${subject.key}_correct`]: Math.max(0, Math.min(5, parseInt(text) || 0))
+                              }))}
+                            />
+                            <TextInput
+                              style={styles.scoreInput}
+                              placeholder="Yanlış"
+                              keyboardType="numeric"
+                              value={String(examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] || 0)}
+                              onChangeText={(text) => setExamForm(prev => ({
+                                ...prev,
+                                [`tyt_${subject.key}_wrong`]: Math.max(0, Math.min(5, parseInt(text) || 0))
+                              }))}
+                            />
+                          </View>
+                          <Text style={styles.netScore}>
+                            Net: {calculateNet(
+                              examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
+                              examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
+                            ).toFixed(1)}
+                          </Text>
+                        </View>
+                      ))}
+                      <Text style={styles.groupTotal}>
+                        Sosyal Net: {calculateTYTTotals().sosyal.toFixed(1)}
+                      </Text>
+                    </View>
+
+                    {/* Fen Bilimleri */}
+                    <View style={styles.subjectGroup}>
+                      <Text style={styles.subjectTitle}>🔬 Fen Bilimleri (20)</Text>
+                      {[
+                        { key: 'fizik', label: 'Fizik' },
+                        { key: 'kimya', label: 'Kimya' },
+                        { key: 'biyoloji', label: 'Biyoloji' }
+                      ].map(subject => (
+                        <View key={subject.key} style={styles.scoreRow}>
+                          <Text style={styles.scoreLabel}>{subject.label}</Text>
+                          <View style={styles.scoreInputs}>
+                            <TextInput
+                              style={styles.scoreInput}
+                              placeholder="Doğru"
+                              keyboardType="numeric"
+                              value={String(examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] || 0)}
+                              onChangeText={(text) => setExamForm(prev => ({
+                                ...prev,
+                                [`tyt_${subject.key}_correct`]: Math.max(0, Math.min(7, parseInt(text) || 0))
+                              }))}
+                            />
+                            <TextInput
+                              style={styles.scoreInput}
+                              placeholder="Yanlış"
+                              keyboardType="numeric"
+                              value={String(examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] || 0)}
+                              onChangeText={(text) => setExamForm(prev => ({
+                                ...prev,
+                                [`tyt_${subject.key}_wrong`]: Math.max(0, Math.min(7, parseInt(text) || 0))
+                              }))}
+                            />
+                          </View>
+                          <Text style={styles.netScore}>
+                            Net: {calculateNet(
+                              examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
+                              examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
+                            ).toFixed(1)}
+                          </Text>
+                        </View>
+                      ))}
+                      <Text style={styles.groupTotal}>
+                        Fen Net: {calculateTYTTotals().fen.toFixed(1)}
+                      </Text>
+                    </View>
+
+                    {/* TYT Overall Total */}
+                    <View style={styles.totalSection}>
+                      <Text style={styles.overallTotal}>
+                        TYT TOPLAM NET: {calculateTYTTotals().overall.toFixed(1)}
+                      </Text>
+                    </View>
                   </View>
                 )}
 
@@ -1133,11 +1593,11 @@ const MockExamsScreen = () => {
                   <View style={styles.scoresSection}>
                     <Text style={styles.sectionTitle}>AYT Puanları</Text>
                     {[
-                      { key: 'matematik', label: 'Matematik' },
-                      { key: 'geometri', label: 'Geometri' }
+                      { key: 'matematik', label: 'Matematik', max: 30 },
+                      { key: 'geometri', label: 'Geometri', max: 10 }
                     ].map(subject => (
                       <View key={subject.key} style={styles.scoreRow}>
-                        <Text style={styles.scoreLabel}>{subject.label}</Text>
+                        <Text style={styles.scoreLabel}>{subject.label} ({subject.max})</Text>
                         <View style={styles.scoreInputs}>
                           <TextInput
                             style={styles.scoreInput}
@@ -1146,7 +1606,7 @@ const MockExamsScreen = () => {
                             value={String(examForm[`ayt_${subject.key}_correct` as keyof typeof examForm] || 0)}
                             onChangeText={(text) => setExamForm(prev => ({
                               ...prev,
-                              [`ayt_${subject.key}_correct`]: parseInt(text) || 0
+                              [`ayt_${subject.key}_correct`]: Math.max(0, Math.min(subject.max, parseInt(text) || 0))
                             }))}
                           />
                           <TextInput
@@ -1156,12 +1616,121 @@ const MockExamsScreen = () => {
                             value={String(examForm[`ayt_${subject.key}_wrong` as keyof typeof examForm] || 0)}
                             onChangeText={(text) => setExamForm(prev => ({
                               ...prev,
-                              [`ayt_${subject.key}_wrong`]: parseInt(text) || 0
+                              [`ayt_${subject.key}_wrong`]: Math.max(0, Math.min(subject.max, parseInt(text) || 0))
                             }))}
                           />
                         </View>
+                        <Text style={styles.netScore}>
+                          Net: {calculateNet(
+                            examForm[`ayt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
+                            examForm[`ayt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
+                          ).toFixed(1)}
+                        </Text>
                       </View>
                     ))}
+                    
+                    {/* AYT Total */}
+                    <View style={styles.totalSection}>
+                      <Text style={styles.overallTotal}>
+                        AYT TOPLAM NET: {calculateAYTTotal().toFixed(1)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Tarama Scores */}
+                {examForm.exam_type === 'Tarama' && (
+                  <View style={styles.scoresSection}>
+                    <Text style={styles.sectionTitle}>Tarama Puanları</Text>
+                    
+                    {/* Add New Lesson */}
+                    <View style={styles.addLessonSection}>
+                      <Text style={styles.addLessonTitle}>➕ Ders Ekle</Text>
+                      <View style={styles.addLessonForm}>
+                        <View style={styles.pickerContainer}>
+                          <Text style={styles.label}>Ders</Text>
+                          <View style={styles.picker}>
+                            <TextInput
+                              style={styles.input}
+                              placeholder="Ders adı girin..."
+                              value={selectedTaramaSubject}
+                              onChangeText={setSelectedTaramaSubject}
+                            />
+                          </View>
+                        </View>
+                        <View style={styles.inputContainer}>
+                          <Text style={styles.label}>Soru Sayısı</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Soru sayısı"
+                            keyboardType="numeric"
+                            value={String(selectedTaramaQuestionCount)}
+                            onChangeText={(text) => setSelectedTaramaQuestionCount(Math.max(1, parseInt(text) || 1))}
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.addButton, (!selectedTaramaSubject || selectedTaramaQuestionCount <= 0) && styles.addButtonDisabled]}
+                          onPress={addTaramaLesson}
+                          disabled={!selectedTaramaSubject || selectedTaramaQuestionCount <= 0}
+                        >
+                          <Text style={styles.addButtonText}>Ekle</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Existing Lessons */}
+                    {examForm.tarama_lessons.length > 0 && (
+                      <View style={styles.lessonsSection}>
+                        <Text style={styles.lessonsTitle}>📚 Eklenmiş Dersler</Text>
+                        {examForm.tarama_lessons.map((lesson, index) => (
+                          <View key={index} style={styles.lessonRow}>
+                            <View style={styles.lessonHeader}>
+                              <Text style={styles.lessonSubject}>{lesson.subject} ({lesson.question_count} soru)</Text>
+                              <TouchableOpacity
+                                style={styles.removeButton}
+                                onPress={() => removeTaramaLesson(index)}
+                              >
+                                <Text style={styles.removeButtonText}>✕</Text>
+                              </TouchableOpacity>
+                            </View>
+                            <View style={styles.lessonInputs}>
+                              <View style={styles.lessonInputContainer}>
+                                <Text style={styles.lessonInputLabel}>Doğru</Text>
+                                <TextInput
+                                  style={styles.lessonInput}
+                                  keyboardType="numeric"
+                                  value={String(lesson.correct)}
+                                  onChangeText={(text) => updateTaramaLesson(index, 'correct', parseInt(text) || 0)}
+                                />
+                              </View>
+                              <View style={styles.lessonInputContainer}>
+                                <Text style={styles.lessonInputLabel}>Yanlış</Text>
+                                <TextInput
+                                  style={styles.lessonInput}
+                                  keyboardType="numeric"
+                                  value={String(lesson.wrong)}
+                                  onChangeText={(text) => updateTaramaLesson(index, 'wrong', parseInt(text) || 0)}
+                                />
+                              </View>
+                              <View style={styles.lessonNetContainer}>
+                                <Text style={styles.lessonNet}>
+                                  Net: {calculateNet(lesson.correct, lesson.wrong).toFixed(1)}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* Tarama Total */}
+                    {examForm.tarama_lessons.length > 0 && (
+                      <View style={styles.totalSection}>
+                        <Text style={styles.overallTotal}>
+                          TARAMA TOPLAM NET: {calculateTaramaTotal().toFixed(1)}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 )}
 
@@ -1858,6 +2427,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  examInfo: {
+    flex: 1,
+  },
+  examActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  editButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  editButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
   examName: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -1871,43 +2459,67 @@ const styles = StyleSheet.create({
   examScores: {
     marginTop: 8,
   },
-  scoreText: {
+  scoreTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#2563eb',
     marginBottom: 4,
   },
-  scoreDetail: {
+  scoreGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  scoreItem: {
+    flex: 1,
+  },
+  scoreLabel: {
+    fontSize: 14,
+    color: '#333',
+  },
+  scoreValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+  totalScore: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  totalLabel: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 2,
+  },
+  totalValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2563eb',
   },
   examTypeButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
+    marginBottom: 16,
   },
   examTypeButton: {
     flex: 1,
-    padding: 12,
+    paddingVertical: 12,
+    backgroundColor: '#F3F4F6',
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
     marginHorizontal: 4,
     alignItems: 'center',
   },
-  examTypeButtonActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+  activeExamTypeButton: {
+    backgroundColor: '#3B82F6',
   },
   examTypeButtonText: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
+    fontWeight: '600',
   },
-  examTypeButtonTextActive: {
+  activeExamTypeButtonText: {
     color: 'white',
   },
-  scoresSection: {
+  formSection: {
     marginTop: 16,
   },
   scoreRow: {
@@ -1915,11 +2527,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
-  },
-  scoreLabel: {
-    fontSize: 14,
-    color: '#333',
-    flex: 1,
   },
   scoreInputs: {
     flexDirection: 'row',
@@ -1935,6 +2542,165 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginLeft: 8,
     textAlign: 'center',
+  },
+  netScore: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },
+  groupTotal: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2563eb',
+    marginTop: 5,
+  },
+  totalSection: {
+    marginTop: 10,
+  },
+  overallTotal: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+  addLessonSection: {
+    marginBottom: 20,
+  },
+  addLessonTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  addLessonForm: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pickerContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
+  picker: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 16,
+    color: '#111827',
+  },
+  addButtonDisabled: {
+    opacity: 0.5,
+  },
+  lessonsSection: {
+    marginTop: 10,
+  },
+  lessonsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#111827',
+  },
+  lessonRow: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 0.5,
+  },
+  lessonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  lessonSubject: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  removeButton: {
+    marginLeft: 10,
+    padding: 5,
+  },
+  removeButtonText: {
+    fontSize: 18,
+    color: '#EF4444',
+  },
+  lessonInputs: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 5,
+  },
+  lessonInputContainer: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  lessonInputLabel: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginBottom: 5,
+    fontWeight: '500',
+  },
+  lessonInput: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#111827',
+  },
+  lessonNetContainer: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  lessonNet: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+  },
+  taramaLessons: {
+    marginBottom: 10,
+  },
+  taramaLesson: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 0.5,
+  },
+  taramaLessonName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  taramaLessonScore: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+  },
+  notesSection: {
+    marginTop: 10,
+  },
+  notesLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  notesText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  noData: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 5,
   },
   // Links Styles
   linkCard: {
@@ -2160,5 +2926,49 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  headerButton: {
+    backgroundColor: '#3B82F6',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+  },
+  headerButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  fullWidthScrollView: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  fullWidthExamCard: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  scoresSection: {
+    marginBottom: 20,
+  },
+  subjectGroup: {
+    marginBottom: 20,
+  },
+  subjectTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
 }); 
