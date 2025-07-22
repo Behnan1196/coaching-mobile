@@ -37,8 +37,6 @@ const StatisticsScreen: React.FC = () => {
 
     const targetUserId = userProfile?.role === 'student' ? userProfile.id : selectedStudent?.id;
     if (!targetUserId) return;
-
-    console.log('🔄 Setting up real-time subscription for statistics:', targetUserId);
     
     const subscription = supabase
       .channel(`statistics-updates-${targetUserId}`, {
@@ -56,34 +54,16 @@ const StatisticsScreen: React.FC = () => {
           filter: `assigned_to=eq.${targetUserId}`
         },
         (payload: any) => {
-          console.log('📊 Real-time task update for statistics:', payload);
-          console.log('📊 Event type:', payload.eventType);
-          console.log('📊 Payload new:', payload.new);
-          console.log('📊 Payload old:', payload.old);
-          
           if (payload.eventType === 'UPDATE') {
-            // Check if this UPDATE is relevant to current user
             if (payload.new?.assigned_to === targetUserId) {
-              console.log('📝 Task updated - refreshing statistics');
               loadStatistics();
-            } else {
-              console.log('🚫 Task update not relevant to current user, skipping');
             }
           } else if (payload.eventType === 'INSERT') {
-            // Check if this INSERT is relevant to current user
             if (payload.new?.assigned_to === targetUserId) {
-              console.log('➕ Task created - refreshing statistics');
               loadStatistics();
-            } else {
-              console.log('🚫 Task creation not relevant to current user, skipping');
             }
           } else if (payload.eventType === 'DELETE') {
-            // For DELETE events, payload.old often only contains ID
-            // Since we have a filter on this listener, we assume it's relevant
-            console.log('🗑️ Task deleted (filtered listener) - refreshing statistics');
             loadStatistics();
-          } else {
-            console.log('❓ Unknown event type:', payload.eventType);
           }
         }
       )
@@ -96,27 +76,12 @@ const StatisticsScreen: React.FC = () => {
           table: 'tasks'
         },
         (payload: any) => {
-          console.log('🗑️ DELETE event caught (unfiltered):', payload);
-          console.log('🗑️ payload.old?.assigned_to:', payload.old?.assigned_to);
-          console.log('🗑️ targetUserId:', targetUserId);
-          
-          // DELETE events often only contain the ID in payload.old
-          // Since we're already in a user-specific context, refresh statistics for any DELETE
-          console.log('🗑️ Task deleted - refreshing statistics (any DELETE)');
           loadStatistics();
         }
       )
-      .subscribe((status) => {
-        console.log('📊 Statistics subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Statistics real-time subscription active');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Statistics real-time subscription error');
-        }
-      });
+      .subscribe();
 
     return () => {
-      console.log('🧹 Cleaning up statistics real-time subscription');
       if (supabase) {
         supabase.removeChannel(subscription);
       }
