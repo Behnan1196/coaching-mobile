@@ -1393,7 +1393,7 @@ const PomodoroTimerScreen = () => {
   return (
     <View style={styles.tabContent}>
       <View style={styles.pomodoroHeader}>
-        <Text style={styles.tabTitle}>🍅 Pomodoro Timer</Text>
+        <Text style={styles.tabTitle}>🍅 Çalışma Zamanlayıcı</Text>
         <TouchableOpacity
           style={styles.settingsButton}
           onPress={() => setShowSettings(true)}
@@ -1527,7 +1527,7 @@ export const ToolsScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Tools</Text>
+        <Text style={styles.headerTitle}>Araçlar</Text>
       </View>
       <Tab.Navigator
         screenOptions={{
@@ -1551,9 +1551,9 @@ export const ToolsScreen: React.FC = () => {
         }}
       >
         <Tab.Screen name="Profile" component={BilgilerimScreen} options={{ title: 'Bilgilerim' }} />
-        <Tab.Screen name="MockExams" component={MockExamsScreen} options={{ title: 'Mock Exams' }} />
-        <Tab.Screen name="Links" component={UsefulLinksScreen} options={{ title: 'Useful Links' }} />
-        <Tab.Screen name="Pomodoro" component={PomodoroTimerScreen} options={{ title: 'Pomodoro' }} />
+        <Tab.Screen name="MockExams" component={MockExamsScreen} options={{ title: 'Deneme Sınavları' }} />
+        <Tab.Screen name="Links" component={UsefulLinksScreen} options={{ title: 'Yararlı Linkler' }} />
+        <Tab.Screen name="Pomodoro" component={PomodoroTimerScreen} options={{ title: 'Çalışma Zamanlayıcı' }} />
       </Tab.Navigator>
     </View>
   );

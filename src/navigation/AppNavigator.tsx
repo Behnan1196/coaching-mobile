@@ -84,7 +84,7 @@ const MainTabs: React.FC = () => {
           name="Tools"
           component={ToolsScreen}
           options={{
-            title: 'Tools',
+            title: 'Araçlar',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="construct" size={size} color={color} />
             ),
