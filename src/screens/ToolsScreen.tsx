@@ -1191,21 +1191,11 @@ const UsefulLinksScreen = () => {
   const [educationalLinks, setEducationalLinks] = useState<EducationalLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // useEffect must be before conditional logic
   React.useEffect(() => {
     loadEducationalLinks();
   }, []);
-
-  const categories = [
-    { value: 'all', label: 'Tümü' },
-    { value: 'general', label: 'Genel' },
-    { value: 'official', label: 'Resmi' },
-    { value: 'educational', label: 'Eğitim' },
-    { value: 'video', label: 'Video' },
-    { value: 'practice', label: 'Pratik' }
-  ];
 
   const loadEducationalLinks = async () => {
     if (!supabase) return;
@@ -1262,10 +1252,6 @@ const UsefulLinksScreen = () => {
     return colors[color] || colors.blue;
   };
 
-  const filteredLinks = categoryFilter === 'all' 
-    ? educationalLinks 
-    : educationalLinks.filter(link => link.category === categoryFilter);
-
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -1278,33 +1264,12 @@ const UsefulLinksScreen = () => {
     <View style={styles.tabContent}>
       <Text style={styles.tabTitle}>🔗 Yararlı Linkler</Text>
       
-      {/* Category Filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryFilter}>
-        {categories.map(category => (
-          <TouchableOpacity
-            key={category.value}
-            style={[
-              styles.categoryButton,
-              categoryFilter === category.value && styles.categoryButtonActive
-            ]}
-            onPress={() => setCategoryFilter(category.value)}
-          >
-            <Text style={[
-              styles.categoryButtonText,
-              categoryFilter === category.value && styles.categoryButtonTextActive
-            ]}>
-              {category.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
       <ScrollView
         style={styles.scrollView}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefreshLinks} />}
       >
-        {filteredLinks.length > 0 ? (
-          filteredLinks.map((link) => (
+        {educationalLinks.length > 0 ? (
+          educationalLinks.map((link) => (
             <TouchableOpacity
               key={link.id}
               style={styles.linkCard}
@@ -1329,9 +1294,7 @@ const UsefulLinksScreen = () => {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              {categoryFilter === 'all' ? 'Henüz link yok' : 'Bu kategoride link bulunamadı'}
-            </Text>
+            <Text style={styles.emptyStateText}>Henüz link yok</Text>
           </View>
         )}
       </ScrollView>
@@ -1972,26 +1935,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   // Links Styles
-  categoryFilter: {
-    marginBottom: 16,
-  },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f5',
-    marginRight: 8,
-  },
-  categoryButtonActive: {
-    backgroundColor: '#2563eb',
-  },
-  categoryButtonText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  categoryButtonTextActive: {
-    color: 'white',
-  },
   linkCard: {
     backgroundColor: 'white',
     borderRadius: 8,
