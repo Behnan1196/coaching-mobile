@@ -511,11 +511,27 @@ const StatisticsScreen: React.FC = () => {
                           ]}
                         >
                           <Text style={styles.performanceDayText}>
-                            {dayDate.getDate()}
+                            {totalTasks > 0 ? Math.round(completionRate) + '%' : ''}
                           </Text>
                         </View>
                       );
                     })}
+                  </View>
+                  
+                  {/* Legend */}
+                  <View style={styles.performanceLegend}>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendColor, { backgroundColor: '#10B981' }]} />
+                      <Text style={styles.legendText}>Mükemmel (80%+)</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendColor, { backgroundColor: '#F59E0B' }]} />
+                      <Text style={styles.legendText}>İyi (60%+)</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendColor, { backgroundColor: '#F97316' }]} />
+                      <Text style={styles.legendText}>Orta (40%+)</Text>
+                    </View>
                   </View>
                 </>
               )}
@@ -773,6 +789,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: 'white',
+  },
+  performanceLegend: {
+    marginTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    marginRight: 4,
+  },
+  legendText: {
+    fontSize: 11,
+    color: '#F97316',
+    fontWeight: '500',
   },
 });
 
