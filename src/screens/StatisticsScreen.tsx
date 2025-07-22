@@ -23,6 +23,7 @@ const StatisticsScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showMonthlyStats, setShowMonthlyStats] = useState(false);
   const [weeklyTasks, setWeeklyTasks] = useState<Task[]>([]);
+  const [monthlyTasks, setMonthlyTasks] = useState<Task[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
 
   useEffect(() => {
@@ -123,6 +124,23 @@ const StatisticsScreen: React.FC = () => {
       if (error) throw error;
 
       setWeeklyTasks(tasks || []);
+
+      // Also load monthly tasks for monthly statistics
+      const currentMonthStart = new Date(currentWeek);
+      currentMonthStart.setDate(1);
+      const currentMonthEnd = new Date(currentMonthStart);
+      currentMonthEnd.setMonth(currentMonthStart.getMonth() + 1);
+      currentMonthEnd.setDate(0);
+
+      const { data: monthlyTasksData } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('assigned_to', targetUserId)
+        .gte('scheduled_date', formatDateForDB(currentMonthStart))
+        .lte('scheduled_date', formatDateForDB(currentMonthEnd))
+        .order('scheduled_date');
+
+      setMonthlyTasks(monthlyTasksData || []);
     } catch (error) {
       console.error('Error loading statistics:', error);
       Alert.alert('Hata', 'İstatistikler yüklenirken bir hata oluştu');
@@ -182,21 +200,10 @@ const StatisticsScreen: React.FC = () => {
   };
 
   const calculateMonthlyStats = () => {
-    if (!weeklyTasks.length || !subjects.length) return [];
-
-    const monthStart = new Date(currentWeek);
-    monthStart.setDate(1);
-    const monthEnd = new Date(monthStart);
-    monthEnd.setMonth(monthStart.getMonth() + 1);
-    monthEnd.setDate(0);
-
-    const monthTasks = weeklyTasks.filter(task => {
-      const taskDate = new Date(task.scheduled_date || '');
-      return taskDate >= monthStart && taskDate <= monthEnd && task.status === 'completed';
-    });
+    if (!monthlyTasks.length || !subjects.length) return [];
 
     return subjects.map(subject => {
-      const subjectTasks = monthTasks.filter(task => task.subject_id === subject.id);
+      const subjectTasks = monthlyTasks.filter(task => task.subject_id === subject.id && task.status === 'completed');
       const totalProblems = subjectTasks.reduce((sum, task) => sum + (task.problem_count || 0), 0);
       return {
         subject: subject.name,
@@ -470,12 +477,28 @@ const StatisticsScreen: React.FC = () => {
                               { backgroundColor: bgColor }
                             ]}
                           >
-                                                      <Text style={[styles.performanceDayText, { fontSize: 8, textAlign: 'center' }]}>
-                            {date.getDate()}
-                          </Text>
-                          {totalTasks > 0 && (
-                            <Text style={[styles.performanceDayText, { fontSize: 6, textAlign: 'center', marginTop: 1 }]}>
+                                                      {/* Tasks completion ratio in center (bigger) */}
+                          {totalTasks > 0 ? (
+                            <Text style={[styles.performanceDayText, { fontSize: 9, textAlign: 'center', fontWeight: 'bold' }]}>
                               {completedTasks}/{totalTasks}
+                            </Text>
+                          ) : (
+                            <Text style={[styles.performanceDayText, { fontSize: 8, textAlign: 'center' }]}>
+                              {date.getDate()}
+                            </Text>
+                          )}
+                          
+                          {/* Day number in bottom right (smaller) */}
+                          {totalTasks > 0 && (
+                            <Text style={{
+                              position: 'absolute',
+                              bottom: 2,
+                              right: 2,
+                              fontSize: 6,
+                              color: 'white',
+                              fontWeight: '600',
+                            }}>
+                              {date.getDate()}
                             </Text>
                           )}
                           </View>
@@ -525,12 +548,28 @@ const StatisticsScreen: React.FC = () => {
                             { backgroundColor: bgColor }
                           ]}
                         >
-                          <Text style={[styles.performanceDayText, { fontSize: 8, textAlign: 'center' }]}>
-                            {dayDate.getDate()}
-                          </Text>
-                          {totalTasks > 0 && (
-                            <Text style={[styles.performanceDayText, { fontSize: 6, textAlign: 'center', marginTop: 1 }]}>
+                          {/* Tasks completion ratio in center (bigger) */}
+                          {totalTasks > 0 ? (
+                            <Text style={[styles.performanceDayText, { fontSize: 9, textAlign: 'center', fontWeight: 'bold' }]}>
                               {completedTasks}/{totalTasks}
+                            </Text>
+                          ) : (
+                            <Text style={[styles.performanceDayText, { fontSize: 8, textAlign: 'center' }]}>
+                              {dayDate.getDate()}
+                            </Text>
+                          )}
+                          
+                          {/* Day number in bottom right (smaller) */}
+                          {totalTasks > 0 && (
+                            <Text style={{
+                              position: 'absolute',
+                              bottom: 2,
+                              right: 2,
+                              fontSize: 6,
+                              color: 'white',
+                              fontWeight: '600',
+                            }}>
+                              {dayDate.getDate()}
                             </Text>
                           )}
                         </View>
@@ -788,6 +827,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   performanceDayText: {
     fontSize: 10,
