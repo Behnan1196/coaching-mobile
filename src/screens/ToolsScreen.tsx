@@ -1198,11 +1198,29 @@ const MockExamsScreen = () => {
             <View key={result.id} style={styles.fullWidthExamCard}>
               <View style={styles.examHeader}>
                 <View style={styles.examInfo}>
-                  <Text style={styles.examName}>{result.exam_name}</Text>
-                  <Text style={styles.examDate}>
-                    {new Date(result.exam_date).toLocaleDateString('tr-TR')} • {result.exam_type}
-                    {result.exam_duration && ` • ${result.exam_duration} dk`}
-                  </Text>
+                  <View style={styles.examInfoRow}>
+                    <View style={[
+                      styles.examTypeTag,
+                      result.exam_type === 'TYT' ? styles.tytTag :
+                      result.exam_type === 'AYT' ? styles.aytTag :
+                      styles.taramaTag
+                    ]}>
+                      <Text style={[
+                        styles.examTypeTagText,
+                        result.exam_type === 'TYT' ? styles.tytTagText :
+                        result.exam_type === 'AYT' ? styles.aytTagText :
+                        styles.taramaTagText
+                      ]}>
+                        {result.exam_type}
+                      </Text>
+                    </View>
+                    {result.exam_name && (
+                      <Text style={styles.examName}>{result.exam_name}</Text>
+                    )}
+                    <Text style={styles.examDate}>
+                      {new Date(result.exam_date).toLocaleDateString('tr-TR')}
+                    </Text>
+                  </View>
                 </View>
                 <View style={styles.examActions}>
                   <TouchableOpacity
@@ -1223,7 +1241,6 @@ const MockExamsScreen = () => {
               <View style={styles.examScores}>
                 {result.exam_type === 'TYT' && (
                   <>
-                    <Text style={styles.scoreTitle}>TYT Sonuçları</Text>
                     <View style={styles.scoreGrid}>
                       <View style={styles.scoreItem}>
                         <Text style={styles.scoreLabel}>Türkçe</Text>
@@ -1261,7 +1278,6 @@ const MockExamsScreen = () => {
                 
                 {result.exam_type === 'AYT' && (
                   <>
-                    <Text style={styles.scoreTitle}>AYT Sonuçları</Text>
                     <View style={styles.scoreGrid}>
                       <View style={styles.scoreItem}>
                         <Text style={styles.scoreLabel}>Matematik</Text>
@@ -1287,7 +1303,6 @@ const MockExamsScreen = () => {
 
                 {result.exam_type === 'Tarama' && (
                   <>
-                    <Text style={styles.scoreTitle}>Tarama Sonuçları</Text>
                     {result.tarama_lessons && result.tarama_lessons.length > 0 ? (
                       <>
                         <View style={styles.taramaLessons}>
@@ -2473,6 +2488,39 @@ const styles = StyleSheet.create({
   },
   examInfo: {
     flex: 1,
+  },
+  examInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  examTypeTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  tytTag: {
+    backgroundColor: '#DBEAFE',
+  },
+  aytTag: {
+    backgroundColor: '#E9D5FF',
+  },
+  taramaTag: {
+    backgroundColor: '#D1FAE5',
+  },
+  examTypeTagText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tytTagText: {
+    color: '#1E40AF',
+  },
+  aytTagText: {
+    color: '#7C3AED',
+  },
+  taramaTagText: {
+    color: '#065F46',
   },
   examActions: {
     flexDirection: 'row',
