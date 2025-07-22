@@ -55,12 +55,48 @@ const StatisticsScreen: React.FC = () => {
           table: 'tasks',
           filter: `assigned_to=eq.${targetUserId}`
         },
-        (payload) => {
+        (payload: any) => {
           console.log('📊 Real-time task update for statistics:', payload);
+          console.log('📊 Event type:', payload.eventType);
+          console.log('📊 Payload new:', payload.new);
+          console.log('📊 Payload old:', payload.old);
           
-          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-            console.log('📈 Refreshing statistics due to task change');
-            // Reload statistics when tasks change
+          // Check if this task is relevant to current user
+          const isRelevantTask = 
+            (payload.eventType === 'DELETE' && payload.old?.assigned_to === targetUserId) ||
+            (payload.eventType !== 'DELETE' && payload.new?.assigned_to === targetUserId);
+          
+          if (!isRelevantTask) {
+            console.log('🚫 Task not relevant to current user, skipping');
+            return;
+          }
+          
+          if (payload.eventType === 'UPDATE') {
+            console.log('📝 Task updated - refreshing statistics');
+            loadStatistics();
+          } else if (payload.eventType === 'INSERT') {
+            console.log('➕ Task created - refreshing statistics');
+            loadStatistics();
+          } else if (payload.eventType === 'DELETE') {
+            console.log('🗑️ Task deleted - refreshing statistics');
+            loadStatistics();
+          } else {
+            console.log('❓ Unknown event type:', payload.eventType);
+          }
+        }
+      )
+      // Also listen to DELETE events specifically without filter to catch them
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'tasks'
+        },
+        (payload: any) => {
+          console.log('🗑️ DELETE event caught (unfiltered):', payload);
+          if (payload.old?.assigned_to === targetUserId) {
+            console.log('🗑️ Relevant DELETE event - refreshing statistics');
             loadStatistics();
           }
         }
