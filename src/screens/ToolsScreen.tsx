@@ -1261,13 +1261,15 @@ const UsefulLinksScreen = () => {
   }
 
   return (
-    <View style={styles.tabContent}>
-      <Text style={styles.tabTitle}>🔗 Yararlı Linkler</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>🔗 Yararlı Linkler</Text>
+      </View>
       
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefreshLinks} />}
-      >
+              <ScrollView
+          style={styles.scrollView}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefreshLinks} />}
+        >
         {educationalLinks.length > 0 ? (
           educationalLinks.map((link) => (
             <TouchableOpacity
@@ -1937,26 +1939,29 @@ const styles = StyleSheet.create({
   // Links Styles
   linkCard: {
     backgroundColor: 'white',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     marginVertical: 8,
+    marginHorizontal: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   linkHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   linkIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 0,
   },
   linkIconText: {
     color: 'white',
@@ -1965,27 +1970,35 @@ const styles = StyleSheet.create({
   },
   linkContent: {
     flex: 1,
+    marginLeft: 12,
   },
   linkTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 6,
   },
   linkDescription: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    color: '#6B7280',
+    marginBottom: 6,
+    lineHeight: 20,
   },
   linkCategory: {
     fontSize: 12,
-    color: '#999',
+    color: '#9CA3AF',
     textTransform: 'capitalize',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
   },
   linkArrow: {
-    fontSize: 18,
-    color: '#2563eb',
-    marginLeft: 12,
+    fontSize: 20,
+    color: '#3B82F6',
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
   // Pomodoro Timer Styles
   pomodoroHeader: {
