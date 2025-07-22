@@ -61,24 +61,26 @@ const StatisticsScreen: React.FC = () => {
           console.log('📊 Payload new:', payload.new);
           console.log('📊 Payload old:', payload.old);
           
-          // Check if this task is relevant to current user
-          const isRelevantTask = 
-            (payload.eventType === 'DELETE' && payload.old?.assigned_to === targetUserId) ||
-            (payload.eventType !== 'DELETE' && payload.new?.assigned_to === targetUserId);
-          
-          if (!isRelevantTask) {
-            console.log('🚫 Task not relevant to current user, skipping');
-            return;
-          }
-          
           if (payload.eventType === 'UPDATE') {
-            console.log('📝 Task updated - refreshing statistics');
-            loadStatistics();
+            // Check if this UPDATE is relevant to current user
+            if (payload.new?.assigned_to === targetUserId) {
+              console.log('📝 Task updated - refreshing statistics');
+              loadStatistics();
+            } else {
+              console.log('🚫 Task update not relevant to current user, skipping');
+            }
           } else if (payload.eventType === 'INSERT') {
-            console.log('➕ Task created - refreshing statistics');
-            loadStatistics();
+            // Check if this INSERT is relevant to current user
+            if (payload.new?.assigned_to === targetUserId) {
+              console.log('➕ Task created - refreshing statistics');
+              loadStatistics();
+            } else {
+              console.log('🚫 Task creation not relevant to current user, skipping');
+            }
           } else if (payload.eventType === 'DELETE') {
-            console.log('🗑️ Task deleted - refreshing statistics');
+            // For DELETE events, payload.old often only contains ID
+            // Since we have a filter on this listener, we assume it's relevant
+            console.log('🗑️ Task deleted (filtered listener) - refreshing statistics');
             loadStatistics();
           } else {
             console.log('❓ Unknown event type:', payload.eventType);
@@ -95,10 +97,13 @@ const StatisticsScreen: React.FC = () => {
         },
         (payload: any) => {
           console.log('🗑️ DELETE event caught (unfiltered):', payload);
-          if (payload.old?.assigned_to === targetUserId) {
-            console.log('🗑️ Relevant DELETE event - refreshing statistics');
-            loadStatistics();
-          }
+          console.log('🗑️ payload.old?.assigned_to:', payload.old?.assigned_to);
+          console.log('🗑️ targetUserId:', targetUserId);
+          
+          // DELETE events often only contain the ID in payload.old
+          // Since we're already in a user-specific context, refresh statistics for any DELETE
+          console.log('🗑️ Task deleted - refreshing statistics (any DELETE)');
+          loadStatistics();
         }
       )
       .subscribe((status) => {
