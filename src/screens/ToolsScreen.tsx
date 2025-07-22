@@ -27,28 +27,7 @@ const BilgilerimScreen = () => {
   const { user, userProfile } = useAuth();
   const { selectedStudent } = useCoachStudent();
   
-  // Early return if supabase is not available
-  if (!supabase) {
-    return (
-      <View style={styles.centered}>
-        <Text>Veritabanı bağlantısı yapılandırılmamış</Text>
-      </View>
-    );
-  }
-
-  // Determine which student profile to work with
-  const targetStudent = userProfile?.role === 'coach' ? selectedStudent : userProfile;
-
-  // Show message if coach hasn't selected a student
-  if (userProfile?.role === 'coach' && !selectedStudent) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.noStudentText}>
-          Lütfen önce bir öğrenci seçin
-        </Text>
-      </View>
-    );
-  }
+  // All hooks must be called before any conditional logic
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +61,29 @@ const BilgilerimScreen = () => {
     address: '',
     notes: ''
   });
+
+  // Early return if supabase is not available
+  if (!supabase) {
+    return (
+      <View style={styles.centered}>
+        <Text>Veritabanı bağlantısı yapılandırılmamış</Text>
+      </View>
+    );
+  }
+
+  // Determine which student profile to work with
+  const targetStudent = userProfile?.role === 'coach' ? selectedStudent : userProfile;
+
+  // Show message if coach hasn't selected a student
+  if (userProfile?.role === 'coach' && !selectedStudent) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.noStudentText}>
+          Lütfen önce bir öğrenci seçin
+        </Text>
+      </View>
+    );
+  }
 
   useEffect(() => {
     if (targetStudent) {
@@ -699,8 +701,8 @@ const BilgilerimScreen = () => {
 const MockExamsScreen = () => {
   const { user, userProfile } = useAuth();
   const { selectedStudent } = useCoachStudent();
-  const targetStudent = userProfile?.role === 'coach' ? selectedStudent : userProfile;
-
+  
+  // All hooks must be called before any conditional logic
   const [mockExamResults, setMockExamResults] = useState<MockExamResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -740,14 +742,18 @@ const MockExamsScreen = () => {
     notes: ''
   });
 
-  if (userProfile?.role === 'coach' && !selectedStudent) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.noStudentText}>Lütfen önce bir öğrenci seçin</Text>
-      </View>
-    );
-  }
+  // useEffect hook must be before conditional logic
+  React.useEffect(() => {
+    const targetStudent = userProfile?.role === 'coach' ? selectedStudent : userProfile;
+    if (targetStudent) {
+      loadMockExamResults();
+    }
+  }, [userProfile, selectedStudent]);
 
+  // Define targetStudent after all hooks
+  const targetStudent = userProfile?.role === 'coach' ? selectedStudent : userProfile;
+
+  // Define functions after hooks
   const loadMockExamResults = async () => {
     if (!targetStudent?.id || !supabase) return;
     
@@ -778,11 +784,14 @@ const MockExamsScreen = () => {
     setRefreshing(false);
   };
 
-  React.useEffect(() => {
-    if (targetStudent) {
-      loadMockExamResults();
-    }
-  }, [targetStudent]);
+  // Conditional rendering after hooks
+  if (userProfile?.role === 'coach' && !selectedStudent) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.noStudentText}>Lütfen önce bir öğrenci seçin</Text>
+      </View>
+    );
+  }
 
   const openExamModal = () => {
     setEditingExam(null);
@@ -1178,10 +1187,16 @@ const MockExamsScreen = () => {
 
 // Useful Links Screen Implementation
 const UsefulLinksScreen = () => {
+  // All hooks must be called before any conditional logic
   const [educationalLinks, setEducationalLinks] = useState<EducationalLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+  // useEffect must be before conditional logic
+  React.useEffect(() => {
+    loadEducationalLinks();
+  }, []);
 
   const categories = [
     { value: 'all', label: 'Tümü' },
@@ -1220,10 +1235,6 @@ const UsefulLinksScreen = () => {
     await loadEducationalLinks();
     setRefreshing(false);
   };
-
-  React.useEffect(() => {
-    loadEducationalLinks();
-  }, []);
 
   const openLink = async (url: string) => {
     try {
@@ -1330,6 +1341,7 @@ const UsefulLinksScreen = () => {
 
 // Pomodoro Timer Screen Implementation
 const PomodoroTimerScreen = () => {
+  // All hooks must be called before any conditional logic
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
   const [isRunning, setIsRunning] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
