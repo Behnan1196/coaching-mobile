@@ -1170,11 +1170,9 @@ const MockExamsScreen = () => {
     <View style={styles.tabContent}>
       <View style={styles.headerRow}>
         <Text style={styles.tabTitle}>📊 Sınav Sonuçları</Text>
-        {userProfile?.role === 'coach' && (
-          <TouchableOpacity style={styles.headerButton} onPress={openExamModal}>
-            <Text style={styles.headerButtonText}>+ Sınav Ekle</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.headerButton} onPress={openExamModal}>
+          <Text style={styles.headerButtonText}>+ Sınav Ekle</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -1192,22 +1190,20 @@ const MockExamsScreen = () => {
                     {result.exam_duration && ` • ${result.exam_duration} dk`}
                   </Text>
                 </View>
-                {userProfile?.role === 'coach' && (
-                  <View style={styles.examActions}>
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={() => openEditExamModal(result)}
-                    >
-                      <Text style={styles.editButtonText}>Düzenle</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => deleteExamResult(result)}
-                    >
-                      <Text style={styles.deleteButtonText}>Sil</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
+                <View style={styles.examActions}>
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => openEditExamModal(result)}
+                  >
+                    <Text style={styles.editButtonText}>Düzenle</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deleteExamResult(result)}
+                  >
+                    <Text style={styles.deleteButtonText}>Sil</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
               
               <View style={styles.examScores}>
@@ -2946,29 +2942,17 @@ const styles = StyleSheet.create({
   },
   fullWidthScrollView: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
   },
   fullWidthExamCard: {
     backgroundColor: 'white',
     borderRadius: 8,
     padding: 16,
-    marginVertical: 8,
+    marginHorizontal: 16,
+    marginVertical: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-  },
-  scoresSection: {
-    marginBottom: 20,
-  },
-  subjectGroup: {
-    marginBottom: 20,
-  },
-  subjectTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
   },
 }); 
