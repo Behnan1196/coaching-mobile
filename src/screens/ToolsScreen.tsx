@@ -1366,6 +1366,83 @@ const MockExamsScreen = () => {
             )}
           </View>
         )}
+
+        {/* Exam Statistics Section */}
+        {mockExamResults.length > 0 && (
+          <View style={styles.statisticsSection}>
+            <Text style={styles.statisticsTitle}>📊 Sınav İstatistikleri</Text>
+            <View style={styles.statisticsContainer}>
+              {/* TYT Average */}
+              <View style={[styles.statisticsCard, styles.tytStatisticsCard]}>
+                <Text style={[styles.statisticsAverage, styles.tytStatisticsText]}>
+                  {mockExamResults.filter(r => r.exam_type === 'TYT').length > 0 
+                    ? (mockExamResults
+                        .filter(r => r.exam_type === 'TYT')
+                        .reduce((acc, r) => acc + 
+                          ((r.tyt_turkce_correct || 0) - (r.tyt_turkce_wrong || 0) / 4 +
+                           (r.tyt_matematik_correct || 0) - (r.tyt_matematik_wrong || 0) / 4 +
+                           (r.tyt_geometri_correct || 0) - (r.tyt_geometri_wrong || 0) / 4 +
+                           (r.tyt_tarih_correct || 0) - (r.tyt_tarih_wrong || 0) / 4 +
+                           (r.tyt_cografya_correct || 0) - (r.tyt_cografya_wrong || 0) / 4 +
+                           (r.tyt_felsefe_correct || 0) - (r.tyt_felsefe_wrong || 0) / 4 +
+                           (r.tyt_din_correct || 0) - (r.tyt_din_wrong || 0) / 4 +
+                           (r.tyt_fizik_correct || 0) - (r.tyt_fizik_wrong || 0) / 4 +
+                           (r.tyt_kimya_correct || 0) - (r.tyt_kimya_wrong || 0) / 4 +
+                           (r.tyt_biyoloji_correct || 0) - (r.tyt_biyoloji_wrong || 0) / 4)
+                        , 0) / 
+                        mockExamResults.filter(r => r.exam_type === 'TYT').length
+                      ).toFixed(2)
+                    : '0.00'
+                  }
+                </Text>
+                <Text style={[styles.statisticsLabel, styles.tytStatisticsLabel]}>TYT Ortalama Net</Text>
+                <Text style={[styles.statisticsCount, styles.tytStatisticsCount]}>
+                  {mockExamResults.filter(r => r.exam_type === 'TYT').length} sınav
+                </Text>
+              </View>
+
+              {/* AYT Average */}
+              <View style={[styles.statisticsCard, styles.aytStatisticsCard]}>
+                <Text style={[styles.statisticsAverage, styles.aytStatisticsText]}>
+                  {mockExamResults.filter(r => r.exam_type === 'AYT').length > 0 
+                    ? (mockExamResults
+                        .filter(r => r.exam_type === 'AYT')
+                        .reduce((acc, r) => acc + 
+                          ((r.ayt_matematik_correct || 0) - (r.ayt_matematik_wrong || 0) / 4 +
+                           (r.ayt_geometri_correct || 0) - (r.ayt_geometri_wrong || 0) / 4)
+                        , 0) / 
+                        mockExamResults.filter(r => r.exam_type === 'AYT').length
+                      ).toFixed(2)
+                    : '0.00'
+                  }
+                </Text>
+                <Text style={[styles.statisticsLabel, styles.aytStatisticsLabel]}>AYT Ortalama Net</Text>
+                <Text style={[styles.statisticsCount, styles.aytStatisticsCount]}>
+                  {mockExamResults.filter(r => r.exam_type === 'AYT').length} sınav
+                </Text>
+              </View>
+
+              {/* Tarama Average */}
+              <View style={[styles.statisticsCard, styles.taramaStatisticsCard]}>
+                <Text style={[styles.statisticsAverage, styles.taramaStatisticsText]}>
+                  {mockExamResults.filter(r => r.exam_type === 'Tarama').length > 0 
+                    ? (mockExamResults
+                        .filter(r => r.exam_type === 'Tarama')
+                        .reduce((acc, r) => acc + (r.tarama_lessons?.reduce((sum: number, lesson: any) => 
+                          sum + ((lesson.correct || 0) - (lesson.wrong || 0) / 4), 0) || 0), 0) / 
+                        mockExamResults.filter(r => r.exam_type === 'Tarama').length
+                      ).toFixed(2)
+                    : '0.00'
+                  }
+                </Text>
+                <Text style={[styles.statisticsLabel, styles.taramaStatisticsLabel]}>Tarama Ortalama Net</Text>
+                <Text style={[styles.statisticsCount, styles.taramaStatisticsCount]}>
+                  {mockExamResults.filter(r => r.exam_type === 'Tarama').length} sınav
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* Exam Modal */}
@@ -3116,5 +3193,86 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+  // Statistics Section Styles
+  statisticsSection: {
+    marginHorizontal: 16,
+    marginVertical: 20,
+  },
+  statisticsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  statisticsContainer: {
+    flexDirection: 'column',
+    gap: 12,
+  },
+  statisticsCard: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tytStatisticsCard: {
+    backgroundColor: '#EFF6FF', // blue-50 to cyan-50 gradient equivalent
+    borderWidth: 1,
+    borderColor: '#DBEAFE', // blue-200
+  },
+  aytStatisticsCard: {
+    backgroundColor: '#FAF5FF', // purple-50 to pink-50 gradient equivalent
+    borderWidth: 1,
+    borderColor: '#E9D5FF', // purple-200
+  },
+  taramaStatisticsCard: {
+    backgroundColor: '#ECFDF5', // green-50 to emerald-50 gradient equivalent
+    borderWidth: 1,
+    borderColor: '#BBF7D0', // green-200
+  },
+  statisticsAverage: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  tytStatisticsText: {
+    color: '#1D4ED8', // blue-700
+  },
+  aytStatisticsText: {
+    color: '#7C3AED', // purple-700
+  },
+  taramaStatisticsText: {
+    color: '#059669', // green-700
+  },
+  statisticsLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  tytStatisticsLabel: {
+    color: '#1E40AF', // blue-800
+  },
+  aytStatisticsLabel: {
+    color: '#6B21A8', // purple-800
+  },
+  taramaStatisticsLabel: {
+    color: '#065F46', // green-800
+  },
+  statisticsCount: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  tytStatisticsCount: {
+    color: '#2563EB', // blue-600
+  },
+  aytStatisticsCount: {
+    color: '#9333EA', // purple-600
+  },
+  taramaStatisticsCount: {
+    color: '#059669', // green-600
   },
 }); 
