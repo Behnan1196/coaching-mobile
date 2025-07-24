@@ -1488,12 +1488,12 @@ const MockExamsScreen = () => {
                             Net: {calculateNet(
                               examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
                               examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
-                            ).toFixed(1)}
+                            ).toFixed(2)}
                           </Text>
                         </View>
                       ))}
                       <Text style={styles.groupTotal}>
-                        Türkçe Net: {calculateTYTTotals().turkce.toFixed(1)}
+                        Türkçe Net: {calculateTYTTotals().turkce.toFixed(2)}
                       </Text>
                     </View>
                     
@@ -1532,12 +1532,12 @@ const MockExamsScreen = () => {
                             Net: {calculateNet(
                               examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
                               examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
-                            ).toFixed(1)}
+                            ).toFixed(2)}
                           </Text>
                         </View>
                       ))}
                       <Text style={styles.groupTotal}>
-                        Matematik Net: {calculateTYTTotals().matematik.toFixed(1)}
+                        Matematik Net: {calculateTYTTotals().matematik.toFixed(2)}
                       </Text>
                     </View>
 
@@ -1578,12 +1578,12 @@ const MockExamsScreen = () => {
                             Net: {calculateNet(
                               examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
                               examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
-                            ).toFixed(1)}
+                            ).toFixed(2)}
                           </Text>
                         </View>
                       ))}
                       <Text style={styles.groupTotal}>
-                        Sosyal Net: {calculateTYTTotals().sosyal.toFixed(1)}
+                        Sosyal Net: {calculateTYTTotals().sosyal.toFixed(2)}
                       </Text>
                     </View>
 
@@ -1623,19 +1623,19 @@ const MockExamsScreen = () => {
                             Net: {calculateNet(
                               examForm[`tyt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
                               examForm[`tyt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
-                            ).toFixed(1)}
+                            ).toFixed(2)}
                           </Text>
                         </View>
                       ))}
                       <Text style={styles.groupTotal}>
-                        Fen Net: {calculateTYTTotals().fen.toFixed(1)}
+                        Fen Net: {calculateTYTTotals().fen.toFixed(2)}
                       </Text>
                     </View>
 
                     {/* TYT Overall Total */}
                     <View style={styles.totalSection}>
                       <Text style={styles.overallTotal}>
-                        TYT TOPLAM NET: {calculateTYTTotals().overall.toFixed(1)}
+                        TYT TOPLAM NET: {calculateTYTTotals().overall.toFixed(2)}
                       </Text>
                     </View>
                   </View>
@@ -1677,7 +1677,7 @@ const MockExamsScreen = () => {
                           Net: {calculateNet(
                             examForm[`ayt_${subject.key}_correct` as keyof typeof examForm] as number || 0,
                             examForm[`ayt_${subject.key}_wrong` as keyof typeof examForm] as number || 0
-                          ).toFixed(1)}
+                          ).toFixed(2)}
                         </Text>
                       </View>
                     ))}
@@ -1685,7 +1685,7 @@ const MockExamsScreen = () => {
                     {/* AYT Total */}
                     <View style={styles.totalSection}>
                       <Text style={styles.overallTotal}>
-                        AYT TOPLAM NET: {calculateAYTTotal().toFixed(1)}
+                        AYT TOPLAM NET: {calculateAYTTotal().toFixed(2)}
                       </Text>
                     </View>
                   </View>
@@ -1797,7 +1797,7 @@ const MockExamsScreen = () => {
                               </View>
                               <View style={styles.lessonNetContainer}>
                                 <Text style={styles.lessonNet}>
-                                  Net: {calculateNet(lesson.correct, lesson.wrong).toFixed(1)}
+                                  Net: {calculateNet(lesson.correct, lesson.wrong).toFixed(2)}
                                 </Text>
                               </View>
                             </View>
@@ -1810,7 +1810,7 @@ const MockExamsScreen = () => {
                     {examForm.tarama_lessons.length > 0 && (
                       <View style={styles.totalSection}>
                         <Text style={styles.overallTotal}>
-                          TARAMA TOPLAM NET: {calculateTaramaTotal().toFixed(1)}
+                          TARAMA TOPLAM NET: {calculateTaramaTotal().toFixed(2)}
                         </Text>
                       </View>
                     )}
