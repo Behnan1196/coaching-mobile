@@ -1245,32 +1245,47 @@ const MockExamsScreen = () => {
                       <View style={styles.scoreItem}>
                         <Text style={styles.scoreLabel}>Türkçe</Text>
                         <Text style={styles.scoreValue}>
-                          {result.tyt_turkce_net?.toFixed(1) || '0.0'}
+                          {((result.tyt_turkce_correct || 0) - (result.tyt_turkce_wrong || 0) / 4).toFixed(2)}
                         </Text>
                       </View>
                       <View style={styles.scoreItem}>
                         <Text style={styles.scoreLabel}>Matematik</Text>
                         <Text style={styles.scoreValue}>
-                          {result.tyt_matematik_total_net?.toFixed(1) || '0.0'}
+                          {(((result.tyt_matematik_correct || 0) - (result.tyt_matematik_wrong || 0) / 4) + 
+                            ((result.tyt_geometri_correct || 0) - (result.tyt_geometri_wrong || 0) / 4)).toFixed(2)}
                         </Text>
                       </View>
                       <View style={styles.scoreItem}>
                         <Text style={styles.scoreLabel}>Sosyal</Text>
                         <Text style={styles.scoreValue}>
-                          {result.tyt_sosyal_total_net?.toFixed(1) || '0.0'}
+                          {(((result.tyt_tarih_correct || 0) - (result.tyt_tarih_wrong || 0) / 4) + 
+                            ((result.tyt_cografya_correct || 0) - (result.tyt_cografya_wrong || 0) / 4) + 
+                            ((result.tyt_felsefe_correct || 0) - (result.tyt_felsefe_wrong || 0) / 4) + 
+                            ((result.tyt_din_correct || 0) - (result.tyt_din_wrong || 0) / 4)).toFixed(2)}
                         </Text>
                       </View>
                       <View style={styles.scoreItem}>
                         <Text style={styles.scoreLabel}>Fen</Text>
                         <Text style={styles.scoreValue}>
-                          {result.tyt_fen_total_net?.toFixed(1) || '0.0'}
+                          {(((result.tyt_fizik_correct || 0) - (result.tyt_fizik_wrong || 0) / 4) + 
+                            ((result.tyt_kimya_correct || 0) - (result.tyt_kimya_wrong || 0) / 4) + 
+                            ((result.tyt_biyoloji_correct || 0) - (result.tyt_biyoloji_wrong || 0) / 4)).toFixed(2)}
                         </Text>
                       </View>
                     </View>
                     <View style={styles.totalScore}>
                       <Text style={styles.totalLabel}>Toplam Net:</Text>
                       <Text style={styles.totalValue}>
-                        {result.tyt_total_net?.toFixed(1) || '0.0'}
+                        {((result.tyt_turkce_correct || 0) - (result.tyt_turkce_wrong || 0) / 4 +
+                          (result.tyt_matematik_correct || 0) - (result.tyt_matematik_wrong || 0) / 4 +
+                          (result.tyt_geometri_correct || 0) - (result.tyt_geometri_wrong || 0) / 4 +
+                          (result.tyt_tarih_correct || 0) - (result.tyt_tarih_wrong || 0) / 4 +
+                          (result.tyt_cografya_correct || 0) - (result.tyt_cografya_wrong || 0) / 4 +
+                          (result.tyt_felsefe_correct || 0) - (result.tyt_felsefe_wrong || 0) / 4 +
+                          (result.tyt_din_correct || 0) - (result.tyt_din_wrong || 0) / 4 +
+                          (result.tyt_fizik_correct || 0) - (result.tyt_fizik_wrong || 0) / 4 +
+                          (result.tyt_kimya_correct || 0) - (result.tyt_kimya_wrong || 0) / 4 +
+                          (result.tyt_biyoloji_correct || 0) - (result.tyt_biyoloji_wrong || 0) / 4).toFixed(2)}
                       </Text>
                     </View>
                   </>
@@ -1282,20 +1297,21 @@ const MockExamsScreen = () => {
                       <View style={styles.scoreItem}>
                         <Text style={styles.scoreLabel}>Matematik</Text>
                         <Text style={styles.scoreValue}>
-                          {result.ayt_matematik_net?.toFixed(1) || '0.0'}
+                          {((result.ayt_matematik_correct || 0) - (result.ayt_matematik_wrong || 0) / 4).toFixed(2)}
                         </Text>
                       </View>
                       <View style={styles.scoreItem}>
                         <Text style={styles.scoreLabel}>Geometri</Text>
                         <Text style={styles.scoreValue}>
-                          {result.ayt_geometri_net?.toFixed(1) || '0.0'}
+                          {((result.ayt_geometri_correct || 0) - (result.ayt_geometri_wrong || 0) / 4).toFixed(2)}
                         </Text>
                       </View>
                     </View>
                     <View style={styles.totalScore}>
                       <Text style={styles.totalLabel}>Toplam Net:</Text>
                       <Text style={styles.totalValue}>
-                        {result.ayt_total_net?.toFixed(1) || '0.0'}
+                        {((result.ayt_matematik_correct || 0) - (result.ayt_matematik_wrong || 0) / 4 +
+                          (result.ayt_geometri_correct || 0) - (result.ayt_geometri_wrong || 0) / 4).toFixed(2)}
                       </Text>
                     </View>
                   </>
@@ -1312,7 +1328,7 @@ const MockExamsScreen = () => {
                                 {lesson.subject} ({lesson.question_count} soru)
                               </Text>
                               <Text style={styles.taramaLessonScore}>
-                                {lesson.correct}D / {lesson.wrong}Y • Net: {lesson.net?.toFixed(1) || '0.0'}
+                                {lesson.correct}D / {lesson.wrong}Y • Net: {((lesson.correct || 0) - (lesson.wrong || 0) / 4).toFixed(2)}
                               </Text>
                             </View>
                           ))}
@@ -1320,7 +1336,8 @@ const MockExamsScreen = () => {
                         <View style={styles.totalScore}>
                           <Text style={styles.totalLabel}>Toplam Net:</Text>
                           <Text style={styles.totalValue}>
-                            {result.tarama_total_net?.toFixed(1) || '0.0'}
+                            {(result.tarama_lessons?.reduce((sum: number, lesson: any) => 
+                              sum + ((lesson.correct || 0) - (lesson.wrong || 0) / 4), 0) || 0).toFixed(2)}
                           </Text>
                         </View>
                       </>
