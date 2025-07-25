@@ -114,19 +114,7 @@ Notifications.setNotificationHandler({
     if (Platform.OS === 'ios') {
       console.log('📱 [NOTIFICATION-HANDLER] iOS - handling foreground notification');
       
-      // For video call invites on iOS, show with high priority
-      if (data?.type === 'video_call_invite' || data?.type === 'incoming_call') {
-        console.log('📱 [iOS] Video call notification - showing with sound and alert');
-        return {
-          shouldShowAlert: true,   // Show alert banner
-          shouldPlaySound: true,   // Play sound
-          shouldSetBadge: true,    // Set badge
-          priority: Notifications.AndroidNotificationPriority.HIGH, // High priority
-        };
-      }
-      
-      // For other notifications on iOS, also show with sound
-      console.log('📱 [iOS] Regular notification - showing with sound and alert');
+      // For all notifications on iOS, show with sound and alert
       return {
         shouldShowAlert: true,   // Always show alert on iOS
         shouldPlaySound: true,   // Always play sound on iOS
