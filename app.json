@@ -45,7 +45,7 @@
         {
           "color": "#3B82F6",
           "defaultChannel": "default",
-          "mode": "production"
+          "mode": "development"
         }
       ]
     ],
