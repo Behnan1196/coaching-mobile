@@ -6,6 +6,7 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { StreamProvider } from './src/contexts/StreamContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { StyleSheet } from 'react-native';
+import './src/lib/notifications';
 
 export default function App() {
   return (
@@ -26,4 +27,4 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-}); 
+});
