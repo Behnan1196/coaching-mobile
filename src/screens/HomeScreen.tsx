@@ -11,18 +11,13 @@ import {
   Platform,
   AppState,
 } from 'react-native';
-import * as Notifications from 'expo-notifications';
+
 import { useAuth } from '../contexts/AuthContext';
 import { useStream } from '../contexts/StreamContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
 import { Task, UserProfile } from '../types/database';
-import NotificationService, { 
-  registerForPushNotifications, 
-  sendPushNotificationToUser,
-  sendSessionNotificationToStudent,
-  setupNotificationChannels
-} from '../lib/notifications';
+
 import PresenceService from '../lib/presence';
 
 export const HomeScreen: React.FC = () => {
@@ -40,14 +35,13 @@ export const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [partnerOnline, setPartnerOnline] = useState(false);
-  const [notificationChannel, setNotificationChannel] = useState<any>(null);
+
 
 
   useEffect(() => {
     if (userProfile) {
       loadData();
-      setupNotifications();
-      setupRealtimeNotifications();
+
     }
   }, [userProfile, selectedStudent]);
 
@@ -68,23 +62,13 @@ export const HomeScreen: React.FC = () => {
       if (userProfile) {
         PresenceService.handleAppStateChange(nextAppState, userProfile);
         
-        // On iOS, reconnect notifications when app becomes active
-        if (Platform.OS === 'ios' && nextAppState === 'active') {
-          console.log('📱 [iOS] App became active, checking notification connection...');
-          // Small delay to let the app fully activate
-          setTimeout(() => {
-            if (!notificationChannel || notificationChannel.state !== 'joined') {
-              console.log('📱 [iOS] Notification channel not connected, reconnecting...');
-              setupRealtimeNotifications();
-            }
-          }, 1000);
-        }
+
       }
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [userProfile, notificationChannel]);
+  }, [userProfile]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -92,65 +76,11 @@ export const HomeScreen: React.FC = () => {
       // Clean up presence tracking
       PresenceService.cleanupAll();
       
-      // Clean up notification channel
-      if (notificationChannel && supabase) {
-        supabase.removeChannel(notificationChannel);
-      }
+
     };
   }, []);
 
-  const setupNotifications = async () => {
-    try {
-      console.log('📱 [HOME] Setting up notifications for user:', userProfile?.id);
-      
-      // Register for push notifications
-      if (userProfile) {
-        const pushToken = await registerForPushNotifications();
-        
-        console.log('📱 [HOME] Push token result:', pushToken ? 'received' : 'not received');
-        
-        // Save token to database if we got one
-        if (pushToken && supabase) {
-          try {
-            console.log('📱 [HOME] Saving token to database...');
-            console.log('📱 [HOME] User ID:', userProfile.id);
-            console.log('📱 [HOME] Platform:', Platform.OS);
-            console.log('📱 [HOME] Token preview:', `${pushToken.substring(0, 20)}...`);
-            
-            const { data, error } = await supabase
-              .from('device_tokens')
-              .upsert({
-                user_id: userProfile.id,
-                token: pushToken,
-                platform: Platform.OS === 'android' ? 'android' : 'ios',
-                updated_at: new Date().toISOString()
-              }, {
-                onConflict: 'user_id,platform'
-              });
-            
-            if (error) {
-              console.error('❌ [HOME] Database error saving token:', error);
-            } else {
-              console.log('✅ [HOME] Push token saved to database successfully');
-              console.log('✅ [HOME] Database response:', data);
-            }
-          } catch (dbError) {
-            console.error('❌ [HOME] Exception saving token to database:', dbError);
-          }
-        } else {
-          console.warn('⚠️ [HOME] No push token to save or no supabase client');
-        }
-      }
-      
-      // Set up notification listeners
-      const cleanup = NotificationService.setupNotificationListeners();
-      
-      // Return cleanup function
-      return cleanup;
-    } catch (error) {
-      console.error('❌ [HOME] Error setting up notifications:', error);
-    }
-  };
+
 
   const setupPresence = async () => {
     try {
@@ -191,187 +121,7 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  const setupRealtimeNotifications = async () => {
-    try {
-      if (!userProfile || !supabase) return;
-      
-      console.log('📡 [NOTIFICATIONS] Setting up real-time notification listening');
-      
-      // Clean up existing channel
-      if (notificationChannel) {
-        console.log('🧹 [NOTIFICATIONS] Cleaning up existing channel');
-        supabase.removeChannel(notificationChannel);
-        setNotificationChannel(null);
-      }
-      
-      // Create notification channel with better connection management
-      const channelName = `user-notifications-${userProfile.id}`;
-      console.log('📡 [NOTIFICATIONS] Creating channel:', channelName);
-      
-      const channel = supabase
-        .channel(channelName, {
-          config: {
-            broadcast: { self: false },
-            presence: { key: userProfile.id },
-            // Better connection handling for iOS
-            ...(Platform.OS === 'ios' && {
-              private: false,
-              heartbeat_interval: 30000, // 30 seconds
-              timeout: 10000, // 10 seconds
-            })
-          }
-        })
-        .on('broadcast', { event: 'new_notification' }, async (payload) => {
-          try {
-            console.log('📨 [NOTIFICATIONS] Real-time notification received:', payload);
-            
-            const { title, body, data } = payload.payload;
-            
-            console.log('📨 [NOTIFICATIONS] Processing notification:', {
-              title,
-              body,
-              data,
-              platform: Platform.OS,
-              timestamp: new Date().toISOString()
-            });
-            
-            // Debug: Check notification permissions on iOS
-            if (Platform.OS === 'ios') {
-              const { status } = await Notifications.getPermissionsAsync();
-              console.log('📱 [iOS-DEBUG] Current notification permissions:', status);
-              
-              // If permissions are not granted, try to request them again
-              if (status !== 'granted') {
-                console.log('📱 [iOS-DEBUG] Notification permissions not granted, requesting...');
-                const { status: newStatus } = await Notifications.requestPermissionsAsync({
-                  ios: {
-                    allowAlert: true,
-                    allowBadge: true,
-                    allowSound: true,
-                  },
-                });
-                console.log('📱 [iOS-DEBUG] New permission status:', newStatus);
-              }
-            }
-            
-            // Use scheduleNotificationAsync with immediate trigger instead of deprecated presentNotificationAsync
-            const notificationContent = {
-              title: title || 'Bildirim',
-              body: body || 'Yeni bildirim aldınız',
-              data: data || {},
-              // Set channel ID for Android
-              ...(Platform.OS === 'android' && {
-                channelId: data?.type === 'video_call_invite' ? 'calls' : 'default',
-                priority: data?.type === 'video_call_invite' ? 'high' : 'default',
-                color: data?.type === 'video_call_invite' ? '#10B981' : '#3B82F6',
-              }),
-              // iOS-specific settings
-              ...(Platform.OS === 'ios' && {
-                badge: 1,
-                sound: 'default', // Explicitly set sound for iOS
-                categoryIdentifier: data?.type === 'video_call_invite' ? 'video_call' : 'general',
-                interruptionLevel: (data?.type === 'video_call_invite' ? 'timeSensitive' : 'active') as 'timeSensitive' | 'active',
-              }),
-            };
-            
-            console.log('📨 [NOTIFICATIONS] Scheduling notification with content:', notificationContent);
-            
-            // For iOS, when app is active, we need to show notifications differently
-            if (Platform.OS === 'ios') {
-              // Check if app is active
-              const appState = AppState.currentState;
-              console.log('📱 [iOS] Current app state:', appState);
-              
-              if (appState === 'active') {
-                console.log('📱 [iOS] App is active, showing alert instead of scheduled notification');
-                
-                // Show an alert for video call invites when app is active
-                if (data?.type === 'video_call_invite') {
-                  Alert.alert(
-                    title || 'Video Görüşme Daveti',
-                    body || 'Video görüşme daveti aldınız',
-                    [
-                      {
-                        text: 'Tamam',
-                        style: 'default',
-                      }
-                    ],
-                    { cancelable: true }
-                  );
-                } else {
-                  // For other notifications, just schedule normally
-                  Notifications.scheduleNotificationAsync({
-                    content: notificationContent,
-                    trigger: null,
-                  }).then(() => {
-                    console.log('✅ [iOS] Regular notification scheduled');
-                  }).catch((error) => {
-                    console.error('❌ [iOS] Error scheduling notification:', error);
-                  });
-                }
-              } else {
-                // App is not active, schedule notification normally
-                console.log('📱 [iOS] App not active, scheduling notification normally');
-                Notifications.scheduleNotificationAsync({
-                  content: notificationContent,
-                  trigger: null,
-                }).then(() => {
-                  console.log('✅ [iOS] Background notification scheduled');
-                }).catch((error) => {
-                  console.error('❌ [iOS] Error scheduling background notification:', error);
-                });
-              }
-            } else {
-              // Android - schedule notification normally
-              Notifications.scheduleNotificationAsync({
-                content: notificationContent,
-                trigger: null, // Show immediately
-              }).then(() => {
-                console.log('✅ [NOTIFICATIONS] Real-time notification scheduled successfully');
-              }).catch((error) => {
-                console.error('❌ [NOTIFICATIONS] Error scheduling notification:', error);
-              });
-            }
-            
-          } catch (error) {
-            console.error('❌ [NOTIFICATIONS] Error handling real-time notification:', error);
-          }
-        })
-        .subscribe((status) => {
-          console.log('📡 [NOTIFICATIONS] Real-time channel status:', status);
-          if (status === 'SUBSCRIBED') {
-            console.log('✅ [NOTIFICATIONS] Successfully subscribed to real-time notifications');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ [NOTIFICATIONS] Error subscribing to real-time notifications');
-            // Better retry logic with exponential backoff
-            const retryDelay = Platform.OS === 'ios' ? 2000 : 1000;
-            setTimeout(() => {
-              console.log(`🔄 [${Platform.OS.toUpperCase()}] Attempting to resubscribe...`);
-              setupRealtimeNotifications();
-            }, retryDelay);
-          } else if (status === 'TIMED_OUT') {
-            console.warn('⏰ [NOTIFICATIONS] Real-time notification channel timed out');
-            // Retry after timeout with longer delay
-            setTimeout(() => {
-              console.log('🔄 [NOTIFICATIONS] Attempting to resubscribe after timeout...');
-              setupRealtimeNotifications();
-            }, 3000);
-          } else if (status === 'CLOSED') {
-            console.log('🔒 [NOTIFICATIONS] Real-time notification channel closed');
-            // Retry connection if it was closed unexpectedly
-            setTimeout(() => {
-              console.log('🔄 [NOTIFICATIONS] Reconnecting after channel closed...');
-              setupRealtimeNotifications();
-            }, 2000);
-          }
-        });
-      
-      setNotificationChannel(channel);
-      
-    } catch (error) {
-      console.error('❌ [NOTIFICATIONS] Error setting up real-time notifications:', error);
-    }
-  };
+
 
   const loadData = async () => {
     try {
@@ -459,10 +209,7 @@ export const HomeScreen: React.FC = () => {
       if (sessions) {
         setUpcomingSessions(sessions);
         
-        // Schedule notifications for new sessions
-        for (const session of sessions) {
-          await NotificationService.scheduleSessionReminders(session);
-        }
+
       }
     } catch (error) {
       console.error('Error fetching upcoming sessions:', error);
@@ -554,104 +301,7 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  const handleTestNotification = async () => {
-    try {
-      console.log('🔔 [TEST] Starting notification test...');
-      
-      // Check device token first
-      const deviceToken = await registerForPushNotifications();
-      console.log('📱 [DEBUG] Current device token:', deviceToken);
-      
-      if (deviceToken && supabase) {
-        // Check if token is saved in database
-        try {
-          const { data: tokenData, error } = await supabase
-            .from('device_tokens')
-            .select('*')
-            .eq('user_id', userProfile?.id)
-            .eq('platform', Platform.OS === 'android' ? 'android' : 'ios');
-          
-          console.log('💾 [DEBUG] Saved tokens in database:', tokenData);
-          if (error) console.error('❌ [DEBUG] Token query error:', error);
-        } catch (dbError) {
-          console.error('❌ [DEBUG] Database error:', dbError);
-        }
-      }
-      
-      // Show immediate local notification first using new method
-      console.log('📨 [TEST] Scheduling local test notification...');
-      
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🔔 Test Bildirimi (Yerel)',
-          body: 'Local notification sistemi çalışıyor! ✅',
-          sound: 'default',
-          data: {
-            type: 'test_notification',
-            timestamp: new Date().toISOString()
-          },
-          // Android-specific settings
-          ...(Platform.OS === 'android' && {
-            channelId: 'default',
-            priority: 'default',
-            vibrate: [0, 250, 250, 250],
-            color: '#3B82F6',
-          }),
-        },
-        trigger: null, // Show immediately
-      });
-      
-      console.log('✅ [TEST] Local notification scheduled successfully');
 
-      // Test cross-user notification if we have a partner
-      const partnerId = userProfile?.role === 'student' 
-        ? assignedCoach?.id 
-        : selectedStudent?.id;
-      
-      const partnerName = userProfile?.role === 'student' 
-        ? assignedCoach?.full_name 
-        : selectedStudent?.full_name;
-
-      if (partnerId && partnerName) {
-        console.log(`📤 [TEST] Attempting to send cross-user notification to ${partnerName}`);
-        
-        const success = await sendPushNotificationToUser(
-          partnerId,
-          '🔔 Test Cross-User Bildirimi',
-          `${userProfile?.full_name} size test bildirimi gönderdi`,
-          {
-            type: 'test_cross_user',
-            senderId: userProfile?.id,
-            senderName: userProfile?.full_name,
-            timestamp: new Date().toISOString()
-          }
-        );
-
-        if (success) {
-          Alert.alert(
-            'Test Bildirimleri Gönderildi',
-            `✅ Local bildirim: Yukarıda görünmeli\n✅ Cross-user bildirim: ${partnerName} kullanıcısına gönderildi\n\nHer iki bildirim de çalışıyorsa sistem tamamen hazır!`
-          );
-        } else {
-          Alert.alert(
-            'Kısmi Başarı',
-            `✅ Local bildirim: Çalışıyor\n❌ Cross-user bildirim: Backend API henüz kurulmamış\n\nBackend /api/notifications/send endpoint'ini kurmanız gerekiyor.`
-          );
-        }
-      } else {
-        Alert.alert(
-          'Test Bildirimi Gönderildi',
-          `✅ Local bildirim: Yukarıda görünmeli\n⚠️ Cross-user test: ${userProfile?.role === 'student' ? 'Koç atanmamış' : 'Öğrenci seçilmemiş'}\n\nLocal notification sistemi çalışıyor!`
-        );
-      }
-    } catch (error) {
-      console.error('❌ [TEST] Error sending test notification:', error);
-      Alert.alert(
-        'Test Bildirimi Hatası',
-        'Test bildirimi gönderilemedi. Push notification izinlerini kontrol edin.'
-      );
-    }
-  };
 
 
 
@@ -776,19 +426,7 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Notification Test */}
-        <View style={styles.testCard}>
-          <Text style={styles.testTitle}>🔔 Bildirim Testi</Text>
-          <Text style={styles.testText}>
-            Push notification sisteminin çalışıp çalışmadığını test edin.
-          </Text>
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={handleTestNotification}
-          >
-            <Text style={styles.testButtonText}>📬 Test Bildirimi Gönder</Text>
-          </TouchableOpacity>
-        </View>
+
 
         {/* Active Call Indicator */}
         {videoCall && (
@@ -967,37 +605,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#92400E',
   },
-  testCard: {
-    margin: 20,
-    padding: 16,
-    backgroundColor: '#E0F2FE',
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
-  },
-  testTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  testText: {
-    fontSize: 14,
-    color: '#4B5563',
-    marginBottom: 12,
-  },
-  testButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  testButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
-    fontSize: 16,
-  },
+
   activeCallCard: {
     margin: 20,
     padding: 16,

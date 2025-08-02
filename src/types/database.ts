@@ -118,26 +118,9 @@ export interface StreamToken {
   created_at: string
 }
 
-export interface DeviceToken {
-  id: string
-  user_id: string
-  token: string
-  platform: 'ios' | 'android'
-  updated_at: string
-  created_at: string
-}
 
-// Web Push Subscription for browser notifications
-export interface WebPushSubscription {
-  id: string
-  user_id: string
-  endpoint: string
-  p256dh_key: string
-  auth_key: string
-  user_agent?: string
-  created_at: string
-  updated_at: string
-}
+
+
 
 // Extended types with relations
 export interface Goal {
@@ -350,16 +333,8 @@ export type Database = {
         Insert: Omit<StreamToken, 'id' | 'created_at'>
         Update: Partial<Omit<StreamToken, 'id' | 'created_at'>>
       }
-      device_tokens: {
-        Row: DeviceToken
-        Insert: Omit<DeviceToken, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<DeviceToken, 'id' | 'created_at' | 'updated_at'>>
-      }
-      web_push_subscriptions: {
-        Row: WebPushSubscription
-        Insert: Omit<WebPushSubscription, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<WebPushSubscription, 'id' | 'created_at' | 'updated_at'>>
-      }
+
+
       student_goals: {
         Row: Goal
         Insert: Omit<Goal, 'id' | 'created_at' | 'updated_at'>

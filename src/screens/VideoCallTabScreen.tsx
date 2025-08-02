@@ -15,7 +15,7 @@ import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
 import { VideoCallScreen } from './VideoCallScreen';
-import { sendPushNotificationToUser } from '../lib/notifications';
+
 
 export const VideoCallTabScreen: React.FC = () => {
   const { userProfile } = useAuth();
@@ -122,48 +122,14 @@ export const VideoCallTabScreen: React.FC = () => {
     });
 
     setIsInviting(true);
-    try {
-      const success = await sendPushNotificationToUser(
-        callPartner.id,
-        '📹 Video Görüşme Daveti',
-        `${userProfile?.full_name} size video görüşme daveti gönderiyor: "${inviteMessage.trim() || 'Video görüşme daveti'}"`,
-        {
-          type: 'video_call_invite',
-          fromUserId: userProfile?.id,
-          fromUserName: userProfile?.full_name,
-          fromPlatform: Platform.OS,
-          message: inviteMessage.trim() || 'Video görüşme daveti'
-        }
-      );
-
-      console.log('📤 [VIDEO-INVITE] Notification result:', success);
-
-      if (success) {
-        console.log('✅ [VIDEO-INVITE] Invite sent successfully');
-        setJustSentInvite(true);
-        setInviteMessage('');
-        setShowInviteForm(false);
-        
-        // Hide the confirmation after 3 seconds
-        setTimeout(() => {
-          setJustSentInvite(false);
-        }, 3000);
-      } else {
-        console.error('❌ [VIDEO-INVITE] Invite failed - API returned false');
-        Alert.alert(
-          'Davet Gönderilirken Hata',
-          `Video daveti gönderilemedi. Lütfen tekrar deneyin.\n\nPlatform: ${Platform.OS}\nHedef: ${callPartner.full_name}`
-        );
-      }
-    } catch (error) {
-      console.error('❌ [VIDEO-INVITE] Error sending video invite:', error);
-      Alert.alert(
-        'Davet Gönderilirken Hata',
-        `Video daveti gönderilemedi. Hata: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}\n\nPlatform: ${Platform.OS}`
-      );
-    } finally {
-      setIsInviting(false);
-    }
+    
+    console.log('📤 [VIDEO-INVITE] Video invite functionality temporarily disabled during notification cleanup');
+    Alert.alert(
+      'Video Davet',
+      'Video daveti gönderme özelliği şu anda mevcut değil.'
+    );
+    
+    setIsInviting(false);
   };
 
   if (showVideoCall && videoCall) {

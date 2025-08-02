@@ -34,6 +34,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Only proceed if supabase client is available
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -64,6 +70,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
+    if (!supabase) return;
+    
     try {
       const { data, error } = await supabase
         .from('user_profiles')
@@ -82,6 +90,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) return { error: { message: 'Supabase client not available' } };
+    
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -92,6 +102,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = async () => {
+    if (!supabase) return;
+    
     setLoading(true);
     await supabase.auth.signOut();
     setUserProfile(null);

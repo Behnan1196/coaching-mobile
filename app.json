@@ -39,19 +39,9 @@
     },
     "plugins": [
       "expo-av",
-      "expo-secure-store",
-      [
-        "expo-notifications",
-        {
-          "color": "#3B82F6",
-          "defaultChannel": "default",
-          "mode": "production"
-        }
-      ]
+      "expo-secure-store"
     ],
-    "notification": {
-      "color": "#3B82F6"
-    },
+
     "sdkVersion": "53.0.0",
     "extra": {
       "eas": {
