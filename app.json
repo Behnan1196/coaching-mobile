@@ -39,7 +39,8 @@
     },
     "plugins": [
       "expo-av",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-notifications"
     ],
 
     "sdkVersion": "53.0.0",

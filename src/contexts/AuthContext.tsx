@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
+import { initializePushNotifications } from '../lib/notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -59,6 +60,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (session?.user) {
         await fetchUserProfile(session.user.id);
+        // Initialize push notifications when user signs in
+        initializePushNotifications(session.user.id);
       } else {
         setUserProfile(null);
       }
