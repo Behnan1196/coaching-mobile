@@ -113,7 +113,7 @@ export async function saveNotificationToken(
         is_active: true,
         updated_at: new Date().toISOString(),
       }, {
-        onConflict: 'user_id,platform'
+        onConflict: 'user_id,platform,token_type'
       });
 
     if (error) {
