@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { ChatScreen } from './ChatScreen';
 import { VideoCallTabScreen } from './VideoCallTabScreen';
+import { NotificationBell } from '../components/NotificationBell';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -11,6 +12,7 @@ export const ChatTabScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Chat</Text>
+        <NotificationBell size={20} color="#374151" />
       </View>
       <Tab.Navigator
         screenOptions={{
@@ -51,6 +53,9 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,

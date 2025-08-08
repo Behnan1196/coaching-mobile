@@ -11,6 +11,7 @@ import { useStream } from '../contexts/StreamContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
+import { useActivityTracking } from '../hooks/useActivityTracking';
 
 export const ChatScreen: React.FC = () => {
   const { userProfile } = useAuth();
@@ -26,6 +27,13 @@ export const ChatScreen: React.FC = () => {
   const [assignedCoach, setAssignedCoach] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatPartner, setChatPartner] = useState<UserProfile | null>(null);
+
+  // Track user activity in this chat channel
+  const { triggerActivity } = useActivityTracking({
+    channelId: chatChannel?.id || null,
+    isEnabled: !!chatChannel && !isDemoMode,
+    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v15.vercel.app'
+  });
 
   useEffect(() => {
     if (userProfile) {
@@ -146,8 +154,8 @@ export const ChatScreen: React.FC = () => {
                   <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
                 </View>
                 <View style={styles.chatContainer}>
-                  <MessageList />
-                  <MessageInput />
+                  <MessageList onTouchStart={triggerActivity} />
+                  <MessageInput onFocus={triggerActivity} />
                 </View>
               </Channel>
             </Chat>
