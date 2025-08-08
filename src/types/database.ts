@@ -24,6 +24,12 @@ export interface UserProfile {
   role: UserRole
   created_at: string
   updated_at: string
+  // Settings properties
+  avatar_url?: string
+  theme?: 'light' | 'dark' | 'system'
+  language?: string
+  notifications_enabled?: boolean
+  email_notifications?: boolean
 }
 
 export interface CoachStudentAssignment {

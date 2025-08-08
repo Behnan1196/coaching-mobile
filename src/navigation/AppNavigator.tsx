@@ -3,6 +3,7 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { CoachStudentProvider, useCoachStudent } from '../contexts/CoachStudentContext';
@@ -13,9 +14,11 @@ import { StudyPlanScreen } from '../screens/StudyPlanScreen';
 import { ChatTabScreen } from '../screens/ChatTabScreen';
 import { StatisticsScreen } from '../screens/StatisticsScreen';
 import { ToolsScreen } from '../screens/ToolsScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 import { StudentSelectionHeader } from '../components/StudentSelectionHeader';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
 const MainTabs: React.FC = () => {
   return (
@@ -110,7 +113,14 @@ const AuthenticatedApp: React.FC = () => {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <MainTabs />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen 
+          name="Settings" 
+          component={SettingsScreen} 
+          options={{ presentation: 'modal' }}
+        />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 };

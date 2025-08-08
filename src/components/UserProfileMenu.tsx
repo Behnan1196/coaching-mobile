@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 interface UserProfileMenuProps {
   onSettingsPress?: () => void;
@@ -19,6 +20,7 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
 }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const { userProfile, signOut } = useAuth();
+  const navigation = useNavigation();
 
   const handleLogout = () => {
     Alert.alert(
@@ -47,7 +49,12 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
 
   const handleSettings = () => {
     setMenuVisible(false);
-    onSettingsPress?.();
+    if (onSettingsPress) {
+      onSettingsPress();
+    } else {
+      // Navigate to settings screen
+      navigation.navigate('Settings' as never);
+    }
   };
 
   const getUserInitial = () => {

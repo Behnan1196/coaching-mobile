@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { UserProfile } from '../types/database';
 import { UserProfileMenu } from './UserProfileMenu';
+import { NotificationBell } from './NotificationBell';
 
 interface StudentSelectionHeaderProps {
   onStudentChange?: (student: UserProfile | null) => void;
@@ -75,18 +76,20 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         {userProfile?.role === 'coach' ? (
-          <>
-            <Text style={styles.label}>Aktif Öğrenci:</Text>
-            <TouchableOpacity
-              style={styles.selector}
-              onPress={() => setDropdownVisible(true)}
-            >
-              <Text style={styles.selectorText}>
-                {selectedStudent?.full_name || 'Öğrenci seçiniz...'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#6B7280" />
-            </TouchableOpacity>
-          </>
+          <View style={styles.coachView}>
+            <View style={styles.studentSelectorContainer}>
+              <Ionicons name="person" size={16} color="#6B7280" style={styles.studentIcon} />
+              <TouchableOpacity
+                style={styles.selector}
+                onPress={() => setDropdownVisible(true)}
+              >
+                <Text style={styles.selectorText}>
+                  {selectedStudent?.full_name || 'Öğrenci seçiniz...'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+          </View>
         ) : (
           <View style={styles.studentView}>
             <Text style={styles.welcomeText}>
@@ -94,7 +97,13 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
             </Text>
           </View>
         )}
-        <UserProfileMenu />
+        
+        <View style={styles.rightSection}>
+          <View style={styles.notificationContainer}>
+            <NotificationBell size={20} color="#6B7280" />
+          </View>
+          <UserProfileMenu />
+        </View>
       </View>
 
       <Modal
@@ -180,6 +189,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  coachView: {
+    flex: 1,
+  },
+  studentSelectorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  studentIcon: {
+    marginRight: 8,
+  },
   studentView: {
     flex: 1,
   },
@@ -188,10 +207,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationContainer: {
+    marginRight: 12,
   },
   selector: {
     flexDirection: 'row',
@@ -202,8 +223,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    minWidth: 200,
-    maxWidth: 250,
+    minWidth: 180,
+    maxWidth: 220,
   },
   selectorText: {
     flex: 1,
