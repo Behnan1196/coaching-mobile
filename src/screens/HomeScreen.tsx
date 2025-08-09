@@ -325,7 +325,8 @@ export const HomeScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.brandText}>ÖZGÜN KOÇLUK</Text>
+            <Text style={styles.welcomeText}>Merhaba,</Text>
+            <Text style={styles.nameText}>{userProfile?.full_name}</Text>
           </View>
         </View>
 
