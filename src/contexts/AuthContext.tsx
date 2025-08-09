@@ -108,39 +108,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = async () => {
-    console.log('🔐 SignOut called...');
-    if (!supabase) {
-      console.log('❌ SignOut failed: No supabase client');
-      return;
-    }
+    if (!supabase) return;
     
-    console.log('🔄 Setting loading state...');
-    setLoading(true);
+    // Immediately clear state to force logout
+    setUser(null);
+    setUserProfile(null);
+    setSession(null);
     
+    // Clean up in background
     try {
-      // Clean up notification tokens for current user before signing out
       if (user?.id) {
-        console.log('🧹 Cleaning up notification tokens for user:', user.id);
-        await cleanupNotificationTokens(user.id);
+        cleanupNotificationTokens(user.id);
       }
-      
-      console.log('🔐 Calling supabase.auth.signOut()...');
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('❌ Supabase signOut error:', error);
-        throw error;
-      }
-      
-      console.log('✅ Supabase signOut successful');
-      setUserProfile(null);
-      
+      await supabase.auth.signOut();
     } catch (error) {
-      console.error('❌ Error in signOut:', error);
-      throw error;
-    } finally {
-      console.log('🔄 Clearing loading state...');
-      setLoading(false);
+      console.error('Error in background signOut cleanup:', error);
     }
   };
 

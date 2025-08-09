@@ -166,9 +166,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
         return;
       }
 
-      console.log('✅ Password updated successfully');
-      
-      // Clear form fields first
+      // Clear form fields
       setSettingsForm(prev => ({
         ...prev,
         current_password: '',
@@ -186,15 +184,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
         [
           {
             text: 'Tamam',
-            onPress: async () => {
-              console.log('🔐 User confirmed password change, logging out...');
-              try {
-                await signOut();
-                console.log('✅ Successfully logged out after password change');
-              } catch (error) {
-                console.error('❌ Error signing out after password change:', error);
-                Alert.alert('Hata', 'Çıkış yapılırken hata oluştu. Lütfen uygulamayı yeniden başlatın.');
-              }
+            onPress: () => {
+              // Simple direct logout
+              signOut();
             }
           }
         ]

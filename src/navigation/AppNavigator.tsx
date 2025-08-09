@@ -128,10 +128,7 @@ const AuthenticatedApp: React.FC = () => {
 export const AppNavigator: React.FC = () => {
   const { isAuthenticated, loading, user } = useAuth();
 
-  console.log('🧭 AppNavigator render - isAuthenticated:', isAuthenticated, 'loading:', loading, 'userId:', user?.id);
-
   if (loading) {
-    console.log('⏳ AppNavigator: Showing loading screen');
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3B82F6" />
@@ -140,11 +137,9 @@ export const AppNavigator: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    console.log('🔑 AppNavigator: Showing login screen');
     return <LoginScreen />;
   }
 
-  console.log('✅ AppNavigator: Showing authenticated app');
   return (
     <CoachStudentProvider key={user?.id}>
       <AuthenticatedApp />
