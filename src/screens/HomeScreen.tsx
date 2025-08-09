@@ -470,12 +470,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  brandText: {
-    fontSize: 24,
+  welcomeText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  nameText: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#3B82F6',
-    letterSpacing: 1,
-    textAlign: 'center',
+    color: '#1F2937',
+    marginTop: 2,
   },
   coachCard: {
     margin: 20,

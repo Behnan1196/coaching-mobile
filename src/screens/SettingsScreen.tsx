@@ -166,23 +166,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
         return;
       }
 
-      // Show success message and logout immediately
-      Alert.alert(
-        'Başarılı', 
-        'Şifre başarıyla güncellendi! Güvenlik nedeniyle yeniden giriş yapmanız gerekiyor.',
-        [
-          {
-            text: 'Tamam',
-            onPress: () => {
-              // Logout immediately after user acknowledges
-              signOut().catch((error) => {
-                console.error('Error signing out after password change:', error);
-              });
-            }
-          }
-        ]
-      );
+      console.log('✅ Password updated successfully');
       
+      // Clear form fields first
       setSettingsForm(prev => ({
         ...prev,
         current_password: '',
@@ -190,10 +176,33 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
         confirm_password: ''
       }));
       
+      // Stop loading state
+      setLoading(false);
+      
+      // Show success message and logout immediately
+      Alert.alert(
+        'Başarılı', 
+        'Şifre başarıyla güncellendi! Güvenlik nedeniyle yeniden giriş yapmanız gerekiyor.',
+        [
+          {
+            text: 'Tamam',
+            onPress: async () => {
+              console.log('🔐 User confirmed password change, logging out...');
+              try {
+                await signOut();
+                console.log('✅ Successfully logged out after password change');
+              } catch (error) {
+                console.error('❌ Error signing out after password change:', error);
+                Alert.alert('Hata', 'Çıkış yapılırken hata oluştu. Lütfen uygulamayı yeniden başlatın.');
+              }
+            }
+          }
+        ]
+      );
+      
     } catch (error) {
-      console.error('Error updating password:', error);
+      console.error('❌ Error updating password:', error);
       Alert.alert('Hata', 'Şifre güncellenirken hata oluştu.');
-    } finally {
       setLoading(false);
     }
   };

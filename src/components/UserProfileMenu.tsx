@@ -35,11 +35,15 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
           text: 'Çıkış Yap',
           style: 'destructive',
           onPress: async () => {
+            console.log('👤 Manual logout initiated...');
             setMenuVisible(false);
             try {
+              console.log('🔐 Calling signOut from UserProfileMenu...');
               await signOut();
+              console.log('✅ Manual logout successful');
             } catch (error) {
-              console.error('Error signing out:', error);
+              console.error('❌ Error in manual logout:', error);
+              Alert.alert('Hata', 'Çıkış yapılırken hata oluştu. Lütfen uygulamayı yeniden başlatın.');
             }
           },
         },
