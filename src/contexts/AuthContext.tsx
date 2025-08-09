@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
-import { initializePushNotifications } from '../lib/notifications';
+import { initializePushNotifications, cleanupNotificationTokens } from '../lib/notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -56,6 +56,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 Auth state changed:', event, session?.user?.id);
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -109,6 +111,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!supabase) return;
     
     setLoading(true);
+    
+    // Clean up notification tokens for current user before signing out
+    if (user?.id) {
+      await cleanupNotificationTokens(user.id);
+    }
+    
     await supabase.auth.signOut();
     setUserProfile(null);
     setLoading(false);

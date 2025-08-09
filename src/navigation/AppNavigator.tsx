@@ -126,7 +126,9 @@ const AuthenticatedApp: React.FC = () => {
 };
 
 export const AppNavigator: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
+
+  console.log('🧭 AppNavigator render - isAuthenticated:', isAuthenticated, 'loading:', loading);
 
   if (loading) {
     return (
@@ -141,7 +143,7 @@ export const AppNavigator: React.FC = () => {
   }
 
   return (
-    <CoachStudentProvider>
+    <CoachStudentProvider key={user?.id}>
       <AuthenticatedApp />
     </CoachStudentProvider>
   );

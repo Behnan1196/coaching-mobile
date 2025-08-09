@@ -166,18 +166,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
         return;
       }
 
+      // Show success message and logout immediately
       Alert.alert(
         'Başarılı', 
         'Şifre başarıyla güncellendi! Güvenlik nedeniyle yeniden giriş yapmanız gerekiyor.',
         [
           {
             text: 'Tamam',
-            onPress: async () => {
-              try {
-                await signOut();
-              } catch (error) {
+            onPress: () => {
+              // Logout immediately after user acknowledges
+              signOut().catch((error) => {
                 console.error('Error signing out after password change:', error);
-              }
+              });
             }
           }
         ]

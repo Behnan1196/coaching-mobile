@@ -194,6 +194,28 @@ export async function initializePushNotifications(userId: string): Promise<void>
 }
 
 /**
+ * Clean up notification tokens for old user when switching users
+ */
+export async function cleanupNotificationTokens(userId: string): Promise<void> {
+  try {
+    console.log('🧹 Cleaning up notification tokens for user:', userId);
+
+    const { error } = await supabase
+      .from('notification_tokens')
+      .update({ is_active: false })
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('❌ Error cleaning up notification tokens:', error);
+    } else {
+      console.log('✅ Notification tokens cleaned up successfully');
+    }
+  } catch (error) {
+    console.error('❌ Error cleaning up notification tokens:', error);
+  }
+}
+
+/**
  * Send a test notification (for debugging)
  */
 export async function sendTestNotification(expoPushToken: string): Promise<void> {
