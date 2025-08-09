@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  refreshUserProfile: () => Promise<void>;
   loading: boolean;
   isAuthenticated: boolean;
 }
@@ -113,12 +114,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(false);
   };
 
+  const refreshUserProfile = async () => {
+    if (!user?.id || !supabase) return;
+    await fetchUserProfile(user.id);
+  };
+
   const value: AuthContextType = {
     user,
     userProfile,
     session,
     signIn,
     signOut,
+    refreshUserProfile,
     loading,
     isAuthenticated: !!user,
   };

@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 interface SettingsScreenProps {}
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
-  const { userProfile, user, signOut } = useAuth();
+  const { userProfile, user, signOut, refreshUserProfile } = useAuth();
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
@@ -33,8 +33,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
     email: '',
     phone: '',
     avatar_url: '',
-    theme: 'system',
-    language: 'tr',
     notifications_enabled: true,
     email_notifications: true,
     current_password: '',
@@ -54,8 +52,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
       email: user?.email || '',
       phone: userProfile?.phone || '',
       avatar_url: userProfile?.avatar_url || '',
-      theme: userProfile?.theme || 'system',
-      language: userProfile?.language || 'tr',
       notifications_enabled: userProfile?.notifications_enabled !== false,
       email_notifications: userProfile?.email_notifications !== false,
       current_password: '',
@@ -114,8 +110,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
       // Try to include settings columns if they exist
       const settingsUpdates = {
         avatar_url: settingsForm.avatar_url,
-        theme: settingsForm.theme,
-        language: settingsForm.language,
         notifications_enabled: settingsForm.notifications_enabled,
         email_notifications: settingsForm.email_notifications,
       };
@@ -135,6 +129,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
       }
 
       Alert.alert('Başarılı', 'Profil başarıyla güncellendi!');
+      
+      // Refresh the user profile in the context
+      await refreshUserProfile();
       
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -169,7 +166,23 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
         return;
       }
 
-      Alert.alert('Başarılı', 'Şifre başarıyla güncellendi!');
+      Alert.alert(
+        'Başarılı', 
+        'Şifre başarıyla güncellendi! Güvenlik nedeniyle yeniden giriş yapmanız gerekiyor.',
+        [
+          {
+            text: 'Tamam',
+            onPress: async () => {
+              try {
+                await signOut();
+              } catch (error) {
+                console.error('Error signing out after password change:', error);
+              }
+            }
+          }
+        ]
+      );
+      
       setSettingsForm(prev => ({
         ...prev,
         current_password: '',
@@ -377,71 +390,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
     </ScrollView>
   );
 
-  const renderAppearanceSettings = () => (
-    <ScrollView style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Görünüm Ayarları</Text>
-      
-      <View style={styles.formSection}>
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingTitle}>Tema</Text>
-            <Text style={styles.settingDescription}>Uygulamanın görünümünü seçin</Text>
-          </View>
-          <View style={styles.themeOptions}>
-            {[
-              { value: 'light', label: 'Açık', icon: 'sunny' },
-              { value: 'dark', label: 'Koyu', icon: 'moon' },
-              { value: 'system', label: 'Sistem', icon: 'phone-portrait' }
-            ].map((theme) => (
-              <TouchableOpacity
-                key={theme.value}
-                style={[
-                  styles.themeOption,
-                  settingsForm.theme === theme.value && styles.activeThemeOption
-                ]}
-                onPress={() => setSettingsForm(prev => ({ ...prev, theme: theme.value }))}
-              >
-                <Ionicons 
-                  name={theme.icon as any} 
-                  size={16} 
-                  color={settingsForm.theme === theme.value ? '#3B82F6' : '#6B7280'} 
-                />
-                <Text style={[
-                  styles.themeOptionText,
-                  settingsForm.theme === theme.value && styles.activeThemeOptionText
-                ]}>
-                  {theme.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
 
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingTitle}>Dil</Text>
-            <Text style={styles.settingDescription}>Uygulama dilini seçin</Text>
-          </View>
-          <TouchableOpacity style={styles.languageSelector}>
-            <Text style={styles.languageText}>Türkçe</Text>
-            <Ionicons name="chevron-down" size={16} color="#6B7280" />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.disabledButton]}
-          onPress={updateProfile}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <Text style={styles.saveButtonText}>Ayarları Kaydet</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  );
 
   const renderNotificationSettings = () => (
     <ScrollView style={styles.tabContent}>
@@ -495,8 +444,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
         return renderProfileSettings();
       case 'security':
         return renderSecuritySettings();
-      case 'appearance':
-        return renderAppearanceSettings();
       case 'notifications':
         return renderNotificationSettings();
       default:
@@ -520,7 +467,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {renderTabButton('profile', 'Profil', 'person-outline')}
             {renderTabButton('security', 'Güvenlik', 'shield-outline')}
-            {renderTabButton('appearance', 'Görünüm', 'color-palette-outline')}
             {renderTabButton('notifications', 'Bildirimler', 'notifications-outline')}
           </ScrollView>
         </View>
@@ -735,46 +681,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
-  themeOptions: {
-    flexDirection: 'row',
-    marginTop: 8,
-  },
-  themeOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-  },
-  activeThemeOption: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EBF4FF',
-  },
-  themeOptionText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginLeft: 4,
-  },
-  activeThemeOptionText: {
-    color: '#3B82F6',
-  },
-  languageSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    backgroundColor: '#F9FAFB',
-  },
-  languageText: {
-    fontSize: 14,
-    color: '#374151',
-    marginRight: 8,
-  },
+
 });
