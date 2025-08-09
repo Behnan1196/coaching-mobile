@@ -15,6 +15,7 @@ import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
 import { VideoCallScreen } from './VideoCallScreen';
+import { sendVideoInviteMessage, getVideoInviteSuccessMessage } from '../utils/videoInviteUtils';
 
 
 export const VideoCallTabScreen: React.FC = () => {
@@ -27,7 +28,9 @@ export const VideoCallTabScreen: React.FC = () => {
     videoError, 
     isStreamReady,
     isDemoMode,
-    endVideoCall
+    endVideoCall,
+    initializeChatChannel,
+    chatChannel
   } = useStream();
   
   const [assignedCoach, setAssignedCoach] = useState<UserProfile | null>(null);
@@ -123,13 +126,38 @@ export const VideoCallTabScreen: React.FC = () => {
 
     setIsInviting(true);
     
-    console.log('📤 [VIDEO-INVITE] Video invite functionality temporarily disabled during notification cleanup');
-    Alert.alert(
-      'Video Davet',
-      'Video daveti gönderme özelliği şu anda mevcut değil.'
-    );
-    
-    setIsInviting(false);
+    try {
+      // Initialize chat channel if needed
+      if (!chatChannel) {
+        await initializeChatChannel(callPartner.id, callPartner.full_name);
+        // Wait a moment for chat channel to be ready
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      if (chatChannel) {
+        // Send video invite message using helper function
+        await sendVideoInviteMessage(chatChannel, userProfile?.id || '', inviteMessage);
+
+        setJustSentInvite(true);
+        setInviteMessage('');
+        setShowInviteForm(false);
+        
+        // Reset the success state after 5 seconds
+        setTimeout(() => {
+          setJustSentInvite(false);
+        }, 5000);
+      } else {
+        throw new Error('Chat channel not available');
+      }
+    } catch (error) {
+      console.error('❌ Failed to send video invite:', error);
+      Alert.alert(
+        'Hata',
+        'Video daveti gönderilemedi. Lütfen tekrar deneyin.'
+      );
+    } finally {
+      setIsInviting(false);
+    }
   };
 
   if (showVideoCall && videoCall) {
@@ -211,7 +239,7 @@ export const VideoCallTabScreen: React.FC = () => {
                   <View style={styles.inviteSuccessCard}>
                     <Text style={styles.inviteSuccessTitle}>✅ Davet Gönderildi!</Text>
                     <Text style={styles.inviteSuccessText}>
-                      {callPartner.full_name} adlı kişiye video görüşme daveti gönderildi
+                      {getVideoInviteSuccessMessage(callPartner.full_name)}
                     </Text>
                   </View>
                 ) : showInviteForm ? (
