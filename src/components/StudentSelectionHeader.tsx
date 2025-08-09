@@ -92,8 +92,8 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
           </View>
         ) : (
           <View style={styles.studentView}>
-            <Text style={styles.welcomeText}>
-              Hoşgeldiniz, {userProfile?.full_name || 'Kullanıcı'}
+            <Text style={styles.brandText}>
+              ÖZGÜN KOÇLUK
             </Text>
           </View>
         )}
@@ -202,10 +202,11 @@ const styles = StyleSheet.create({
   studentView: {
     flex: 1,
   },
-  welcomeText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+  brandText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#3B82F6',
+    letterSpacing: 1,
   },
   rightSection: {
     flexDirection: 'row',

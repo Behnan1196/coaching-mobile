@@ -325,8 +325,7 @@ export const HomeScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.welcomeText}>Merhaba,</Text>
-            <Text style={styles.nameText}>{userProfile?.full_name}</Text>
+            <Text style={styles.brandText}>ÖZGÜN KOÇLUK</Text>
           </View>
         </View>
 
@@ -470,15 +469,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  welcomeText: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  nameText: {
-    fontSize: 20,
+  brandText: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
-    marginTop: 2,
+    color: '#3B82F6',
+    letterSpacing: 1,
+    textAlign: 'center',
   },
   coachCard: {
     margin: 20,

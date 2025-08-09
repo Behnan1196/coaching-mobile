@@ -34,12 +34,12 @@ export async function registerForPushNotifications(): Promise<string | null> {
     // Set up Android notification channel
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('chat', {
-        name: 'Chat Messages',
+        name: 'Özgün Koçluk - Mesajlar',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF231F7C',
         sound: 'default',
-        description: 'Notifications for new chat messages',
+        description: 'Özgün Koçluk chat mesajları için bildirimler',
       });
     }
 
@@ -223,8 +223,8 @@ export async function sendTestNotification(expoPushToken: string): Promise<void>
     const message = {
       to: expoPushToken,
       sound: 'default',
-      title: '🧪 Test Notification',
-      body: 'Push notifications are working!',
+      title: '🧪 Özgün Koçluk Test',
+      body: 'Bildirimler çalışıyor!',
       data: { 
         type: 'test',
         timestamp: new Date().toISOString() 
