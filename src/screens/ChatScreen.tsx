@@ -28,10 +28,10 @@ export const ChatScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [chatPartner, setChatPartner] = useState<UserProfile | null>(null);
 
-  // Track user activity in this chat channel
+  // Track user activity in this chat channel - DISABLED to fix notification blocking
   const { triggerActivity } = useActivityTracking({
     channelId: chatChannel?.id || null,
-    isEnabled: !!chatChannel && !isDemoMode,
+    isEnabled: false, // Disabled: was blocking all mobile notifications
     apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v15.vercel.app'
   });
 
