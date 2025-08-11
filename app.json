@@ -42,13 +42,12 @@
       "expo-secure-store",
       "expo-notifications"
     ],
-
     "sdkVersion": "53.0.0",
     "extra": {
       "eas": {
-        "projectId": "7cd95625-11cc-40e0-967a-f09e46a57e58"
+        "projectId": "95facdd8-f4a2-4ba1-ac5c-cbc13d6e5e98"
       }
     },
-    "owner": "behnan"
+    "owner": "ozgunkocluk"
   }
 }

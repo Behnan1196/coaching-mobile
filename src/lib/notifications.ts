@@ -103,25 +103,29 @@ export async function saveNotificationToken(
   tokenType: 'expo' | 'fcm' | 'apns' = 'expo'
 ): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('notification_tokens')
-      .upsert({
-        user_id: userId,
+    // Use the public API endpoint for mobile token registration
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v15.vercel.app';
+    const response = await fetch(`${apiUrl}/api/notifications/register-token-public`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
         token,
-        token_type: tokenType,
+        tokenType,
         platform: Platform.OS as 'ios' | 'android',
-        is_active: true,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id,platform,token_type'
-      });
+      }),
+    });
 
-    if (error) {
-      console.error('❌ Error saving notification token:', error);
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('❌ Error saving notification token:', result);
       return false;
     }
 
-    console.log('✅ Notification token saved successfully');
+    console.log('✅ Notification token saved successfully:', result);
     return true;
   } catch (error) {
     console.error('❌ Error saving notification token:', error);
@@ -174,14 +178,36 @@ export async function initializePushNotifications(userId: string): Promise<void>
       return;
     }
 
-    // Save token to database
-    await saveNotificationToken(userId, expoPushToken, 'expo');
+    // Save token to database with retry logic
+    const expTokenSaved = await saveNotificationToken(userId, expoPushToken, 'expo');
+    if (!expTokenSaved) {
+      console.log('⚠️ Failed to save Expo token, retrying in 5 seconds...');
+      setTimeout(async () => {
+        const retryResult = await saveNotificationToken(userId, expoPushToken, 'expo');
+        if (retryResult) {
+          console.log('✅ Expo token saved successfully on retry');
+        } else {
+          console.error('❌ Failed to save Expo token after retry');
+        }
+      }, 5000);
+    }
 
     // Also get and save device token for direct FCM/APNs
     const deviceToken = await getDeviceToken();
     if (deviceToken) {
       const tokenType = Platform.OS === 'ios' ? 'apns' : 'fcm';
-      await saveNotificationToken(userId, deviceToken, tokenType);
+      const deviceTokenSaved = await saveNotificationToken(userId, deviceToken, tokenType);
+      if (!deviceTokenSaved) {
+        console.log(`⚠️ Failed to save ${tokenType} token, retrying in 5 seconds...`);
+        setTimeout(async () => {
+          const retryResult = await saveNotificationToken(userId, deviceToken, tokenType);
+          if (retryResult) {
+            console.log(`✅ ${tokenType} token saved successfully on retry`);
+          } else {
+            console.error(`❌ Failed to save ${tokenType} token after retry`);
+          }
+        }, 5000);
+      }
     }
 
     // Setup listeners
@@ -190,6 +216,12 @@ export async function initializePushNotifications(userId: string): Promise<void>
     console.log('✅ Push notifications initialized successfully');
   } catch (error) {
     console.error('❌ Error initializing push notifications:', error);
+    
+    // Retry initialization after 10 seconds
+    console.log('🔄 Retrying notification initialization in 10 seconds...');
+    setTimeout(() => {
+      initializePushNotifications(userId);
+    }, 10000);
   }
 }
 

@@ -13,7 +13,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { UserProfile } from '../types/database';
 import { UserProfileMenu } from './UserProfileMenu';
-import { NotificationBell } from './NotificationBell';
 
 interface StudentSelectionHeaderProps {
   onStudentChange?: (student: UserProfile | null) => void;
@@ -99,9 +98,6 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
         )}
         
         <View style={styles.rightSection}>
-          <View style={styles.notificationContainer}>
-            <NotificationBell size={20} color="#6B7280" />
-          </View>
           <UserProfileMenu />
         </View>
       </View>
@@ -211,9 +207,6 @@ const styles = StyleSheet.create({
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  notificationContainer: {
-    marginRight: 12,
   },
   selector: {
     flexDirection: 'row',
