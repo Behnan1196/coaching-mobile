@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
+import { supabase } from '../lib/supabase';
 
 interface UseActivityTrackingProps {
   channelId: string | null;
@@ -13,44 +14,69 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const updateActivity = useCallback(async (isActive: boolean) => {
-    if (!channelId || !isEnabled) return;
+    if (!channelId || !isEnabled) {
+      console.log(`🚫 Activity tracking skipped: channelId=${channelId}, isEnabled=${isEnabled}`);
+      return;
+    }
 
     try {
+      // Get current session for authentication
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('❌ No active session for activity tracking:', sessionError);
+        return;
+      }
+
+      const platform = Platform.OS; // Detect actual platform (ios/android)
+      const requestBody = {
+        channelId,
+        isActive,
+        platform
+      };
+      
+      console.log(`📱 MOBILE ACTIVITY: ${isActive ? 'ACTIVE' : 'INACTIVE'} in channel ${channelId} (${platform})`);
+      
       const response = await fetch(`${apiUrl}/api/notifications/user-activity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          channelId,
-          isActive,
-          platform: 'ios' // You could detect platform dynamically
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
-        console.log(`🔄 Activity tracking: ${isActive ? 'started' : 'stopped'} for channel ${channelId}`);
+        const result = await response.text();
+        console.log(`✅ Mobile activity tracking: ${isActive ? 'started' : 'stopped'} for channel ${channelId} - Response: ${result}`);
       } else {
-        console.error('Failed to update activity:', response.status);
+        const errorText = await response.text();
+        console.error(`❌ Failed to update mobile activity: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error('Error updating activity:', error);
+      console.error('❌ Error updating mobile activity:', error);
     }
   }, [channelId, isEnabled, apiUrl]);
 
   const startActivity = useCallback(() => {
     if (!isActiveRef.current) {
+      console.log(`🟢 Starting mobile activity tracking for channel: ${channelId}`);
       isActiveRef.current = true;
       updateActivity(true);
+    } else {
+      console.log(`⚠️ Activity already active for channel: ${channelId}`);
     }
-  }, [updateActivity]);
+  }, [updateActivity, channelId]);
 
   const stopActivity = useCallback(() => {
     if (isActiveRef.current) {
+      console.log(`🔴 Stopping mobile activity tracking for channel: ${channelId}`);
       isActiveRef.current = false;
       updateActivity(false);
+    } else {
+      console.log(`⚠️ Activity already inactive for channel: ${channelId}`);
     }
-  }, [updateActivity]);
+  }, [updateActivity, channelId]);
 
   const resetTimeout = useCallback(() => {
     if (timeoutRef.current) {
@@ -65,17 +91,24 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
 
   // Track app state changes
   useEffect(() => {
-    if (!channelId || !isEnabled) return;
+    if (!channelId || !isEnabled) {
+      console.log(`🚫 Activity tracking disabled: channelId=${channelId}, isEnabled=${isEnabled}`);
+      return;
+    }
+
+    console.log(`🎯 Initializing mobile activity tracking for channel: ${channelId}`);
 
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      console.log(`📱 App state changed: ${appStateRef.current} → ${nextAppState}`);
+      
       if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
         // App has come to the foreground
-        console.log('📱 App came to foreground');
+        console.log('📱 App came to foreground - starting activity');
         startActivity();
         resetTimeout();
       } else if (nextAppState.match(/inactive|background/)) {
         // App has gone to the background
-        console.log('📱 App went to background');
+        console.log('📱 App went to background - stopping activity');
         stopActivity();
       }
       
@@ -84,6 +117,7 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
 
     // Start tracking when component mounts (if app is active)
     if (AppState.currentState === 'active') {
+      console.log('📱 App is active on mount - starting activity tracking');
       startActivity();
       resetTimeout();
     }
@@ -93,6 +127,7 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
 
     return () => {
       // Cleanup
+      console.log(`🧹 Cleaning up activity tracking for channel: ${channelId}`);
       stopActivity();
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
