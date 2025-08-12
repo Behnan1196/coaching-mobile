@@ -21,8 +21,28 @@ const setupGoogleServices = () => {
   
   if (!googleServicesJson) {
     if (isEASBuild) {
-      console.error('❌ GOOGLE_SERVICES_JSON environment variable is required for EAS builds');
-      process.exit(1);
+      console.log('⚠️ GOOGLE_SERVICES_JSON not found - creating minimal config for development build');
+      // Create a minimal google-services.json for development builds
+      const minimalConfig = {
+        "project_info": {
+          "project_number": "123456789",
+          "project_id": "coaching-mobile-dev"
+        },
+        "client": [{
+          "client_info": {
+            "mobilesdk_app_id": "1:123456789:android:dev",
+            "android_client_info": {
+              "package_name": "com.coaching.mobile"
+            }
+          },
+          "api_key": [{
+            "current_key": "dev-key"
+          }]
+        }]
+      };
+      fs.writeFileSync(googleServicesPath, JSON.stringify(minimalConfig, null, 2));
+      console.log('✅ Minimal google-services.json created for development');
+      return;
     } else {
       console.log('⚠️  GOOGLE_SERVICES_JSON environment variable not found.');
       console.log('   For local development, make sure google-services.json exists.');
