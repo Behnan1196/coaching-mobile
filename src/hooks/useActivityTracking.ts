@@ -83,10 +83,11 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
       clearTimeout(timeoutRef.current);
     }
     
-    // Stop activity after 30 seconds of inactivity
+    // Stop activity after 60 seconds of inactivity (more forgiving)
     timeoutRef.current = setTimeout(() => {
+      console.log('⏰ Activity timeout reached - stopping activity tracking');
       stopActivity();
-    }, 30000);
+    }, 60000);
   }, [stopActivity]);
 
   // Track app state changes
@@ -106,10 +107,14 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
         console.log('📱 App came to foreground - starting activity');
         startActivity();
         resetTimeout();
-      } else if (nextAppState.match(/inactive|background/)) {
-        // App has gone to the background
+      } else if (nextAppState === 'background') {
+        // App has gone to the background (not just inactive)
         console.log('📱 App went to background - stopping activity');
         stopActivity();
+      } else if (nextAppState === 'inactive') {
+        // App is inactive but not background - keep activity tracking active
+        console.log('📱 App went inactive - keeping activity tracking active');
+        // Don't stop activity for inactive state
       }
       
       appStateRef.current = nextAppState;
