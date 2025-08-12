@@ -29,6 +29,14 @@ export const ChatScreen: React.FC = () => {
   const [chatPartner, setChatPartner] = useState<UserProfile | null>(null);
 
   // Track user activity in this chat channel - SMART FILTERING
+  console.log('🎯 ChatScreen Activity Tracking Config:', {
+    channelId: chatChannel?.id,
+    isDemoMode,
+    isEnabled: !!chatChannel && !isDemoMode,
+    streamApiKey: process.env.EXPO_PUBLIC_STREAM_API_KEY,
+    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v15.vercel.app'
+  });
+  
   const { triggerActivity } = useActivityTracking({
     channelId: chatChannel?.id || null,
     isEnabled: !!chatChannel && !isDemoMode, // Re-enabled with smart filtering
