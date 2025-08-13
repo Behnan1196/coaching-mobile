@@ -37,6 +37,10 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
       
       console.log(`📱 MOBILE ACTIVITY: ${isActive ? 'ACTIVE' : 'INACTIVE'} in channel ${channelId} (${platform})`);
       
+      // Add timeout and better error handling for network requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch(`${apiUrl}/api/notifications/user-activity`, {
         method: 'POST',
         headers: {
@@ -44,7 +48,10 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(requestBody),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const result = await response.text();
@@ -54,7 +61,14 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
         console.error(`❌ Failed to update mobile activity: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error('❌ Error updating mobile activity:', error);
+      // More specific error handling
+      if (error.name === 'AbortError') {
+        console.warn('⚠️ Activity tracking request timed out - this is normal during app state transitions');
+      } else if (error.message?.includes('Network request failed')) {
+        console.warn('⚠️ Network unavailable for activity tracking - will retry when connection is restored');
+      } else {
+        console.error('❌ Error updating mobile activity:', error);
+      }
     }
   }, [channelId, isEnabled, apiUrl]);
 
@@ -103,10 +117,12 @@ export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivit
       console.log(`📱 App state changed: ${appStateRef.current} → ${nextAppState}`);
       
       if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
-        // App has come to the foreground
-        console.log('📱 App came to foreground - starting activity');
-        startActivity();
-        resetTimeout();
+        // App has come to the foreground - add small delay to let network stabilize
+        console.log('📱 App came to foreground - starting activity (with delay)');
+        setTimeout(() => {
+          startActivity();
+          resetTimeout();
+        }, 1000); // 1 second delay
       } else if (nextAppState === 'background') {
         // App has gone to the background (not just inactive)
         console.log('📱 App went to background - stopping activity');
