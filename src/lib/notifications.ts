@@ -4,13 +4,43 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
 
+// Global variable to track current tab - will be set by navigation context
+let currentTab: string | null = null;
+
+export const setCurrentTab = (tab: string | null) => {
+  currentTab = tab;
+  console.log('📍 Notification service: Current tab set to', tab);
+};
+
 // Configure notification handler
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
+  handleNotification: async (notification) => {
+    const data = notification.request.content.data;
+    const isChatMessage = data?.type === 'chat_message';
+    const isOnChatTab = currentTab === 'Chat';
+    
+    // Suppress chat message notifications if user is on Chat tab
+    if (isChatMessage && isOnChatTab) {
+      console.log('🔇 Suppressing chat notification - user is on Chat tab');
+      return {
+        shouldShowAlert: false,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      };
+    }
+    
+    console.log('🔔 Showing notification:', {
+      type: data?.type,
+      currentTab,
+      shouldShow: !isChatMessage || !isOnChatTab
+    });
+    
+    return {
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    };
+  },
 });
 
 export interface NotificationToken {

@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
@@ -98,7 +99,7 @@ export const LoginScreen: React.FC = () => {
   if (loadingCredentials) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#01adb8" />
         <Text style={styles.loadingText}>Yükleniyor...</Text>
       </View>
     );
@@ -112,6 +113,11 @@ export const LoginScreen: React.FC = () => {
       >
         <View style={styles.content}>
         <View style={styles.header}>
+          <Image 
+            source={require('../../assets/login.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Koçluk Uygulaması</Text>
           <Text style={styles.subtitle}>Hesabınıza giriş yapın</Text>
         </View>
@@ -149,7 +155,7 @@ export const LoginScreen: React.FC = () => {
             <Switch
               value={rememberMe}
               onValueChange={handleRememberMeChange}
-              trackColor={{ false: '#D1D5DB', true: '#3B82F6' }}
+              trackColor={{ false: '#D1D5DB', true: '#01adb8' }}
               thumbColor={rememberMe ? '#FFFFFF' : '#FFFFFF'}
             />
             <Text style={styles.rememberMeText}>Beni hatırla</Text>
@@ -201,6 +207,11 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     alignItems: 'center',
   },
+  logo: {
+    width: 180,
+    height: 180,
+    marginBottom: 16,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -245,7 +256,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   loginButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#01adb8',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',

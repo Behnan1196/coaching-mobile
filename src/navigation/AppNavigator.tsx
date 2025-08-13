@@ -7,6 +7,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { CoachStudentProvider, useCoachStudent } from '../contexts/CoachStudentContext';
+import { NavigationProvider, useNavigation } from '../contexts/NavigationContext';
 import { useStream } from '../contexts/StreamContext';
 import { LoginScreen } from '../screens/LoginScreen';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -21,6 +22,8 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const MainTabs: React.FC = () => {
+  const { setCurrentTab } = useNavigation();
+
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top', 'bottom']}>
       <StudentSelectionHeader />
@@ -42,6 +45,14 @@ const MainTabs: React.FC = () => {
             fontWeight: '600',
           },
         }}
+        screenListeners={({ navigation }) => ({
+          state: (e) => {
+            const state = e.data.state;
+            const currentRoute = state.routes[state.index];
+            console.log('📍 Tab changed to:', currentRoute.name);
+            setCurrentTab(currentRoute.name);
+          },
+        })}
       >
         <Tab.Screen
           name="Home"
@@ -141,9 +152,11 @@ export const AppNavigator: React.FC = () => {
   }
 
   return (
-    <CoachStudentProvider key={user?.id}>
-      <AuthenticatedApp />
-    </CoachStudentProvider>
+    <NavigationProvider>
+      <CoachStudentProvider key={user?.id}>
+        <AuthenticatedApp />
+      </CoachStudentProvider>
+    </NavigationProvider>
   );
 };
 

@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   TouchableOpacity, 
   StyleSheet, 
   Alert,
-  Dimensions
+  Dimensions,
+  Linking
 } from 'react-native';
 import { Task, Subject, Topic, Resource, UserRole } from '../types/database';
 import { supabase } from '../lib/supabase';
@@ -16,6 +17,10 @@ interface TaskCardProps {
   subject?: Subject;
   topic?: Topic;
   resource?: Resource;
+  mockExam?: {
+    id: string;
+    name: string;
+  };
   onTaskUpdate?: (updatedTask: Task) => void;
   onTaskDelete?: (taskId: string) => void;
   onTaskEdit?: (task: Task) => void;
@@ -31,6 +36,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   subject,
   topic,
   resource,
+  mockExam: propMockExam,
   onTaskUpdate,
   onTaskDelete,
   onTaskEdit,
@@ -38,6 +44,40 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   userId,
   compact = false
 }) => {
+  const [mockExam, setMockExam] = useState(propMockExam);
+
+  useEffect(() => {
+    const fetchMockExam = async () => {
+      if (task.mock_exam_id && !mockExam) {
+        const { data, error } = await supabase
+          .from('mock_exams')
+          .select('id, name')
+          .eq('id', task.mock_exam_id)
+          .single();
+
+        if (data && !error) {
+          setMockExam(data);
+        }
+      }
+    };
+
+    fetchMockExam();
+  }, [task.mock_exam_id]);
+
+  const handleResourcePress = async () => {
+    if (resource?.url) {
+      try {
+        const supported = await Linking.canOpenURL(resource.url);
+        if (supported) {
+          await Linking.openURL(resource.url);
+        } else {
+          Alert.alert('Hata', 'Bu kaynağın linkine erişilemiyor.');
+        }
+      } catch (error) {
+        Alert.alert('Hata', 'Kaynak açılırken bir hata oluştu.');
+      }
+    }
+  };
   const getTaskTypeColor = (taskType: string) => {
     switch (taskType) {
       case 'resource':
@@ -80,6 +120,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   const formatQuestionCount = (count: number) => {
     return `${count} soru`;
+  };
+
+  const formatStartTime = (timeString: string) => {
+    // Remove seconds from the time string if they exist
+    if (timeString.includes(':')) {
+      const [hours, minutes] = timeString.split(':');
+      return `${hours}:${minutes}`;
+    }
+    return timeString;
   };
 
   const handleToggleComplete = async () => {
@@ -149,38 +198,54 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       </View>
 
       <View style={styles.taskContent}>
-        <Text style={[styles.taskTitle, isCompleted && styles.completedText]} numberOfLines={compact ? 2 : 3}>
-          {task.title}
-        </Text>
-        
+        {/* Subject/Topic line based on task type */}
         {subject && (
-          <Text style={[styles.taskSubject, isCompleted && styles.completedText]}>
-            {subject.name}
+          <Text style={[styles.taskSubjectTopic, isCompleted && styles.completedText]}>
+            {['study', 'review', 'practice'].includes(task.task_type) && topic
+              ? `${subject.name} - ${topic.name}`
+              : subject.name}
+          </Text>
+        )}
+
+        {/* Mock exam name for SORU ÇÖZ and SINAV */}
+        {['practice', 'exam'].includes(task.task_type) && mockExam && (
+          <Text style={[styles.mockExamName, isCompleted && styles.completedText]}>
+            {mockExam.name}
+          </Text>
+        )}
+
+        {/* Resource name with link for KAYNAK */}
+        {task.task_type === 'resource' && resource && (
+          <TouchableOpacity onPress={handleResourcePress}>
+            <Text style={[styles.resourceName, isCompleted && styles.completedText]}>
+              {resource.name} 🔗
+            </Text>
+          </TouchableOpacity>
+        )}
+        
+        {/* Description for all types */}
+        {task.description && (
+          <Text style={[styles.taskDescription, isCompleted && styles.completedText]} numberOfLines={2}>
+            {task.description}
+          </Text>
+        )}
+
+        {/* Problem count for SORU ÇÖZ and SINAV */}
+        {['practice', 'exam'].includes(task.task_type) && task.problem_count && (
+          <Text style={[styles.problemCount, isCompleted && styles.completedText]}>
+            {formatQuestionCount(task.problem_count)}
           </Text>
         )}
         
-        {topic && (
-          <Text style={[styles.taskTopic, isCompleted && styles.completedText]}>
-            {topic.name}
-          </Text>
-        )}
-        
+        {/* Time and Duration row */}
         <View style={styles.taskDetails}>
+          <Text style={[styles.detailText, isCompleted && styles.completedText]}>
+            {task.scheduled_start_time ? formatStartTime(task.scheduled_start_time) : '--:--'}
+          </Text>
+          
           {task.estimated_duration && (
             <Text style={[styles.detailText, isCompleted && styles.completedText]}>
               {formatDuration(task.estimated_duration)}
-            </Text>
-          )}
-          
-          {task.problem_count && (
-            <Text style={[styles.detailText, isCompleted && styles.completedText]}>
-              {formatQuestionCount(task.problem_count)}
-            </Text>
-          )}
-          
-          {task.scheduled_start_time && (
-            <Text style={[styles.detailText, isCompleted && styles.completedText]}>
-              {task.scheduled_start_time}
             </Text>
           )}
         </View>
@@ -267,28 +332,42 @@ const styles = StyleSheet.create({
   taskContent: {
     flex: 1,
   },
-  taskTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-    lineHeight: 22,
-  },
-  taskSubject: {
+  taskSubjectTopic: {
     fontSize: 14,
-    color: '#3B82F6',
+    color: '#1F2937',
     fontWeight: '500',
     marginBottom: 4,
   },
-  taskTopic: {
+  mockExamName: {
+    fontSize: 14,
+    color: '#4B5563',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  resourceName: {
+    fontSize: 14,
+    color: '#2563EB',
+    fontWeight: '500',
+    marginBottom: 4,
+    textDecorationLine: 'underline',
+  },
+  taskDescription: {
     fontSize: 13,
     color: '#6B7280',
     marginBottom: 8,
+    lineHeight: 18,
+  },
+  problemCount: {
+    fontSize: 13,
+    color: '#4B5563',
+    marginBottom: 8,
+    fontWeight: '500',
   },
   taskDetails: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 'auto',
   },
   detailText: {
     fontSize: 12,
@@ -300,6 +379,5 @@ const styles = StyleSheet.create({
   },
   completedText: {
     opacity: 0.6,
-    textDecorationLine: 'line-through',
   },
-}); 
+});

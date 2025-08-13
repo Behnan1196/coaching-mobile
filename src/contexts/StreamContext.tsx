@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Call, StreamVideoClient } from '@stream-io/video-react-native-sdk';
 import { StreamChat, Channel } from 'stream-chat';
+import * as Notifications from 'expo-notifications';
 import { useAuth } from './AuthContext';
 import { 
   generateUserToken, 
@@ -112,6 +113,38 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
     }
   };
 
+  const setupChatMessageListener = (channel: Channel, currentUserId: string) => {
+    console.log('🔔 [CHAT] Setting up message listener for notifications');
+    
+    channel.on('message.new', async (event) => {
+      const message = event.message;
+      const messageUserId = message.user?.id;
+      
+      // Don't show notifications for our own messages
+      if (messageUserId === currentUserId) {
+        return;
+      }
+      
+      console.log('📨 [CHAT] New message received from:', message.user?.name);
+      
+      // Send local push notification
+      // The notification handler will decide whether to show it based on current tab
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `💬 ${message.user?.name || 'Yeni mesaj'}`,
+          body: message.text || 'Yeni bir mesaj aldınız',
+          data: {
+            type: 'chat_message',
+            channelId: channel.id,
+            userId: messageUserId,
+            userName: message.user?.name,
+          },
+        },
+        trigger: null, // Show immediately
+      });
+    });
+  };
+
   const cleanupStream = () => {
     console.log('🧹 [STREAM] Cleaning up Stream resources');
     
@@ -153,6 +186,9 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
       
       // Create or get chat channel using existing chat client
       const channel = await createChatChannel(chatClient, streamUser.id, partnerId, streamUser.name, partnerName);
+      
+      // Set up message listener for push notifications
+      setupChatMessageListener(channel, streamUser.id);
       
       setChatChannel(channel);
       

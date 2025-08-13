@@ -6,7 +6,8 @@ import {
   TouchableOpacity, 
   Modal, 
   FlatList, 
-  ActivityIndicator 
+  ActivityIndicator,
+  Image 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -91,9 +92,16 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
           </View>
         ) : (
           <View style={styles.studentView}>
-            <Text style={styles.brandText}>
-              ÖZGÜN KOÇLUK
-            </Text>
+            <View style={styles.brandContainer}>
+              <Image 
+                source={require('../../assets/ozgunlogo.png')}
+                style={styles.brandLogo}
+                resizeMode="contain"
+              />
+              <Text style={styles.brandText}>
+                ÖZGÜN KOÇLUK
+              </Text>
+            </View>
           </View>
         )}
         
@@ -197,6 +205,15 @@ const styles = StyleSheet.create({
   },
   studentView: {
     flex: 1,
+  },
+  brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandLogo: {
+    width: 32,
+    height: 32,
+    marginRight: 8,
   },
   brandText: {
     fontSize: 18,
