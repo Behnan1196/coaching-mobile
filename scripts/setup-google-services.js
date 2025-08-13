@@ -32,7 +32,7 @@ const setupGoogleServices = () => {
           "client_info": {
             "mobilesdk_app_id": "1:123456789:android:dev",
             "android_client_info": {
-              "package_name": "com.coaching.mobile"
+              "package_name": "com.behnan.coachingmobile"
             }
           },
           "api_key": [{
