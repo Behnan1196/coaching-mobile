@@ -33,8 +33,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
     email: '',
     phone: '',
     avatar_url: '',
-    notifications_enabled: true,
-    email_notifications: true,
     current_password: '',
     new_password: '',
     confirm_password: ''
@@ -52,8 +50,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
       email: user?.email || '',
       phone: userProfile?.phone || '',
       avatar_url: userProfile?.avatar_url || '',
-      notifications_enabled: userProfile?.notifications_enabled !== false,
-      email_notifications: userProfile?.email_notifications !== false,
       current_password: '',
       new_password: '',
       confirm_password: ''
@@ -110,8 +106,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
       // Try to include settings columns if they exist
       const settingsUpdates = {
         avatar_url: settingsForm.avatar_url,
-        notifications_enabled: settingsForm.notifications_enabled,
-        email_notifications: settingsForm.email_notifications,
       };
 
       // Combine all updates
@@ -391,62 +385,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
     </ScrollView>
   );
 
-
-
-  const renderNotificationSettings = () => (
-    <ScrollView style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Bildirim Ayarları</Text>
-      
-      <View style={styles.formSection}>
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingTitle}>Bildirimler</Text>
-            <Text style={styles.settingDescription}>Tüm bildirimleri açık/kapalı</Text>
-          </View>
-          <Switch
-            value={settingsForm.notifications_enabled}
-            onValueChange={(value) => setSettingsForm(prev => ({ ...prev, notifications_enabled: value }))}
-            trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-            thumbColor={settingsForm.notifications_enabled ? '#3B82F6' : '#F3F4F6'}
-          />
-        </View>
-
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingTitle}>E-posta Bildirimleri</Text>
-            <Text style={styles.settingDescription}>E-posta ile bildirim al</Text>
-          </View>
-          <Switch
-            value={settingsForm.email_notifications}
-            onValueChange={(value) => setSettingsForm(prev => ({ ...prev, email_notifications: value }))}
-            trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-            thumbColor={settingsForm.email_notifications ? '#3B82F6' : '#F3F4F6'}
-          />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.disabledButton]}
-          onPress={updateProfile}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <Text style={styles.saveButtonText}>Ayarları Kaydet</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  );
-
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile':
         return renderProfileSettings();
       case 'security':
         return renderSecuritySettings();
-      case 'notifications':
-        return renderNotificationSettings();
       default:
         return renderProfileSettings();
     }
@@ -468,7 +412,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {renderTabButton('profile', 'Profil', 'person-outline')}
             {renderTabButton('security', 'Güvenlik', 'shield-outline')}
-            {renderTabButton('notifications', 'Bildirimler', 'notifications-outline')}
           </ScrollView>
         </View>
 
