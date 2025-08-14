@@ -83,7 +83,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       case 'resource':
         return '#10B981'; // Green for KAYNAK
       case 'study':
-        return '#3B82F6'; // Blue for ÇALIŞMA
+        return '#249096'; // Blue for ÇALIŞMA
       case 'practice':
         return '#F59E0B'; // Orange for SORU ÇÖZ
       case 'exam':
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 16,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
   },
   taskTypeText: {
     color: 'white',

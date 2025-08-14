@@ -277,7 +277,7 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#249096" />
         <Text style={styles.loadingText}>Aylık plan yükleniyor...</Text>
       </View>
     );
@@ -337,7 +337,7 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#3B82F6']}
+            colors={['#249096']}
           />
         }
       >
@@ -365,7 +365,7 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
                   styles.dayCell,
                   { 
                     width: cellWidth, 
-                    backgroundColor: isToday ? '#3B82F6' : backgroundColor,
+                    backgroundColor: isToday ? '#249096' : backgroundColor,
                     opacity: isCurrentMonth ? 1 : 0.3
                   }
                 ]}

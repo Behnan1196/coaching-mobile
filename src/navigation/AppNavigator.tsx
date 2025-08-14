@@ -132,7 +132,7 @@ export const AppNavigator: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#249096" />
       </View>
     );
   }

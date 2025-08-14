@@ -70,7 +70,7 @@ export const CoachStudentSelectionScreen: React.FC<CoachStudentSelectionScreenPr
   if (loading && availableStudents.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#249096" />
         <Text style={styles.loadingText}>Loading students...</Text>
       </View>
     );
@@ -123,7 +123,7 @@ export const CoachStudentSelectionScreen: React.FC<CoachStudentSelectionScreenPr
               <RefreshControl
                 refreshing={loading}
                 onRefresh={loadStudents}
-                colors={['#3B82F6']}
+                colors={['#249096']}
               />
             }
             showsVerticalScrollIndicator={false}
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
-    backgroundColor: '#3B82F6',
+            backgroundColor: '#249096',
     paddingTop: 60,
     paddingBottom: 30,
     paddingHorizontal: 20,

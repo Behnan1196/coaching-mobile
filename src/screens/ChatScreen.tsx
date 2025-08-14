@@ -95,7 +95,7 @@ export const ChatScreen: React.FC = () => {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <ActivityIndicator size="large" color="#249096" />
           <Text style={styles.loadingText}>
             {loading ? 'Yükleniyor...' : 'Sohbet hazırlanıyor...'}
           </Text>
@@ -194,7 +194,7 @@ export const ChatScreen: React.FC = () => {
         <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
       </View>
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#249096" />
         <Text style={styles.loadingText}>
           Chat hazırlanıyor...
         </Text>

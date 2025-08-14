@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   userRole: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#3B82F6',
+    color: '#249096',
     marginBottom: 2,
   },
   userEmail: {

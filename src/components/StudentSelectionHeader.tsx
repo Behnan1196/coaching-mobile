@@ -66,7 +66,7 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
           <Text style={styles.studentEmail}>{item.email}</Text>
         </View>
         {selectedStudent?.id === item.id && (
-          <Ionicons name="checkmark" size={20} color="#3B82F6" />
+          <Ionicons name="checkmark" size={20} color="#249096" />
         )}
       </View>
     </TouchableOpacity>
@@ -130,9 +130,9 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator size="small" color="#3B82F6" />
+                  <ActivityIndicator size="small" color="#249096" />
                 ) : (
-                  <Ionicons name="refresh" size={20} color="#3B82F6" />
+                  <Ionicons name="refresh" size={20} color="#249096" />
                 )}
               </TouchableOpacity>
             </View>
@@ -166,7 +166,7 @@ export const StudentSelectionHeader: React.FC<StudentSelectionHeaderProps> = ({
                         <Text style={styles.studentEmail}>Hiçbir öğrenci seçili olmayacak</Text>
                       </View>
                       {!selectedStudent && (
-                        <Ionicons name="checkmark" size={20} color="#3B82F6" />
+                        <Ionicons name="checkmark" size={20} color="#249096" />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

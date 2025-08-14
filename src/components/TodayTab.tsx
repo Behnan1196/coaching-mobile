@@ -251,7 +251,7 @@ export const TodayTab: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#249096" />
         <Text style={styles.loadingText}>Bugünkü görevler yükleniyor...</Text>
       </View>
     );
@@ -295,7 +295,7 @@ export const TodayTab: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#3B82F6']}
+            colors={['#249096']}
           />
         }
       >

@@ -302,7 +302,7 @@ export const WeeklyPlanTab: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#249096" />
         <Text style={styles.loadingText}>Haftalık plan yükleniyor...</Text>
       </View>
     );
@@ -341,7 +341,7 @@ export const WeeklyPlanTab: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#3B82F6']}
+            colors={['#249096']}
           />
         }
       >
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   todayHeader: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
   },
   dayInfo: {
     flex: 1,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -179,7 +179,7 @@ export const VideoCallTabScreen: React.FC = () => {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <ActivityIndicator size="large" color="#249096" />
           <Text style={styles.loadingText}>Yükleniyor...</Text>
         </View>
       </View>
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   callButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   inviteButtonSend: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
   },
   inviteButtonSendText: {
     fontSize: 14,

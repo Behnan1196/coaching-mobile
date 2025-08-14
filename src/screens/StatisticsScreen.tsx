@@ -303,7 +303,7 @@ const StatisticsScreen: React.FC = () => {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#3B82F6" style={styles.loading} />
+        <ActivityIndicator size="large" color="#249096" style={styles.loading} />
       ) : (
         <>
           {/* Main Stats Cards */}
@@ -786,14 +786,14 @@ const styles = StyleSheet.create({
   },
   statItemFill: {
     height: 8,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
     borderRadius: 4,
   },
   statItemValue: {
     width: 60,
     fontSize: 12,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: '#249096',
     textAlign: 'right',
   },
   emptyState: {

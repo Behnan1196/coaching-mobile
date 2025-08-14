@@ -357,7 +357,7 @@ const BilgilerimScreen = () => {
             style={styles.goalEditButton}
             onPress={() => openEditGoalModal(item)}
           >
-            <Ionicons name="create-outline" size={18} color="#3B82F6" />
+            <Ionicons name="create-outline" size={18} color="#249096" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.goalDeleteButton}
@@ -1227,7 +1227,7 @@ const MockExamsScreen = () => {
                     style={styles.examEditButton}
                     onPress={() => openEditExamModal(result)}
                   >
-                    <Ionicons name="create-outline" size={16} color="#3B82F6" />
+                    <Ionicons name="create-outline" size={16} color="#249096" />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.examDeleteButton}
@@ -1971,7 +1971,7 @@ const UsefulLinksScreen = () => {
 
   const getIconColor = (color: string) => {
     const colors: { [key: string]: string } = {
-      blue: '#3B82F6',
+      blue: '#249096',
       green: '#10B981',
       red: '#EF4444',
       purple: '#8B5CF6',
@@ -2329,7 +2329,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   saveButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 8,
@@ -2461,7 +2461,7 @@ const styles = StyleSheet.create({
     color: '#991B1B',
   },
   addButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 8,
@@ -2542,7 +2542,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
     alignItems: 'center',
     marginLeft: 10,
   },
@@ -2694,7 +2694,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeExamTypeButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
   },
   examTypeButtonText: {
     fontSize: 14,
@@ -2947,7 +2947,7 @@ const styles = StyleSheet.create({
   },
   linkArrow: {
     fontSize: 20,
-    color: '#3B82F6',
+    color: '#249096',
     fontWeight: 'bold',
     marginLeft: 8,
   },
@@ -3119,7 +3119,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   headerButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#249096',
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 8,
