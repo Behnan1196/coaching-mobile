@@ -10,7 +10,6 @@ import { CoachStudentProvider, useCoachStudent } from '../contexts/CoachStudentC
 import { NavigationProvider, useNavigation } from '../contexts/NavigationContext';
 import { useStream } from '../contexts/StreamContext';
 import { LoginScreen } from '../screens/LoginScreen';
-import { HomeScreen } from '../screens/HomeScreen';
 import { StudyPlanScreen } from '../screens/StudyPlanScreen';
 import { ChatTabScreen } from '../screens/ChatTabScreen';
 import { StatisticsScreen } from '../screens/StatisticsScreen';
@@ -28,6 +27,7 @@ const MainTabs: React.FC = () => {
     <SafeAreaView style={styles.tabContainer} edges={['top', 'bottom']}>
       <StudentSelectionHeader />
       <Tab.Navigator
+        initialRouteName="StudyPlan"
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: '#3B82F6',
@@ -54,16 +54,6 @@ const MainTabs: React.FC = () => {
           },
         })}
       >
-        <Tab.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="home" size={size} color={color} />
-            ),
-          }}
-        />
         <Tab.Screen
           name="StudyPlan"
           component={StudyPlanScreen}
