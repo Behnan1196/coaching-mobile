@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   brandText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#3B82F6',
+    color: '#01adb8',
     letterSpacing: 1,
   },
   rightSection: {
