@@ -7,7 +7,6 @@ import {
   ScrollView,
   TextInput,
   Alert,
-  Switch,
   ActivityIndicator,
   Image,
 } from 'react-native';
@@ -23,7 +22,6 @@ interface SettingsScreenProps {}
 export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
   const { userProfile, user, signOut, refreshUserProfile } = useAuth();
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
@@ -33,15 +31,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
     email: '',
     phone: '',
     avatar_url: '',
-    current_password: '',
-    new_password: '',
-    confirm_password: ''
   });
-
-  // Password visibility states
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     // Populate form with current user data
@@ -50,9 +40,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
       email: user?.email || '',
       phone: userProfile?.phone || '',
       avatar_url: userProfile?.avatar_url || '',
-      current_password: '',
-      new_password: '',
-      confirm_password: ''
     });
     setAvatarPreview(userProfile?.avatar_url || null);
   }, [userProfile, user]);
@@ -135,85 +122,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
     }
   };
 
-  const updatePassword = async () => {
-    if (settingsForm.new_password !== settingsForm.confirm_password) {
-      Alert.alert('Hata', 'Yeni şifreler eşleşmiyor!');
-      return;
-    }
-
-    if (settingsForm.new_password.length < 6) {
-      Alert.alert('Hata', 'Yeni şifre en az 6 karakter olmalıdır!');
-      return;
-    }
-
-    if (!supabase) return;
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: settingsForm.new_password
-      });
-
-      if (error) {
-        console.error('Error updating password:', error);
-        Alert.alert('Hata', 'Şifre güncellenirken hata oluştu: ' + error.message);
-        return;
-      }
-
-      // Clear form fields
-      setSettingsForm(prev => ({
-        ...prev,
-        current_password: '',
-        new_password: '',
-        confirm_password: ''
-      }));
-      
-      // Stop loading state
-      setLoading(false);
-      
-      // Show success message and logout immediately
-      Alert.alert(
-        'Başarılı', 
-        'Şifre başarıyla güncellendi! Güvenlik nedeniyle yeniden giriş yapmanız gerekiyor.',
-        [
-          {
-            text: 'Tamam',
-            onPress: () => {
-              // Simple direct logout
-              signOut();
-            }
-          }
-        ]
-      );
-      
-    } catch (error) {
-      console.error('❌ Error updating password:', error);
-      Alert.alert('Hata', 'Şifre güncellenirken hata oluştu.');
-      setLoading(false);
-    }
-  };
-
   const getUserInitial = () => {
     return userProfile?.full_name?.charAt(0)?.toUpperCase() || 'U';
   };
 
   const renderTabButton = (tabId: string, title: string, icon: string) => (
     <TouchableOpacity
-      style={[
-        styles.tabButton,
-        activeTab === tabId && styles.activeTabButton
-      ]}
-      onPress={() => setActiveTab(tabId)}
+      style={styles.tabButton}
     >
       <Ionicons 
         name={icon as any} 
         size={20} 
-        color={activeTab === tabId ? '#3B82F6' : '#6B7280'} 
+        color="white"
       />
-      <Text style={[
-        styles.tabButtonText,
-        activeTab === tabId && styles.activeTabButtonText
-      ]}>
+      <Text style={styles.tabButtonText}>
         {title}
       </Text>
     </TouchableOpacity>
@@ -296,104 +218,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
     </ScrollView>
   );
 
-  const renderSecuritySettings = () => (
-    <ScrollView style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Güvenlik Ayarları</Text>
-      
-      <View style={styles.formSection}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Mevcut Şifre</Text>
-          <View style={styles.passwordInputContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              value={settingsForm.current_password}
-              onChangeText={(text) => setSettingsForm(prev => ({ ...prev, current_password: text }))}
-              placeholder="Mevcut şifre"
-              secureTextEntry={!showCurrentPassword}
-            />
-            <TouchableOpacity
-              style={styles.passwordToggle}
-              onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-            >
-              <Ionicons 
-                name={showCurrentPassword ? "eye-off" : "eye"} 
-                size={20} 
-                color="#6B7280" 
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Yeni Şifre</Text>
-          <View style={styles.passwordInputContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              value={settingsForm.new_password}
-              onChangeText={(text) => setSettingsForm(prev => ({ ...prev, new_password: text }))}
-              placeholder="Yeni şifre"
-              secureTextEntry={!showNewPassword}
-            />
-            <TouchableOpacity
-              style={styles.passwordToggle}
-              onPress={() => setShowNewPassword(!showNewPassword)}
-            >
-              <Ionicons 
-                name={showNewPassword ? "eye-off" : "eye"} 
-                size={20} 
-                color="#6B7280" 
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Yeni Şifre (Tekrar)</Text>
-          <View style={styles.passwordInputContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              value={settingsForm.confirm_password}
-              onChangeText={(text) => setSettingsForm(prev => ({ ...prev, confirm_password: text }))}
-              placeholder="Yeni şifre tekrar"
-              secureTextEntry={!showConfirmPassword}
-            />
-            <TouchableOpacity
-              style={styles.passwordToggle}
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              <Ionicons 
-                name={showConfirmPassword ? "eye-off" : "eye"} 
-                size={20} 
-                color="#6B7280" 
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.disabledButton]}
-          onPress={updatePassword}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <Text style={styles.saveButtonText}>Şifreyi Güncelle</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  );
-
   const renderTabContent = () => {
-    switch (activeTab) {
-      case 'profile':
-        return renderProfileSettings();
-      case 'security':
-        return renderSecuritySettings();
-      default:
-        return renderProfileSettings();
-    }
+    return renderProfileSettings();
   };
 
   return (
@@ -411,7 +237,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = () => {
         <View style={styles.tabNavigation}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {renderTabButton('profile', 'Profil', 'person-outline')}
-            {renderTabButton('security', 'Güvenlik', 'shield-outline')}
           </ScrollView>
         </View>
 
@@ -461,21 +286,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 8,
     borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-  },
-  activeTabButton: {
-    backgroundColor: '#EBF4FF',
-    borderWidth: 1,
-    borderColor: '#3B82F6',
+    backgroundColor: '#3B82F6',
   },
   tabButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6B7280',
+    color: 'white',
     marginLeft: 8,
-  },
-  activeTabButtonText: {
-    color: '#3B82F6',
   },
   tabContent: {
     flex: 1,
@@ -572,23 +389,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 4,
   },
-  passwordInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    backgroundColor: 'white',
-  },
-  passwordInput: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  passwordToggle: {
-    padding: 10,
-  },
   saveButton: {
     backgroundColor: '#3B82F6',
     borderRadius: 8,
@@ -604,26 +404,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  settingInfo: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  settingDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-
 });
