@@ -2237,10 +2237,10 @@ export const ToolsScreen: React.FC = () => {
       </View>
       <Tab.Navigator
         screenOptions={{
-          tabBarActiveTintColor: '#3B82F6',
+          tabBarActiveTintColor: '#249096',
           tabBarInactiveTintColor: '#6B7280',
           tabBarIndicatorStyle: {
-            backgroundColor: '#3B82F6',
+            backgroundColor: '#249096',
           },
           tabBarLabelStyle: {
             fontSize: 12,

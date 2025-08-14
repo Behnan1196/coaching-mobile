@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   toggleButtonTextActive: {
-    color: '#3B82F6',
+    color: '#249096',
   },
   loading: {
     marginTop: 50,

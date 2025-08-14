@@ -30,7 +30,7 @@ const MainTabs: React.FC = () => {
         initialRouteName="StudyPlan"
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: '#3B82F6',
+          tabBarActiveTintColor: '#249096',
           tabBarInactiveTintColor: '#6B7280',
           tabBarStyle: {
             backgroundColor: 'white',
