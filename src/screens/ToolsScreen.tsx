@@ -2043,7 +2043,6 @@ const PomodoroTimerScreen = () => {
   const [workDuration, setWorkDuration] = useState(25);
   const [breakDuration, setBreakDuration] = useState(5);
   const [showSettings, setShowSettings] = useState(false);
-  const [runInBackground, setRunInBackground] = useState(false);
   const [pausedTime, setPausedTime] = useState(0);
   const [lastActiveTime, setLastActiveTime] = useState(Date.now());
 
@@ -2054,10 +2053,7 @@ const PomodoroTimerScreen = () => {
       
       if (nextAppState === 'active') {
         // App came to foreground
-        if (isRunning && !runInBackground && pausedTime > 0) {
-          console.log('🍅 [POMODORO] App resumed - timer was paused in background');
-          // Timer was paused, keep it paused
-        } else if (isRunning && runInBackground) {
+        if (isRunning) {
           console.log('🍅 [POMODORO] App resumed - timer was running in background');
           // Timer was running in background, calculate elapsed time
           const elapsedSeconds = Math.floor((now - lastActiveTime) / 1000);
@@ -2069,11 +2065,7 @@ const PomodoroTimerScreen = () => {
         setLastActiveTime(now);
       } else if (nextAppState === 'background' || nextAppState === 'inactive') {
         // App went to background
-        if (isRunning && !runInBackground) {
-          console.log('🍅 [POMODORO] App backgrounded - pausing timer');
-          setPausedTime(timeLeft);
-          setIsRunning(false);
-        } else if (isRunning && runInBackground) {
+        if (isRunning) {
           console.log('🍅 [POMODORO] App backgrounded - timer continues running');
           setLastActiveTime(now);
         }
@@ -2082,7 +2074,7 @@ const PomodoroTimerScreen = () => {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [isRunning, runInBackground, timeLeft, pausedTime]);
+  }, [isRunning, timeLeft, pausedTime]);
 
   React.useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -2169,7 +2161,7 @@ const PomodoroTimerScreen = () => {
     if (!isRunning && pausedTime > 0) {
       return '⏸️ Duraklatıldı';
     } else if (isRunning) {
-      return runInBackground ? '▶️ Çalışıyor (Arka planda)' : '▶️ Çalışıyor';
+      return '▶️ Çalışıyor';
     } else {
       return '⏸️ Duraklatıldı';
     }
@@ -2235,19 +2227,6 @@ const PomodoroTimerScreen = () => {
             <Text style={styles.statLabel}>Mola Süresi</Text>
             <Text style={styles.statValue}>{breakDuration} dk</Text>
           </View>
-        </View>
-
-        {/* Background Mode Toggle */}
-        <View style={styles.backgroundToggle}>
-          <Text style={styles.toggleLabel}>Arka planda çalıştır</Text>
-          <TouchableOpacity
-            style={[styles.toggleButton, runInBackground && styles.toggleButtonActive]}
-            onPress={() => setRunInBackground(!runInBackground)}
-          >
-            <Text style={styles.toggleButtonText}>
-              {runInBackground ? '✓' : '✗'}
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -3375,29 +3354,7 @@ const styles = StyleSheet.create({
   taramaStatisticsCount: {
     color: '#059669', // green-600
   },
-  backgroundToggle: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  toggleLabel: {
-    fontSize: 16,
-    color: '#666',
-  },
-  toggleButton: {
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: '#E5E7EB',
-  },
-  toggleButtonActive: {
-    backgroundColor: '#2563eb',
-  },
-  toggleButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+
   settingsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
