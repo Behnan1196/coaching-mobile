@@ -13,7 +13,8 @@ import {
   Platform,
   RefreshControl,
   Linking,
-  Dimensions
+  Dimensions,
+  AppState
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
@@ -2042,15 +2043,70 @@ const PomodoroTimerScreen = () => {
   const [workDuration, setWorkDuration] = useState(25);
   const [breakDuration, setBreakDuration] = useState(5);
   const [showSettings, setShowSettings] = useState(false);
+  const [runInBackground, setRunInBackground] = useState(false);
+  const [pausedTime, setPausedTime] = useState(0);
+  const [lastActiveTime, setLastActiveTime] = useState(Date.now());
+
+  // Handle app state changes for timer
+  React.useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      const now = Date.now();
+      
+      if (nextAppState === 'active') {
+        // App came to foreground
+        if (isRunning && !runInBackground && pausedTime > 0) {
+          console.log('🍅 [POMODORO] App resumed - timer was paused in background');
+          // Timer was paused, keep it paused
+        } else if (isRunning && runInBackground) {
+          console.log('🍅 [POMODORO] App resumed - timer was running in background');
+          // Timer was running in background, calculate elapsed time
+          const elapsedSeconds = Math.floor((now - lastActiveTime) / 1000);
+          if (elapsedSeconds > 0) {
+            setTimeLeft(prev => Math.max(0, prev - elapsedSeconds));
+            console.log(`🍅 [POMODORO] Adjusted timer by ${elapsedSeconds} seconds`);
+          }
+        }
+        setLastActiveTime(now);
+      } else if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // App went to background
+        if (isRunning && !runInBackground) {
+          console.log('🍅 [POMODORO] App backgrounded - pausing timer');
+          setPausedTime(timeLeft);
+          setIsRunning(false);
+        } else if (isRunning && runInBackground) {
+          console.log('🍅 [POMODORO] App backgrounded - timer continues running');
+          setLastActiveTime(now);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [isRunning, runInBackground, timeLeft, pausedTime]);
 
   React.useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
 
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft((prevTime) => prevTime - 1);
+        setTimeLeft((prevTime) => {
+          const newTime = prevTime - 1;
+          if (newTime <= 0) {
+            // Timer completed
+            setIsRunning(false);
+            return 0;
+          }
+          return newTime;
+        });
       }, 1000);
-    } else if (timeLeft === 0) {
+    }
+
+    return () => clearInterval(interval);
+  }, [isRunning, timeLeft]);
+
+  // Handle timer completion
+  React.useEffect(() => {
+    if (timeLeft === 0 && isRunning) {
       setIsRunning(false);
       if (!isBreak) {
         // Work session completed
@@ -2059,6 +2115,7 @@ const PomodoroTimerScreen = () => {
             setTimeLeft(breakDuration * 60);
             setIsBreak(true);
             setIsRunning(true);
+            setPausedTime(0);
           }}
         ]);
       } else {
@@ -2068,21 +2125,33 @@ const PomodoroTimerScreen = () => {
             setTimeLeft(workDuration * 60);
             setIsBreak(false);
             setIsRunning(true);
+            setPausedTime(0);
           }}
         ]);
       }
     }
-
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft, isBreak, workDuration, breakDuration]);
+  }, [timeLeft, isRunning, isBreak, workDuration, breakDuration]);
 
   const toggleTimer = () => {
-    setIsRunning(!isRunning);
+    if (isRunning) {
+      // Pause timer
+      setIsRunning(false);
+      setPausedTime(timeLeft);
+      console.log('🍅 [POMODORO] Timer paused');
+    } else {
+      // Resume timer
+      setIsRunning(true);
+      setPausedTime(0);
+      setLastActiveTime(Date.now());
+      console.log('🍅 [POMODORO] Timer resumed');
+    }
   };
 
   const resetTimer = () => {
     setIsRunning(false);
+    setPausedTime(0);
     setTimeLeft(isBreak ? breakDuration * 60 : workDuration * 60);
+    console.log('🍅 [POMODORO] Timer reset');
   };
 
   const formatTime = (seconds: number) => {
@@ -2094,6 +2163,16 @@ const PomodoroTimerScreen = () => {
   const getProgress = () => {
     const totalTime = isBreak ? breakDuration * 60 : workDuration * 60;
     return 1 - (timeLeft / totalTime);
+  };
+
+  const getStatusText = () => {
+    if (!isRunning && pausedTime > 0) {
+      return '⏸️ Duraklatıldı';
+    } else if (isRunning) {
+      return runInBackground ? '▶️ Çalışıyor (Arka planda)' : '▶️ Çalışıyor';
+    } else {
+      return '⏸️ Duraklatıldı';
+    }
   };
 
   return (
@@ -2115,6 +2194,7 @@ const PomodoroTimerScreen = () => {
           <Text style={styles.timerLabel}>
             {isBreak ? 'Mola Zamanı' : 'Çalışma Zamanı'}
           </Text>
+          <Text style={styles.statusText}>{getStatusText()}</Text>
         </View>
 
         {/* Progress Bar */}
@@ -2156,74 +2236,88 @@ const PomodoroTimerScreen = () => {
             <Text style={styles.statValue}>{breakDuration} dk</Text>
           </View>
         </View>
+
+        {/* Background Mode Toggle */}
+        <View style={styles.backgroundToggle}>
+          <Text style={styles.toggleLabel}>Arka planda çalıştır</Text>
+          <TouchableOpacity
+            style={[styles.toggleButton, runInBackground && styles.toggleButtonActive]}
+            onPress={() => setRunInBackground(!runInBackground)}
+          >
+            <Text style={styles.toggleButtonText}>
+              {runInBackground ? '✓' : '✗'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Settings Modal */}
       {showSettings && (
-        <Modal visible={showSettings} animationType="slide" transparent>
-          <View style={styles.settingsModalContainer}>
-            <View style={styles.settingsModal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Timer Ayarları</Text>
-                <TouchableOpacity onPress={() => setShowSettings(false)}>
-                  <Text style={styles.modalCloseButton}>✕</Text>
-                </TouchableOpacity>
+        <View style={styles.settingsModalContainer}>
+          <View style={styles.settingsModal}>
+            <View style={styles.settingsHeader}>
+              <Text style={styles.settingsTitle}>Zamanlayıcı Ayarları</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowSettings(false)}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.settingsContent}>
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>Çalışma Süresi (dakika)</Text>
+                <View style={styles.settingInputContainer}>
+                  <TouchableOpacity
+                    style={styles.settingButton}
+                    onPress={() => setWorkDuration(Math.max(1, workDuration - 5))}
+                  >
+                    <Text style={styles.settingButtonText}>-5</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.settingValue}>{workDuration}</Text>
+                  <TouchableOpacity
+                    style={styles.settingButton}
+                    onPress={() => setWorkDuration(workDuration + 5)}
+                  >
+                    <Text style={styles.settingButtonText}>+5</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
-              <View style={styles.settingsContent}>
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingLabel}>Çalışma Süresi (dakika)</Text>
-                  <View style={styles.settingInputContainer}>
-                    <TouchableOpacity
-                      style={styles.settingButton}
-                      onPress={() => setWorkDuration(Math.max(5, workDuration - 5))}
-                    >
-                      <Text style={styles.settingButtonText}>-</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.settingValue}>{workDuration}</Text>
-                    <TouchableOpacity
-                      style={styles.settingButton}
-                      onPress={() => setWorkDuration(Math.min(60, workDuration + 5))}
-                    >
-                      <Text style={styles.settingButtonText}>+</Text>
-                    </TouchableOpacity>
-                  </View>
+              <View style={styles.settingItem}>
+                <Text style={styles.settingLabel}>Mola Süresi (dakika)</Text>
+                <View style={styles.settingInputContainer}>
+                  <TouchableOpacity
+                    style={styles.settingButton}
+                    onPress={() => setBreakDuration(Math.max(1, breakDuration - 1))}
+                  >
+                    <Text style={styles.settingButtonText}>-1</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.settingValue}>{breakDuration}</Text>
+                  <TouchableOpacity
+                    style={styles.settingButton}
+                    onPress={() => setBreakDuration(breakDuration + 1)}
+                  >
+                    <Text style={styles.settingButtonText}>+1</Text>
+                  </TouchableOpacity>
                 </View>
-
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingLabel}>Mola Süresi (dakika)</Text>
-                  <View style={styles.settingInputContainer}>
-                    <TouchableOpacity
-                      style={styles.settingButton}
-                      onPress={() => setBreakDuration(Math.max(1, breakDuration - 1))}
-                    >
-                      <Text style={styles.settingButtonText}>-</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.settingValue}>{breakDuration}</Text>
-                    <TouchableOpacity
-                      style={styles.settingButton}
-                      onPress={() => setBreakDuration(Math.min(30, breakDuration + 1))}
-                    >
-                      <Text style={styles.settingButtonText}>+</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.applyButton}
-                  onPress={() => {
-                    if (!isRunning) {
-                      setTimeLeft(isBreak ? breakDuration * 60 : workDuration * 60);
-                    }
-                    setShowSettings(false);
-                  }}
-                >
-                  <Text style={styles.applyButtonText}>Uygula</Text>
-                </TouchableOpacity>
               </View>
+
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => {
+                  if (!isRunning) {
+                    setTimeLeft(isBreak ? breakDuration * 60 : workDuration * 60);
+                  }
+                  setShowSettings(false);
+                }}
+              >
+                <Text style={styles.applyButtonText}>Uygula</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </Modal>
+        </View>
       )}
     </View>
   );
@@ -2991,6 +3085,12 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 8,
   },
+  statusText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'center',
+  },
   progressBarContainer: {
     width: '100%',
     height: 8,
@@ -3274,5 +3374,46 @@ const styles = StyleSheet.create({
   },
   taramaStatisticsCount: {
     color: '#059669', // green-600
+  },
+  backgroundToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  toggleLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+  toggleButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#E5E7EB',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#2563eb',
+  },
+  toggleButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  settingsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  settingsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: '#6B7280',
   },
 }); 
