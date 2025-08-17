@@ -48,64 +48,79 @@ export const WeeklyPlanTab: React.FC = () => {
 
     console.log(`📡 [WEEKLY] Setting up real-time subscription for user: ${currentUser.id}`);
     
-    const subscription = supabase
-      .channel(`weekly-task-updates-${currentUser.id}`, {
-        config: {
-          broadcast: { self: false },
-          presence: { key: userProfile?.id || currentUser.id }
-        }
-      })
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks',
-          filter: `assigned_to=eq.${currentUser.id}`
-        },
-        (payload) => {
-          console.log('📡 [WEEKLY] Real-time task update received:', payload);
-          
-          const weekStart = getWeekStart(currentWeek);
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          
-          if (payload.eventType === 'UPDATE') {
-            console.log('📝 [WEEKLY] Updating task:', payload.new.id);
-            setTasks(prev => prev.map(task => 
-              task.id === payload.new.id 
-                ? { ...task, ...payload.new, completed_at: payload.new.completed_at || undefined }
-                : task
-            ));
-          } else if (payload.eventType === 'INSERT') {
-            console.log('➕ [WEEKLY] New task inserted:', payload.new.id);
-            // Check if the new task is in the current week
-            const taskDate = new Date(payload.new.scheduled_date);
-            if (taskDate >= weekStart && taskDate <= weekEnd) {
-              setTasks(prev => [...prev, {
-                ...payload.new,
-                completed_at: payload.new.completed_at || undefined
-              } as any]);
-            }
-          } else if (payload.eventType === 'DELETE') {
-            console.log('🗑️ [WEEKLY] Task deleted:', payload.old.id);
-            setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+    let subscription: any = null;
+    
+    try {
+      subscription = supabase
+        .channel(`weekly-task-updates-${currentUser.id}-${currentWeek.getTime()}`, {
+          config: {
+            broadcast: { self: false },
+            presence: { key: userProfile?.id || currentUser.id }
           }
-        }
-      )
-      .subscribe((status) => {
-        console.log(`📊 [WEEKLY] Subscription status:`, status);
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ [WEEKLY] Real-time subscription active');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ [WEEKLY] Real-time subscription error');
-        }
-      });
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tasks',
+            filter: `assigned_to=eq.${currentUser.id}`
+          },
+          (payload) => {
+            console.log('📡 [WEEKLY] Real-time task update received:', payload);
+            
+            const weekStart = getWeekStart(currentWeek);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            
+            if (payload.eventType === 'UPDATE') {
+              console.log('📝 [WEEKLY] Updating task:', payload.new.id);
+              setTasks(prev => prev.map(task => 
+                task.id === payload.new.id 
+                  ? { ...task, ...payload.new, completed_at: payload.new.completed_at || undefined }
+                  : task
+              ));
+            } else if (payload.eventType === 'INSERT') {
+              console.log('➕ [WEEKLY] New task inserted:', payload.new.id);
+              // Check if the new task is in the current week
+              const taskDate = new Date(payload.new.scheduled_date);
+              if (taskDate >= weekStart && taskDate <= weekEnd) {
+                setTasks(prev => [...prev, {
+                  ...payload.new,
+                  completed_at: payload.new.completed_at || undefined
+                } as any]);
+              }
+            } else if (payload.eventType === 'DELETE') {
+              console.log('🗑️ [WEEKLY] Task deleted:', payload.old.id);
+              setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log(`📊 [WEEKLY] Subscription status:`, status);
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ [WEEKLY] Real-time subscription active');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ [WEEKLY] Real-time subscription error');
+          } else if (status === 'TIMED_OUT') {
+            console.warn('⏰ [WEEKLY] Real-time subscription timed out');
+          } else if (status === 'CLOSED') {
+            console.warn('🔒 [WEEKLY] Real-time subscription closed');
+          }
+        });
+    } catch (error) {
+      console.error('❌ [WEEKLY] Failed to setup real-time subscription:', error);
+    }
 
     return () => {
       console.log('🧹 [WEEKLY] Cleaning up real-time subscription');
-      if (supabase) {
-        supabase.removeChannel(subscription);
+      if (subscription && supabase) {
+        try {
+          supabase.removeChannel(subscription);
+          console.log('✅ [WEEKLY] Subscription cleaned up successfully');
+        } catch (error) {
+          console.error('❌ [WEEKLY] Error cleaning up subscription:', error);
+        }
       }
     };
   }, [currentUser, currentWeek, userProfile]);

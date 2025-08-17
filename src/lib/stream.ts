@@ -124,4 +124,42 @@ export const formatStreamUser = (user: { id: string; full_name: string; email: s
   role: 'user',
 });
 
+// Utility function to create unique channel names for real-time subscriptions
+export const createUniqueChannelName = (baseName: string, userId: string, additionalId?: string | number) => {
+  const timestamp = additionalId || Date.now();
+  return `${baseName}-${userId}-${timestamp}`;
+};
+
+// Utility function to safely remove Supabase channels
+export const safelyRemoveChannel = (supabase: any, subscription: any, context: string) => {
+  if (!subscription || !supabase) return;
+  
+  try {
+    supabase.removeChannel(subscription);
+    console.log(`✅ [${context}] Subscription cleaned up successfully`);
+  } catch (error) {
+    console.error(`❌ [${context}] Error cleaning up subscription:`, error);
+  }
+};
+
+// Utility function to check subscription status
+export const logSubscriptionStatus = (status: string, context: string) => {
+  switch (status) {
+    case 'SUBSCRIBED':
+      console.log(`✅ [${context}] Real-time subscription active`);
+      break;
+    case 'CHANNEL_ERROR':
+      console.error(`❌ [${context}] Real-time subscription error`);
+      break;
+    case 'TIMED_OUT':
+      console.warn(`⏰ [${context}] Real-time subscription timed out`);
+      break;
+    case 'CLOSED':
+      console.warn(`🔒 [${context}] Real-time subscription closed`);
+      break;
+    default:
+      console.log(`📊 [${context}] Subscription status: ${status}`);
+  }
+};
+
 export { STREAM_CONFIG }; 
