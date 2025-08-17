@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
-import { initializePushNotifications, cleanupNotificationTokens } from '../lib/notifications';
+import { initializePushNotifications, cleanupNotificationTokens, cleanupLeftoverTokens, smartCleanupTokens } from '../lib/notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -43,11 +43,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUserProfile(session.user.id);
+        // Clean up any leftover tokens from other users first
+        await cleanupLeftoverTokens();
+        await fetchUserProfile(session.user.id);
       }
       setLoading(false);
     });
@@ -58,10 +60,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔐 Auth state changed:', event, session?.user?.id);
       
+      // Clean up tokens for previous user before setting new user
+      if (user?.id && session?.user?.id && user.id !== session.user.id) {
+        console.log('🔄 User switching detected, cleaning up old user tokens');
+        await cleanupNotificationTokens(user.id);
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        // Clean up any leftover tokens from other users before initializing new ones
+        await cleanupLeftoverTokens();
         await fetchUserProfile(session.user.id);
         // Initialize push notifications when user signs in
         initializePushNotifications(session.user.id);
@@ -110,19 +120,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async () => {
     if (!supabase) return;
     
+    // Clean up notification tokens only when actually signing out
+    try {
+      if (user?.id) {
+        console.log('🧹 Cleaning up notification tokens during sign out');
+        await cleanupNotificationTokens(user.id);
+      }
+    } catch (error) {
+      console.error('Error cleaning up notification tokens:', error);
+    }
+    
     // Immediately clear state to force logout
     setUser(null);
     setUserProfile(null);
     setSession(null);
     
-    // Clean up in background
+    // Complete sign out
     try {
-      if (user?.id) {
-        cleanupNotificationTokens(user.id);
-      }
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Error in background signOut cleanup:', error);
+      console.error('Error during sign out:', error);
     }
   };
 
