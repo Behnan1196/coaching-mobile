@@ -2,7 +2,7 @@
   "expo": {
     "name": "Özgün Koçluk",
     "slug": "coaching-mobile",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -11,17 +11,23 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.behnan.coachingmobile",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera for video calls with your coach",
         "NSMicrophoneUsageDescription": "This app needs access to microphone for voice calls with your coach",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "This app needs access to photo library for profile avatar uploads",
+        "NSPhotoLibraryAddUsageDescription": "This app needs access to photo library for profile avatar uploads"
       },
       "entitlements": {
-        "aps-environment": "development"
+        "aps-environment": "production",
+        "com.apple.developer.associated-domains": [
+          "applinks:ozgun-v15.vercel.app"
+        ]
       }
     },
     "android": {
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
