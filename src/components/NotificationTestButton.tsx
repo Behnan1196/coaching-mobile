@@ -1,209 +1,121 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { sendTestNotification, debugCleanupAllTokens, checkNotificationTokenStatus, smartCleanupTokens } from '../lib/notifications';
+import { 
+  cleanupNotificationTokens, 
+  cleanupLeftoverTokens, 
+  smartCleanupTokens,
+  debugCleanupAllTokens,
+  checkNotificationTokenStatus 
+} from '../lib/notifications';
 import { useAuth } from '../contexts/AuthContext';
 
-interface NotificationTestButtonProps {
-  expoPushToken?: string;
+interface ConnectionStatusProps {
+  isConnected: boolean;
+  lastError: string | null;
+  onReconnect: () => void;
+  label: string;
 }
 
-export const NotificationTestButton: React.FC<NotificationTestButtonProps> = ({ 
-  expoPushToken 
-}) => {
-  const [loading, setLoading] = useState(false);
-  const [cleanupLoading, setCleanupLoading] = useState(false);
-  const [statusLoading, setStatusLoading] = useState(false);
-  const [smartCleanupLoading, setSmartCleanupLoading] = useState(false);
+const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ 
+  isConnected, 
+  lastError, 
+  onReconnect, 
+  label 
+}) => (
+  <View style={styles.connectionStatus}>
+    <View style={[styles.statusDot, { backgroundColor: isConnected ? '#4CAF50' : '#F44336' }]} />
+    <Text style={styles.statusText}>
+      {label}: {isConnected ? 'Connected' : 'Disconnected'}
+    </Text>
+    {lastError && (
+      <Text style={styles.errorText} numberOfLines={2}>
+        Error: {lastError}
+      </Text>
+    )}
+    {!isConnected && (
+      <TouchableOpacity style={styles.reconnectButton} onPress={onReconnect}>
+        <Text style={styles.reconnectText}>Reconnect</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
+
+export const NotificationTestButton: React.FC = () => {
   const { user } = useAuth();
 
-  const handleTestNotification = async () => {
-    if (!expoPushToken) {
-      Alert.alert(
-        'No Token',
-        'No Expo push token available. Please ensure notifications are properly initialized.'
-      );
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await sendTestNotification(expoPushToken);
-      Alert.alert(
-        '✅ Test Sent',
-        'Test notification has been sent! You should receive it shortly.'
-      );
-    } catch (error) {
-      console.error('Error sending test notification:', error);
-      Alert.alert(
-        '❌ Error',
-        'Failed to send test notification. Check console for details.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDebugCleanup = async () => {
-    if (!user?.id) {
-      Alert.alert('No User', 'No authenticated user found.');
+    if (!user) {
+      Alert.alert('Error', 'No user logged in');
       return;
     }
 
     Alert.alert(
       'Debug Cleanup',
-      'This will remove ALL notification tokens for the current user. This is useful for troubleshooting notification issues. Continue?',
+      `This will delete ALL notification tokens for user ${user.id}. Are you sure?`,
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Clean Up',
+          text: 'Delete All',
           style: 'destructive',
           onPress: async () => {
             try {
-              setCleanupLoading(true);
               await debugCleanupAllTokens(user.id);
-              Alert.alert(
-                '✅ Cleanup Complete',
-                'All notification tokens have been removed. You may need to re-initialize notifications.'
-              );
+              Alert.alert('Success', 'All tokens deleted');
             } catch (error) {
-              console.error('Error during debug cleanup:', error);
-              Alert.alert(
-                '❌ Error',
-                'Failed to clean up tokens. Check console for details.'
-              );
-            } finally {
-              setCleanupLoading(false);
+              Alert.alert('Error', `Failed to delete tokens: ${error}`);
             }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleSmartCleanup = async () => {
-    if (!user?.id) {
-      Alert.alert('No User', 'No authenticated user found.');
-      return;
-    }
-
-    Alert.alert(
-      'Smart Cleanup',
-      'This will remove notification tokens from OTHER users while preserving YOUR tokens. This ensures you can still receive notifications. Continue?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Clean Up',
-          style: 'default',
-          onPress: async () => {
-            try {
-              setSmartCleanupLoading(true);
-              await smartCleanupTokens();
-              Alert.alert(
-                '✅ Smart Cleanup Complete',
-                'Old user tokens have been removed while preserving your current tokens. You should still receive notifications.'
-              );
-            } catch (error) {
-              console.error('Error during smart cleanup:', error);
-              Alert.alert(
-                '❌ Error',
-                'Failed to perform smart cleanup. Check console for details.'
-              );
-            } finally {
-              setSmartCleanupLoading(false);
-            }
-          },
-        },
+          }
+        }
       ]
     );
   };
 
   const handleStatusCheck = async () => {
     try {
-      setStatusLoading(true);
-      const status = await checkNotificationTokenStatus();
-      
-      if (status) {
-        const summary = status.summary;
-        Alert.alert(
-          '📊 Token Status',
-          `Total Tokens: ${status.totalTokens}\n\n` +
-          `Platforms:\n` +
-          `• iOS: ${summary.ios}\n` +
-          `• Android: ${summary.android}\n` +
-          `• Web: ${summary.web}\n\n` +
-          `Types:\n` +
-          `• Expo: ${summary.expo}\n` +
-          `• FCM: ${summary.fcm}\n` +
-          `• APNs: ${summary.apns}\n\n` +
-          `Status:\n` +
-          `• Active: ${summary.active}\n` +
-          `• Inactive: ${summary.inactive}`,
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert('Status', 'Unable to retrieve token status. Check console for details.');
-      }
+      await checkNotificationTokenStatus();
+      Alert.alert('Success', 'Status check completed. Check console for details.');
     } catch (error) {
-      console.error('Error checking token status:', error);
-      Alert.alert('Error', 'Failed to check token status.');
-    } finally {
-      setStatusLoading(false);
+      Alert.alert('Error', `Status check failed: ${error}`);
+    }
+  };
+
+  const handleSmartCleanup = async () => {
+    try {
+      await smartCleanupTokens();
+      Alert.alert('Success', 'Smart cleanup completed');
+    } catch (error) {
+      Alert.alert('Error', `Smart cleanup failed: ${error}`);
+    }
+  };
+
+  const handleLeftoverCleanup = async () => {
+    try {
+      await cleanupLeftoverTokens();
+      Alert.alert('Success', 'Leftover cleanup completed');
+    } catch (error) {
+      Alert.alert('Error', `Leftover cleanup failed: ${error}`);
     }
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleTestNotification}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? '🧪 Sending...' : '🧪 Test Notification'}
-        </Text>
+      <Text style={styles.title}>Debug Tools</Text>
+      
+      <TouchableOpacity style={styles.button} onPress={handleDebugCleanup}>
+        <Text style={styles.buttonText}>Delete All User Tokens</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity
-        style={[styles.button, styles.statusButton, statusLoading && styles.buttonDisabled]}
-        onPress={handleStatusCheck}
-        disabled={statusLoading}
-      >
-        <Text style={styles.buttonText}>
-          {statusLoading ? '🔍 Checking...' : '🔍 Check Status'}
-        </Text>
+      <TouchableOpacity style={styles.button} onPress={handleStatusCheck}>
+        <Text style={styles.buttonText}>Check Token Status</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity
-        style={[styles.button, styles.smartButton, smartCleanupLoading && styles.buttonDisabled]}
-        onPress={handleSmartCleanup}
-        disabled={smartCleanupLoading}
-      >
-        <Text style={styles.buttonText}>
-          {smartCleanupLoading ? '🧠 Cleaning...' : '🧠 Smart Cleanup'}
-        </Text>
+      <TouchableOpacity style={styles.button} onPress={handleSmartCleanup}>
+        <Text style={styles.buttonText}>Smart Cleanup</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity
-        style={[styles.button, styles.debugButton, cleanupLoading && styles.buttonDisabled]}
-        onPress={handleDebugCleanup}
-        disabled={cleanupLoading}
-      >
-        <Text style={styles.buttonText}>
-          {cleanupLoading ? '🧹 Cleaning...' : '🧹 Debug Cleanup'}
-        </Text>
+      <TouchableOpacity style={styles.button} onPress={handleLeftoverCleanup}>
+        <Text style={styles.buttonText}>Cleanup Leftover Tokens</Text>
       </TouchableOpacity>
-      
-      {!expoPushToken && (
-        <Text style={styles.warningText}>
-          ⚠️ No push token available
-        </Text>
-      )}
     </View>
   );
 };
@@ -211,44 +123,63 @@ export const NotificationTestButton: React.FC<NotificationTestButtonProps> = ({
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     margin: 16,
-    borderWidth: 1,
-    borderColor: '#dee2e6',
   },
-  button: {
-    backgroundColor: '#007bff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    backgroundColor: '#6c757d',
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  warningText: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#dc3545',
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
     textAlign: 'center',
   },
-  debugButton: {
-    backgroundColor: '#6c757d',
-    marginTop: 10,
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 8,
   },
-  statusButton: {
-    backgroundColor: '#28a745',
-    marginTop: 10,
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: '600',
   },
-  smartButton: {
-    backgroundColor: '#ffc107',
-    marginTop: 10,
+  connectionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 6,
+    marginBottom: 8,
+    flexWrap: 'wrap',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    flex: 1,
+  },
+  errorText: {
+    fontSize: 10,
+    color: '#F44336',
+    marginTop: 4,
+    flex: 1,
+  },
+  reconnectButton: {
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  reconnectText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

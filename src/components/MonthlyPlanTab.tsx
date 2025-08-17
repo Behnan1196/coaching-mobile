@@ -13,8 +13,10 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
-import { Task } from '../types/database';
+import { Task, Subject, Topic, Resource, TaskWithRelations } from '../types/database';
+import { TaskCard } from './TaskCard';
 import { TaskModal } from './TaskModal';
+import { useRealTimeSubscription } from '../hooks/useActivityTracking';
 
 const { width } = Dimensions.get('window');
 
@@ -33,7 +35,10 @@ interface DayData {
 export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek }) => {
   const { userProfile } = useAuth();
   const { selectedStudent } = useCoachStudent();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<TaskWithRelations[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -49,87 +54,45 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
     }
   }, [currentUser, currentMonth]);
 
-  // Setup real-time subscription for task updates
-  useEffect(() => {
-    if (!currentUser || !supabase) return;
-
-    console.log(`📡 [MONTHLY] Setting up real-time subscription for user: ${currentUser.id}`);
-    
-    let subscription: any = null;
-    
-    try {
-      subscription = supabase
-        .channel(`monthly-task-updates-${currentUser.id}-${currentMonth.getTime()}`, {
-          config: {
-            broadcast: { self: false },
-            presence: { key: userProfile?.id || currentUser.id }
-          }
-        })
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'tasks',
-            filter: `assigned_to=eq.${currentUser.id}`
-          },
-          (payload) => {
-            console.log('📡 [MONTHLY] Real-time task update received:', payload);
-            
-            const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-            const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-            
-            if (payload.eventType === 'UPDATE') {
-              console.log('📝 [MONTHLY] Updating task:', payload.new.id);
-              setTasks(prev => prev.map(task => 
-                task.id === payload.new.id 
-                  ? { ...task, ...payload.new, completed_at: payload.new.completed_at || undefined }
-                  : task
-              ));
-            } else if (payload.eventType === 'INSERT') {
-              console.log('➕ [MONTHLY] New task inserted:', payload.new.id);
-              // Check if the new task is in the current month
-              const taskDate = new Date(payload.new.scheduled_date);
-              if (taskDate >= monthStart && taskDate <= monthEnd) {
-                setTasks(prev => [...prev, {
-                  ...payload.new,
-                  completed_at: payload.new.completed_at || undefined
-                } as any]);
-              }
-            } else if (payload.eventType === 'DELETE') {
-              console.log('🗑️ [MONTHLY] Task deleted:', payload.old.id);
-              setTasks(prev => prev.filter(task => task.id !== payload.old.id));
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log(`📊 [MONTHLY] Subscription status:`, status);
-          if (status === 'SUBSCRIBED') {
-            console.log('✅ [MONTHLY] Real-time subscription active');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ [MONTHLY] Real-time subscription error');
-          } else if (status === 'TIMED_OUT') {
-            console.warn('⏰ [MONTHLY] Real-time subscription timed out');
-          } else if (status === 'CLOSED') {
-            console.warn('🔒 [MONTHLY] Real-time subscription closed');
-          }
-        });
-    } catch (error) {
-      console.error('❌ [MONTHLY] Failed to setup real-time subscription:', error);
-    }
-
-    return () => {
-      console.log('🧹 [MONTHLY] Cleaning up real-time subscription');
-      if (subscription && supabase) {
-        try {
-          supabase.removeChannel(subscription);
-          console.log('✅ [MONTHLY] Subscription cleaned up successfully');
-        } catch (error) {
-          console.error('❌ [MONTHLY] Error cleaning up subscription:', error);
-        }
+  // Use the new real-time subscription hook
+  const { isConnected, lastError, reconnect } = useRealTimeSubscription({
+    channelName: `monthly-task-updates-${currentUser?.id}-${currentMonth.getTime()}`,
+    table: 'tasks',
+    filter: currentUser ? `assigned_to=eq.${currentUser.id}` : undefined,
+    enabled: !!currentUser,
+    userId: currentUser?.id,
+    onUpdate: (payload) => {
+      console.log('📝 [MONTHLY] Updating task:', payload.new.id);
+      setTasks(prev => prev.map(task => 
+        task.id === payload.new.id 
+          ? { ...task, ...payload.new, completed_at: payload.new.completed_at || undefined }
+          : task
+      ));
+    },
+    onInsert: (payload) => {
+      console.log('➕ [MONTHLY] New task inserted:', payload.new.id);
+      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const taskDate = new Date(payload.new.scheduled_date);
+      if (taskDate >= monthStart && taskDate <= monthEnd) {
+        setTasks(prev => [...prev, {
+          ...payload.new,
+          completed_at: payload.new.completed_at || undefined
+        } as any]);
       }
-    };
-  }, [currentUser, currentMonth, userProfile]);
+    },
+    onDelete: (payload) => {
+      console.log('🗑️ [MONTHLY] Task deleted:', payload.old.id);
+      setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+    }
+  });
+
+  // Show connection status and error handling
+  useEffect(() => {
+    if (lastError) {
+      console.warn(`⚠️ [MONTHLY] Real-time subscription error: ${lastError}`);
+    }
+  }, [lastError]);
 
   const loadMonthlyTasks = async () => {
     if (!currentUser || !supabase) return;

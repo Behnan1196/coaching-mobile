@@ -16,6 +16,7 @@ import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { Task, Subject, Topic, Resource, TaskWithRelations } from '../types/database';
 import { TaskCard } from './TaskCard';
 import { TaskModal } from './TaskModal';
+import { useRealTimeSubscription } from '../hooks/useActivityTracking';
 
 const { width } = Dimensions.get('window');
 
@@ -42,88 +43,46 @@ export const WeeklyPlanTab: React.FC = () => {
     }
   }, [currentUser, currentWeek]);
 
-  // Setup real-time subscription for task updates
-  useEffect(() => {
-    if (!currentUser || !supabase) return;
-
-    console.log(`📡 [WEEKLY] Setting up real-time subscription for user: ${currentUser.id}`);
-    
-    let subscription: any = null;
-    
-    try {
-      subscription = supabase
-        .channel(`weekly-task-updates-${currentUser.id}-${currentWeek.getTime()}`, {
-          config: {
-            broadcast: { self: false },
-            presence: { key: userProfile?.id || currentUser.id }
-          }
-        })
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'tasks',
-            filter: `assigned_to=eq.${currentUser.id}`
-          },
-          (payload) => {
-            console.log('📡 [WEEKLY] Real-time task update received:', payload);
-            
-            const weekStart = getWeekStart(currentWeek);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            
-            if (payload.eventType === 'UPDATE') {
-              console.log('📝 [WEEKLY] Updating task:', payload.new.id);
-              setTasks(prev => prev.map(task => 
-                task.id === payload.new.id 
-                  ? { ...task, ...payload.new, completed_at: payload.new.completed_at || undefined }
-                  : task
-              ));
-            } else if (payload.eventType === 'INSERT') {
-              console.log('➕ [WEEKLY] New task inserted:', payload.new.id);
-              // Check if the new task is in the current week
-              const taskDate = new Date(payload.new.scheduled_date);
-              if (taskDate >= weekStart && taskDate <= weekEnd) {
-                setTasks(prev => [...prev, {
-                  ...payload.new,
-                  completed_at: payload.new.completed_at || undefined
-                } as any]);
-              }
-            } else if (payload.eventType === 'DELETE') {
-              console.log('🗑️ [WEEKLY] Task deleted:', payload.old.id);
-              setTasks(prev => prev.filter(task => task.id !== payload.old.id));
-            }
-          }
-        )
-        .subscribe((status) => {
-          console.log(`📊 [WEEKLY] Subscription status:`, status);
-          if (status === 'SUBSCRIBED') {
-            console.log('✅ [WEEKLY] Real-time subscription active');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ [WEEKLY] Real-time subscription error');
-          } else if (status === 'TIMED_OUT') {
-            console.warn('⏰ [WEEKLY] Real-time subscription timed out');
-          } else if (status === 'CLOSED') {
-            console.warn('🔒 [WEEKLY] Real-time subscription closed');
-          }
-        });
-    } catch (error) {
-      console.error('❌ [WEEKLY] Failed to setup real-time subscription:', error);
-    }
-
-    return () => {
-      console.log('🧹 [WEEKLY] Cleaning up real-time subscription');
-      if (subscription && supabase) {
-        try {
-          supabase.removeChannel(subscription);
-          console.log('✅ [WEEKLY] Subscription cleaned up successfully');
-        } catch (error) {
-          console.error('❌ [WEEKLY] Error cleaning up subscription:', error);
-        }
+  // Use the new real-time subscription hook
+  const { isConnected, lastError, reconnect } = useRealTimeSubscription({
+    channelName: `weekly-task-updates-${currentUser?.id}-${currentWeek.getTime()}`,
+    table: 'tasks',
+    filter: currentUser ? `assigned_to=eq.${currentUser.id}` : undefined,
+    enabled: !!currentUser,
+    userId: currentUser?.id,
+    onUpdate: (payload) => {
+      console.log('📝 [WEEKLY] Updating task:', payload.new.id);
+      setTasks(prev => prev.map(task => 
+        task.id === payload.new.id 
+          ? { ...task, ...payload.new, completed_at: payload.new.completed_at || undefined }
+          : task
+      ));
+    },
+    onInsert: (payload) => {
+      console.log('➕ [WEEKLY] New task inserted:', payload.new.id);
+      const weekStart = getWeekStart(currentWeek);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      const taskDate = new Date(payload.new.scheduled_date);
+      if (taskDate >= weekStart && taskDate <= weekEnd) {
+        setTasks(prev => [...prev, {
+          ...payload.new,
+          completed_at: payload.new.completed_at || undefined
+        } as any]);
       }
-    };
-  }, [currentUser, currentWeek, userProfile]);
+    },
+    onDelete: (payload) => {
+      console.log('🗑️ [WEEKLY] Task deleted:', payload.old.id);
+      setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+    }
+  });
+
+  // Show connection status and error handling
+  useEffect(() => {
+    if (lastError) {
+      console.warn(`⚠️ [WEEKLY] Real-time subscription error: ${lastError}`);
+    }
+  }, [lastError]);
 
   const getWeekStart = (date: Date) => {
     const d = new Date(date);
