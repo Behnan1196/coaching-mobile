@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.behnan.coachingmobile",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera for video calls with your coach",
         "NSMicrophoneUsageDescription": "This app needs access to microphone for voice calls with your coach",
