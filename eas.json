@@ -60,14 +60,14 @@
     "testflight": {
       "ios": {
         "appleId": "behnan.ozturkmen@gmail.com",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
+        "ascAppId": "6751234300",
         "appleTeamId": "T4L553ZQDU"
       }
     },
     "production": {
       "ios": {
         "appleId": "behnan.ozturkmen@gmail.com",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
+        "ascAppId": "6751234300",
         "appleTeamId": "T4L553ZQDU"
       }
     }

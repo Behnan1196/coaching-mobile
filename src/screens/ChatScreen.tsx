@@ -4,8 +4,15 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { Chat, Channel, MessageList, MessageInput, OverlayProvider } from 'stream-chat-react-native';
+import { 
+  Chat, 
+  Channel, 
+  MessageList, 
+  MessageInput, 
+  OverlayProvider 
+} from 'stream-chat-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useStream } from '../contexts/StreamContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
@@ -27,6 +34,23 @@ export const ChatScreen: React.FC = () => {
   const [assignedCoach, setAssignedCoach] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatPartner, setChatPartner] = useState<UserProfile | null>(null);
+
+  // Safety check to prevent crashes
+  useEffect(() => {
+    if (!userProfile) {
+      console.log('⚠️ ChatScreen: User profile not available');
+      return;
+    }
+
+    // Check if Stream Chat is properly initialized
+    if (!isDemoMode && (!chatClient || !chatChannel)) {
+      console.log('⚠️ ChatScreen: Stream Chat not properly initialized', {
+        hasChatClient: !!chatClient,
+        hasChatChannel: !!chatChannel,
+        isDemoMode
+      });
+    }
+  }, [userProfile, chatClient, chatChannel, isDemoMode]);
 
   // Track user activity in this chat channel - SMART FILTERING
   console.log('🎯 ChatScreen Activity Tracking Config:', {
@@ -145,6 +169,25 @@ export const ChatScreen: React.FC = () => {
     );
   }
 
+  // Show fallback when Stream Chat is not available
+  if (!chatClient || !chatChannel) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>💬 {chatPartner?.full_name || 'Chat'}</Text>
+        </View>
+        <View style={styles.fallbackContainer}>
+          <Text style={styles.fallbackText}>
+            ⚠️ Chat sistemi henüz hazır değil
+          </Text>
+          <Text style={styles.fallbackSubtext}>
+            Lütfen biraz bekleyin veya uygulamayı yeniden başlatın
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   // Show chat interface if everything is ready
   if (chatPartner && chatClient && chatChannel) {
     // Debug: Log channel information
@@ -152,7 +195,30 @@ export const ChatScreen: React.FC = () => {
     console.log('📱 Channel message count:', chatChannel.state.messages.length);
     console.log('📱 Channel members:', chatChannel.state.members);
     
+    // Additional safety check for Stream Chat readiness
+    if (!chatClient.userID || !chatChannel.state.isUpToDate) {
+      console.log('⚠️ Stream Chat not fully ready yet');
+      return (
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#249096" />
+            <Text style={styles.loadingText}>
+              Chat bağlantısı kuruluyor...
+            </Text>
+          </View>
+        </View>
+      );
+    }
+    
     try {
+      // Validate Stream Chat components before rendering
+      if (!chatClient || !chatChannel) {
+        throw new Error('Stream Chat components not properly initialized');
+      }
+
       return (
         <View style={styles.container}>
           <OverlayProvider>
@@ -162,8 +228,8 @@ export const ChatScreen: React.FC = () => {
                   <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
                 </View>
                 <View style={styles.chatContainer}>
-                  <MessageList onTouchStart={triggerActivity} />
-                  <MessageInput onFocus={triggerActivity} />
+                  <MessageList />
+                  <MessageInput />
                 </View>
               </Channel>
             </Chat>
@@ -172,6 +238,14 @@ export const ChatScreen: React.FC = () => {
       );
     } catch (error) {
       console.error('Error rendering chat interface:', error);
+      
+      // Show user-friendly error instead of crashing
+      Alert.alert(
+        'Chat Error',
+        'Chat interface could not be loaded. Please try again.',
+        [{ text: 'OK' }]
+      );
+      
       return (
         <View style={styles.container}>
           <View style={styles.header}>
@@ -180,6 +254,9 @@ export const ChatScreen: React.FC = () => {
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>
               ⚠️ Chat arayüzü yüklenirken hata oluştu
+            </Text>
+            <Text style={styles.errorSubtext}>
+              Lütfen uygulamayı yeniden başlatın
             </Text>
           </View>
         </View>
@@ -279,6 +356,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#374151',
+    textAlign: 'center',
+  },
+  fallbackContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#FEE2E2', // A light red background for fallback
+  },
+  fallbackText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#991B1B', // Darker red for text
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  fallbackSubtext: {
+    fontSize: 14,
+    color: '#991B1B',
     textAlign: 'center',
   },
 }); 

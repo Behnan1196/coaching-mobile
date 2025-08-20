@@ -2,6 +2,43 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { supabase } from '../lib/stream';
 
+// Activity tracking hook for chat channels
+interface UseActivityTrackingProps {
+  channelId: string | null;
+  isEnabled: boolean;
+  apiUrl?: string;
+}
+
+export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivityTrackingProps) {
+  const triggerActivity = async () => {
+    if (!isEnabled || !channelId || !apiUrl) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/api/notifications/user-activity`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          channelId,
+          activityType: 'chat_interaction',
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to track activity:', response.status);
+      }
+    } catch (error) {
+      console.warn('Error tracking activity:', error);
+    }
+  };
+
+  return { triggerActivity };
+}
+
 interface UseRealTimeSubscriptionOptions {
   channelName: string;
   table: string;
