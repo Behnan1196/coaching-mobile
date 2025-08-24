@@ -10,7 +10,7 @@ export const ChatTabScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chat</Text>
+        <Text style={styles.headerTitle}>İletişim</Text>
       </View>
       <Tab.Navigator
         screenOptions={{
@@ -32,8 +32,8 @@ export const ChatTabScreen: React.FC = () => {
           },
         }}
       >
-        <Tab.Screen name="Messages" component={ChatScreen} options={{ title: 'Messages' }} />
-        <Tab.Screen name="VideoCall" component={VideoCallTabScreen} options={{ title: 'Video Call' }} />
+        <Tab.Screen name="Messages" component={ChatScreen} options={{ title: 'Mesajlar' }} />
+        <Tab.Screen name="VideoCall" component={VideoCallTabScreen} options={{ title: 'Video Görüşme' }} />
       </Tab.Navigator>
     </View>
   );

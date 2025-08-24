@@ -68,7 +68,7 @@ const MainTabs: React.FC = () => {
           name="Chat"
           component={ChatTabScreen}
           options={{
-            title: 'Chat',
+            title: 'İletişim',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="chatbubbles" size={size} color={color} />
             ),

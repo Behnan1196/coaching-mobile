@@ -5,6 +5,7 @@
     "version": "1.0.2",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -12,6 +13,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.behnan.coachingmobile",
       "buildNumber": "4",
+      "icon": "./assets/icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera for video calls with your coach",
         "NSMicrophoneUsageDescription": "This app needs access to microphone for voice calls with your coach",
@@ -51,9 +53,9 @@
     "sdkVersion": "53.0.0",
     "extra": {
       "eas": {
-        "projectId": "95facdd8-f4a2-4ba1-ac5c-cbc13d6e5e98"
+        "projectId": "e10953f0-405b-447d-96a2-98b9909fcb9b"
       }
     },
-    "owner": "ozgunkocluk"
+    "owner": "ozandev"
   }
 }
