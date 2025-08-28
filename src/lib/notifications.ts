@@ -205,43 +205,76 @@ export async function initializePushNotifications(userId: string): Promise<void>
   try {
     console.log('🔔 Initializing push notifications for user:', userId);
 
-    // Register for push notifications
-    const expoPushToken = await registerForPushNotifications();
-    if (!expoPushToken) {
-      console.log('⚠️ Failed to get push token');
-      return;
-    }
+    // For iOS, prioritize native APNs token for legacy certificate support
+    // For Android, use both Expo and FCM tokens
+    let primaryTokenSaved = false;
 
-    // Save token to database with retry logic
-    const expTokenSaved = await saveNotificationToken(userId, expoPushToken, 'expo');
-    if (!expTokenSaved) {
-      console.log('⚠️ Failed to save Expo token, retrying in 5 seconds...');
-      setTimeout(async () => {
-        const retryResult = await saveNotificationToken(userId, expoPushToken, 'expo');
-        if (retryResult) {
-          console.log('✅ Expo token saved successfully on retry');
+    if (Platform.OS === 'ios') {
+      // Get native device token for iOS (APNs)
+      const deviceToken = await getDeviceToken();
+      if (deviceToken) {
+        console.log('📱 Registering iOS device token for legacy APNs support');
+        const deviceTokenSaved = await saveNotificationToken(userId, deviceToken, 'apns');
+        if (deviceTokenSaved) {
+          primaryTokenSaved = true;
+          console.log('✅ iOS APNs token saved successfully');
         } else {
-          console.error('❌ Failed to save Expo token after retry');
+          console.log('⚠️ Failed to save iOS APNs token, retrying in 5 seconds...');
+          setTimeout(async () => {
+            const retryResult = await saveNotificationToken(userId, deviceToken, 'apns');
+            if (retryResult) {
+              console.log('✅ iOS APNs token saved successfully on retry');
+            } else {
+              console.error('❌ Failed to save iOS APNs token after retry');
+            }
+          }, 5000);
         }
-      }, 5000);
+      }
+      
+      // Also register Expo token as fallback for iOS
+      const expoPushToken = await registerForPushNotifications();
+      if (expoPushToken) {
+        const expTokenSaved = await saveNotificationToken(userId, expoPushToken, 'expo');
+        if (expTokenSaved) {
+          console.log('✅ iOS Expo fallback token saved successfully');
+        }
+      }
+    } else {
+      // For Android, prioritize FCM token, then Expo token
+      const deviceToken = await getDeviceToken();
+      if (deviceToken) {
+        console.log('📱 Registering Android FCM token');
+        const deviceTokenSaved = await saveNotificationToken(userId, deviceToken, 'fcm');
+        if (deviceTokenSaved) {
+          primaryTokenSaved = true;
+          console.log('✅ Android FCM token saved successfully');
+        } else {
+          console.log('⚠️ Failed to save Android FCM token, retrying in 5 seconds...');
+          setTimeout(async () => {
+            const retryResult = await saveNotificationToken(userId, deviceToken, 'fcm');
+            if (retryResult) {
+              console.log('✅ Android FCM token saved successfully on retry');
+            } else {
+              console.error('❌ Failed to save Android FCM token after retry');
+            }
+          }, 5000);
+        }
+      }
+
+      // Also register Expo token as fallback for Android
+      const expoPushToken = await registerForPushNotifications();
+      if (expoPushToken) {
+        const expTokenSaved = await saveNotificationToken(userId, expoPushToken, 'expo');
+        if (expTokenSaved && !primaryTokenSaved) {
+          primaryTokenSaved = true;
+          console.log('✅ Android Expo token saved successfully');
+        }
+      }
     }
 
-    // Also get and save device token for direct FCM/APNs
-    const deviceToken = await getDeviceToken();
-    if (deviceToken) {
-      const tokenType = Platform.OS === 'ios' ? 'apns' : 'fcm';
-      const deviceTokenSaved = await saveNotificationToken(userId, deviceToken, tokenType);
-      if (!deviceTokenSaved) {
-        console.log(`⚠️ Failed to save ${tokenType} token, retrying in 5 seconds...`);
-        setTimeout(async () => {
-          const retryResult = await saveNotificationToken(userId, deviceToken, tokenType);
-          if (retryResult) {
-            console.log(`✅ ${tokenType} token saved successfully on retry`);
-          } else {
-            console.error(`❌ Failed to save ${tokenType} token after retry`);
-          }
-        }, 5000);
-      }
+    if (!primaryTokenSaved) {
+      console.log('⚠️ Failed to register any notification tokens');
+      return;
     }
 
     // Setup listeners
