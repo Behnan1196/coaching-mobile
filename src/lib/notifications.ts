@@ -12,11 +12,33 @@ export const setCurrentTab = (tab: string | null) => {
   console.log('📍 Notification service: Current tab set to', tab);
 };
 
-// Configure notification handler
+// Configure notification handler for video invites
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     const data = notification.request.content.data;
-    const isChatMessage = data?.type === 'chat_message';
+    const notificationType = data?.type;
+    
+    console.log('🔔 Notification received:', {
+      type: notificationType,
+      title: notification.request.content.title,
+      body: notification.request.content.body,
+      currentTab
+    });
+    
+    // Always show video invite notifications regardless of current tab
+    if (notificationType === 'video_invite') {
+      console.log('📹 Showing video invite notification');
+      return {
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      };
+    }
+    
+    // For other notification types, use existing logic
+    const isChatMessage = notificationType === 'chat_message';
     const isOnChatTab = currentTab === 'Chat';
     
     // Suppress chat message notifications if user is on Chat tab
@@ -30,12 +52,6 @@ Notifications.setNotificationHandler({
         shouldShowList: false,
       };
     }
-    
-    console.log('🔔 Showing notification:', {
-      type: data?.type,
-      currentTab,
-      shouldShow: !isChatMessage || !isOnChatTab
-    });
     
     return {
       shouldShowAlert: true,
@@ -65,8 +81,9 @@ export async function registerForPushNotifications(): Promise<string | null> {
       return null;
     }
 
-    // Set up Android notification channel
+    // Set up Android notification channels
     if (Platform.OS === 'android') {
+      // Chat messages channel
       await Notifications.setNotificationChannelAsync('chat', {
         name: 'Özgün Koçluk - Mesajlar',
         importance: Notifications.AndroidImportance.HIGH,
@@ -74,6 +91,17 @@ export async function registerForPushNotifications(): Promise<string | null> {
         lightColor: '#FF231F7C',
         sound: 'default',
         description: 'Özgün Koçluk chat mesajları için bildirimler',
+      });
+
+      // Video invites channel (high priority)
+      await Notifications.setNotificationChannelAsync('video_invites', {
+        name: 'Özgün Koçluk - Video Davetleri',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 500, 250, 500],
+        lightColor: '#00FF00',
+        sound: 'default',
+        description: 'Özgün Koçluk video görüşme davetleri',
+        showBadge: true,
       });
     }
 
@@ -149,6 +177,12 @@ export async function saveNotificationToken(
         token,
         tokenType,
         platform: Platform.OS as 'ios' | 'android',
+        deviceInfo: {
+          deviceName: Device.deviceName || 'Unknown',
+          modelName: Device.modelName || 'Unknown',
+          osVersion: Device.osVersion || 'Unknown',
+          platform: Platform.OS,
+        }
       }),
     });
 
@@ -170,11 +204,18 @@ export async function saveNotificationToken(
 /**
  * Setup notification listeners
  */
-export function setupNotificationListeners() {
+export function setupNotificationListeners(onVideoInviteReceived?: (inviteData: any) => void) {
   // Handle notifications received while app is in foreground
   const notificationListener = Notifications.addNotificationReceivedListener(notification => {
     console.log('📱 Notification received:', notification);
-    // You can customize foreground notification behavior here
+    
+    const data = notification.request.content.data;
+    if (data?.type === 'video_invite') {
+      console.log('📹 Video invite notification received in foreground');
+      if (onVideoInviteReceived) {
+        onVideoInviteReceived(data);
+      }
+    }
   });
 
   // Handle notification responses (when user taps notification)
@@ -185,10 +226,14 @@ export function setupNotificationListeners() {
     const data = response.notification.request.content.data;
     
     // Handle different notification types
-    if (data?.type === 'chat_message') {
-      // Navigate to chat screen
-      // You'll need to implement navigation logic here
+    if (data?.type === 'video_invite') {
+      console.log('📹 Video invite notification tapped');
+      if (onVideoInviteReceived) {
+        onVideoInviteReceived(data);
+      }
+    } else if (data?.type === 'chat_message') {
       console.log('📨 Chat message notification tapped');
+      // Navigate to chat screen - implement as needed
     }
   });
 
@@ -201,7 +246,10 @@ export function setupNotificationListeners() {
 /**
  * Initialize push notifications for the current user
  */
-export async function initializePushNotifications(userId: string): Promise<void> {
+export async function initializePushNotifications(
+  userId: string, 
+  onVideoInviteReceived?: (inviteData: any) => void
+): Promise<void> {
   try {
     console.log('🔔 Initializing push notifications for user:', userId);
 
@@ -277,8 +325,8 @@ export async function initializePushNotifications(userId: string): Promise<void>
       return;
     }
 
-    // Setup listeners
-    setupNotificationListeners();
+    // Setup listeners with video invite handler
+    setupNotificationListeners(onVideoInviteReceived);
 
     console.log('✅ Push notifications initialized successfully');
   } catch (error) {
@@ -287,14 +335,13 @@ export async function initializePushNotifications(userId: string): Promise<void>
     // Retry initialization after 10 seconds
     console.log('🔄 Retrying notification initialization in 10 seconds...');
     setTimeout(() => {
-      initializePushNotifications(userId);
+      initializePushNotifications(userId, onVideoInviteReceived);
     }, 10000);
   }
 }
 
 /**
  * Clean up notification tokens for old user when switching users
- * This function should only be called when switching to a different user
  */
 export async function cleanupNotificationTokens(userId: string): Promise<void> {
   try {
@@ -330,284 +377,90 @@ export async function cleanupNotificationTokens(userId: string): Promise<void> {
 }
 
 /**
- * Clean up notification tokens for current user before switching to new user
- * This ensures no old tokens remain active
+ * Send video invite notification via API
  */
-export async function cleanupCurrentUserTokens(): Promise<void> {
+export async function sendVideoInvite(
+  toUserId: string, 
+  message?: string
+): Promise<{ success: boolean; error?: string; inviteId?: string }> {
   try {
-    if (!supabase) {
-      console.error('❌ Supabase client not available for token cleanup');
-      return;
-    }
-
-    // Get current session to identify current user
-    const { data: { session } } = await supabase.auth.getSession();
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app';
     
-    if (session?.user?.id) {
-      console.log('🧹 Cleaning up current user tokens before switch:', session.user.id);
-      await cleanupNotificationTokens(session.user.id);
-    }
-  } catch (error) {
-    console.error('❌ Error cleaning up current user tokens:', error);
-  }
-}
-
-/**
- * Clean up any leftover notification tokens from previous sessions
- * This should be called when the app starts to ensure no old tokens remain
- * BUT preserves the current user's tokens
- */
-export async function cleanupLeftoverTokens(): Promise<void> {
-  try {
-    console.log('🧹 Checking for leftover notification tokens...');
-    
-    if (!supabase) {
-      console.error('❌ Supabase client not available for token cleanup');
-      return;
-    }
-    
-    // Get current session
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.user?.id) {
-      console.log('⚠️ No active session, skipping leftover token cleanup');
-      return;
-    }
-    
-    const currentUserId = session.user.id;
-    console.log('👤 Current user ID:', currentUserId);
-    
-    // Get all tokens for the current user
-    const { data: currentUserTokens, error: currentUserError } = await supabase
-      .from('notification_tokens')
-      .select('*')
-      .eq('user_id', currentUserId);
-    
-    if (currentUserError) {
-      console.error('❌ Error fetching current user tokens:', currentUserError);
-      return;
-    }
-    
-    // Get all tokens for other users (potential leftover tokens)
-    const { data: otherUserTokens, error: otherUserError } = await supabase
-      .from('notification_tokens')
-      .select('*')
-      .neq('user_id', currentUserId);
-    
-    if (otherUserError) {
-      console.error('❌ Error fetching other user tokens:', otherUserError);
-      return;
-    }
-    
-    // Clean up tokens from other users (these are leftover from previous sessions)
-    if (otherUserTokens && otherUserTokens.length > 0) {
-      console.log(`🧹 Found ${otherUserTokens.length} leftover tokens from other users, cleaning up...`);
-      
-      const { error: deleteError } = await supabase
-        .from('notification_tokens')
-        .delete()
-        .neq('user_id', currentUserId);
-      
-      if (deleteError) {
-        console.error('❌ Error cleaning up leftover tokens from other users:', deleteError);
-      } else {
-        console.log('✅ Leftover tokens from other users cleaned up successfully');
-      }
-    } else {
-      console.log('✅ No leftover tokens from other users found');
-    }
-    
-    // Log current user's token status
-    if (currentUserTokens && currentUserTokens.length > 0) {
-      console.log(`✅ Current user has ${currentUserTokens.length} active notification tokens`);
-      currentUserTokens.forEach(token => {
-        console.log(`  - ${token.platform} (${token.token_type}): ${token.is_active ? 'Active' : 'Inactive'}`);
-      });
-    } else {
-      console.log('⚠️ Current user has no notification tokens');
-    }
-  } catch (error) {
-    console.error('❌ Error in leftover token cleanup:', error);
-  }
-}
-
-/**
- * Smart cleanup function that only removes tokens for users other than the current user
- * This preserves the current user's ability to receive notifications
- */
-export async function smartCleanupTokens(): Promise<void> {
-  try {
-    console.log('🧠 Performing smart token cleanup...');
-    
-    if (!supabase) {
-      console.error('❌ Supabase client not available for smart cleanup');
-      return;
-    }
-    
-    // Get current session
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.user?.id) {
-      console.log('⚠️ No active session, skipping smart cleanup');
-      return;
-    }
-    
-    const currentUserId = session.user.id;
-    
-    // Remove all tokens except the current user's
-    const { error } = await supabase
-      .from('notification_tokens')
-      .delete()
-      .neq('user_id', currentUserId);
-    
-    if (error) {
-      console.error('❌ Error during smart cleanup:', error);
-    } else {
-      console.log('✅ Smart cleanup completed - preserved current user tokens');
-    }
-  } catch (error) {
-    console.error('❌ Error in smart cleanup:', error);
-  }
-}
-
-/**
- * Send a test notification (for debugging)
- */
-export async function sendTestNotification(expoPushToken: string): Promise<void> {
-  try {
-    const message = {
-      to: expoPushToken,
-      sound: 'default',
-      title: '🧪 Özgün Koçluk Test',
-      body: 'Bildirimler çalışıyor!',
-      data: { 
-        type: 'test',
-        timestamp: new Date().toISOString() 
-      },
-      channelId: 'chat', // Android channel
-    };
-
-    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+    const response = await fetch(`${apiUrl}/api/notifications/video-invite`, {
       method: 'POST',
       headers: {
-        Accept: 'application/json',
-        'Accept-encoding': 'gzip, deflate',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(message),
+      body: JSON.stringify({
+        toUserId,
+        message,
+      }),
     });
 
     const result = await response.json();
-    console.log('📤 Test notification sent:', result);
-  } catch (error) {
-    console.error('❌ Error sending test notification:', error);
-  }
-}
 
-/**
- * Debug function: Manually clean up all notification tokens for a specific user
- * This is useful for troubleshooting notification issues
- */
-export async function debugCleanupAllTokens(userId: string): Promise<void> {
-  try {
-    console.log('🐛 DEBUG: Cleaning up ALL notification tokens for user:', userId);
-    
-    if (!supabase) {
-      console.error('❌ Supabase client not available for debug cleanup');
-      return;
+    if (!response.ok) {
+      console.error('❌ Error sending video invite:', result);
+      return { success: false, error: result.error || 'Failed to send video invite' };
     }
 
-    // First, get all tokens for the user
-    const { data: tokens, error: fetchError } = await supabase
-      .from('notification_tokens')
-      .select('*')
-      .eq('user_id', userId);
-
-    if (fetchError) {
-      console.error('❌ Error fetching tokens for debug cleanup:', fetchError);
-      return;
-    }
-
-    if (!tokens || tokens.length === 0) {
-      console.log('✅ No tokens found for user:', userId);
-      return;
-    }
-
-    console.log(`🐛 Found ${tokens.length} tokens to clean up:`, tokens.map(t => ({
-      id: t.id,
-      platform: t.platform,
-      token_type: t.token_type,
-      is_active: t.is_active,
-      created_at: t.created_at
-    })));
-
-    // Delete all tokens for the user
-    const { error: deleteError } = await supabase
-      .from('notification_tokens')
-      .delete()
-      .eq('user_id', userId);
-
-    if (deleteError) {
-      console.error('❌ Error during debug cleanup:', deleteError);
-    } else {
-      console.log(`✅ Successfully cleaned up ${tokens.length} tokens for user:`, userId);
-    }
-  } catch (error) {
-    console.error('❌ Error in debug cleanup:', error);
-  }
-}
-
-/**
- * Check current notification token status for debugging
- */
-export async function checkNotificationTokenStatus(): Promise<any> {
-  try {
-    console.log('🔍 Checking notification token status...');
-    
-    if (!supabase) {
-      console.error('❌ Supabase client not available for token status check');
-      return null;
-    }
-    
-    // Get current session
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.user?.id) {
-      console.log('⚠️ No active session for token status check');
-      return null;
-    }
-    
-    // Get all tokens for the current user
-    const { data: tokens, error } = await supabase
-      .from('notification_tokens')
-      .select('*')
-      .eq('user_id', session.user.id);
-    
-    if (error) {
-      console.error('❌ Error fetching token status:', error);
-      return null;
-    }
-    
-    const status = {
-      userId: session.user.id,
-      totalTokens: tokens?.length || 0,
-      tokens: tokens || [],
-      summary: {
-        ios: tokens?.filter(t => t.platform === 'ios').length || 0,
-        android: tokens?.filter(t => t.platform === 'android').length || 0,
-        web: tokens?.filter(t => t.platform === 'web').length || 0,
-        expo: tokens?.filter(t => t.token_type === 'expo').length || 0,
-        fcm: tokens?.filter(t => t.token_type === 'fcm').length || 0,
-        apns: tokens?.filter(t => t.token_type === 'apns').length || 0,
-        active: tokens?.filter(t => t.is_active).length || 0,
-        inactive: tokens?.filter(t => !t.is_active).length || 0,
-      }
+    console.log('✅ Video invite sent successfully:', result);
+    return { 
+      success: true, 
+      inviteId: result.inviteId,
     };
-    
-    console.log('🔍 Token status:', status);
-    return status;
   } catch (error) {
-    console.error('❌ Error checking token status:', error);
-    return null;
+    console.error('❌ Error sending video invite:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+/**
+ * Get pending video invites
+ */
+export async function getPendingVideoInvites(): Promise<{
+  success: boolean;
+  receivedInvites: any[];
+  sentInvites: any[];
+  error?: string;
+}> {
+  try {
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app';
+    
+    const response = await fetch(`${apiUrl}/api/notifications/video-invite`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('❌ Error fetching video invites:', result);
+      return { 
+        success: false, 
+        receivedInvites: [], 
+        sentInvites: [], 
+        error: result.error || 'Failed to fetch video invites' 
+      };
+    }
+
+    return {
+      success: true,
+      receivedInvites: result.receivedInvites || [],
+      sentInvites: result.sentInvites || [],
+    };
+  } catch (error) {
+    console.error('❌ Error fetching video invites:', error);
+    return {
+      success: false,
+      receivedInvites: [],
+      sentInvites: [],
+      error: error instanceof Error ? error.message : String(error)
+    };
   }
 }

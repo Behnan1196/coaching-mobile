@@ -15,7 +15,8 @@ import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
 import { VideoCallScreen } from './VideoCallScreen';
-import { sendVideoInviteMessage, getVideoInviteSuccessMessage } from '../utils/videoInviteUtils';
+import { sendVideoInvite } from '../lib/notifications';
+import VideoInviteHandler from '../components/VideoInviteHandler';
 
 
 export const VideoCallTabScreen: React.FC = () => {
@@ -39,10 +40,7 @@ export const VideoCallTabScreen: React.FC = () => {
   const [callPartner, setCallPartner] = useState<UserProfile | null>(null);
   
   // Video invite state
-  const [isInviting, setIsInviting] = useState(false);
-  const [inviteMessage, setInviteMessage] = useState('');
-  const [showInviteForm, setShowInviteForm] = useState(false);
-  const [justSentInvite, setJustSentInvite] = useState(false);
+  const [showVideoInviteHandler, setShowVideoInviteHandler] = useState(false);
 
   useEffect(() => {
     if (userProfile) {
@@ -110,54 +108,8 @@ export const VideoCallTabScreen: React.FC = () => {
     }
   };
 
-  const handleSendVideoInvite = async () => {
-    if (!callPartner) {
-      Alert.alert('Hata', 'Video daveti göndermek için partner bilgisi bulunamadı.');
-      return;
-    }
-
-    console.log('📤 [VIDEO-INVITE] Starting invite process...', {
-      fromUser: userProfile?.full_name,
-      fromUserId: userProfile?.id,
-      toUser: callPartner.full_name,
-      toUserId: callPartner.id,
-      platform: Platform.OS
-    });
-
-    setIsInviting(true);
-    
-    try {
-      // Initialize chat channel if needed
-      if (!chatChannel) {
-        await initializeChatChannel(callPartner.id, callPartner.full_name);
-        // Wait a moment for chat channel to be ready
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-      
-      if (chatChannel) {
-        // Send video invite message using helper function
-        await sendVideoInviteMessage(chatChannel, userProfile?.id || '', inviteMessage);
-
-        setJustSentInvite(true);
-        setInviteMessage('');
-        setShowInviteForm(false);
-        
-        // Reset the success state after 5 seconds
-        setTimeout(() => {
-          setJustSentInvite(false);
-        }, 5000);
-      } else {
-        throw new Error('Chat channel not available');
-      }
-    } catch (error) {
-      console.error('❌ Failed to send video invite:', error);
-      Alert.alert(
-        'Hata',
-        'Video daveti gönderilemedi. Lütfen tekrar deneyin.'
-      );
-    } finally {
-      setIsInviting(false);
-    }
+  const handleOpenVideoInviteHandler = () => {
+    setShowVideoInviteHandler(true);
   };
 
   if (showVideoCall && videoCall) {
@@ -235,64 +187,15 @@ export const VideoCallTabScreen: React.FC = () => {
 
               {/* Video Call Invite Section */}
               <View style={styles.inviteSection}>
-                {justSentInvite ? (
-                  <View style={styles.inviteSuccessCard}>
-                    <Text style={styles.inviteSuccessTitle}>✅ Davet Gönderildi!</Text>
-                    <Text style={styles.inviteSuccessText}>
-                      {getVideoInviteSuccessMessage(callPartner.full_name)}
-                    </Text>
-                  </View>
-                ) : showInviteForm ? (
-                  <View style={styles.inviteFormCard}>
-                    <Text style={styles.inviteFormTitle}>
-                      {callPartner.full_name} adlı kişiye video görüşme daveti gönder
-                    </Text>
-                    
-                    <View style={styles.inviteInputContainer}>
-                      <Text style={styles.inviteInputLabel}>Davet Mesajı (İsteğe bağlı)</Text>
-                      <TextInput
-                        style={styles.inviteInput}
-                        value={inviteMessage}
-                        onChangeText={setInviteMessage}
-                        placeholder="Örn: Matematik konusunu görüşelim"
-                        maxLength={100}
-                        multiline
-                      />
-                    </View>
-                    
-                    <View style={styles.inviteButtonContainer}>
-                      <TouchableOpacity
-                        style={[styles.inviteButton, styles.inviteButtonCancel]}
-                        onPress={() => {
-                          setShowInviteForm(false);
-                          setInviteMessage('');
-                        }}
-                      >
-                        <Text style={styles.inviteButtonCancelText}>İptal</Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity
-                        style={[styles.inviteButton, styles.inviteButtonSend, isInviting && styles.inviteButtonDisabled]}
-                        onPress={handleSendVideoInvite}
-                        disabled={isInviting}
-                      >
-                        <Text style={styles.inviteButtonSendText}>
-                          {isInviting ? 'Gönderiliyor...' : '📹 Davet Gönder'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.inviteCard}
-                    onPress={() => setShowInviteForm(true)}
-                  >
-                    <Text style={styles.inviteCardTitle}>📹 Video Görüşme Daveti Gönder</Text>
-                    <Text style={styles.inviteCardSubtitle}>
-                      {callPartner.full_name} adlı kişiye video görüşme daveti gönderin
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={styles.inviteCard}
+                  onPress={handleOpenVideoInviteHandler}
+                >
+                  <Text style={styles.inviteCardTitle}>📹 Video Görüşme Daveti Gönder</Text>
+                  <Text style={styles.inviteCardSubtitle}>
+                    {callPartner.full_name} adlı kişiye push bildirim ile video görüşme daveti gönderin
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -310,6 +213,14 @@ export const VideoCallTabScreen: React.FC = () => {
           </View>
         )}
       </View>
+
+      {/* Video Invite Handler Modal */}
+      <VideoInviteHandler
+        visible={showVideoInviteHandler}
+        onClose={() => setShowVideoInviteHandler(false)}
+        targetUserId={callPartner?.id}
+        targetUserName={callPartner?.full_name}
+      />
     </View>
   );
 };
@@ -458,86 +369,5 @@ const styles = StyleSheet.create({
   inviteCardSubtitle: {
     fontSize: 14,
     color: '#6B7280',
-  },
-  inviteSuccessCard: {
-    backgroundColor: '#F0FDF4',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-  },
-  inviteSuccessTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#15803D',
-    marginBottom: 8,
-  },
-  inviteSuccessText: {
-    fontSize: 14,
-    color: '#166534',
-  },
-  inviteFormCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  inviteFormTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  inviteInputContainer: {
-    marginBottom: 16,
-  },
-  inviteInputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  inviteInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#1F2937',
-    backgroundColor: '#FFFFFF',
-    minHeight: 40,
-  },
-  inviteButtonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  inviteButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  inviteButtonCancel: {
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-  },
-  inviteButtonCancelText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  inviteButtonSend: {
-    backgroundColor: '#249096',
-  },
-  inviteButtonSendText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFFFFF',
-  },
-  inviteButtonDisabled: {
-    backgroundColor: '#9CA3AF',
   },
 }); 

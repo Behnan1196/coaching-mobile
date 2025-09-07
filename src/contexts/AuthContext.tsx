@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
 import { initializePushNotifications, cleanupNotificationTokens, cleanupLeftoverTokens, smartCleanupTokens } from '../lib/notifications';
+import { useNavigation } from '@react-navigation/native';
 
 interface AuthContextType {
   user: User | null;
@@ -34,6 +35,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Video invite handler
+  const handleVideoInviteReceived = (inviteData: any) => {
+    console.log('📹 Video invite received in AuthContext:', inviteData);
+    // You can add navigation logic here if needed
+    // For now, the notification will show and user can tap to open video call screen
+  };
 
   useEffect(() => {
     // Only proceed if supabase client is available
@@ -73,8 +81,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Clean up any leftover tokens from other users before initializing new ones
         await cleanupLeftoverTokens();
         await fetchUserProfile(session.user.id);
-        // Initialize push notifications when user signs in
-        initializePushNotifications(session.user.id);
+        // Initialize push notifications when user signs in (with video invite handler)
+        initializePushNotifications(session.user.id, handleVideoInviteReceived);
       } else {
         setUserProfile(null);
       }
