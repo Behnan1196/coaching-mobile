@@ -222,17 +222,16 @@ export const ChatScreen: React.FC = () => {
       }
 
       return (
-        <KeyboardAvoidingView 
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 140 : 0}
-        >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
+          </View>
           <OverlayProvider>
             <Chat client={chatClient}>
-              <Channel channel={chatChannel}>
-                <View style={styles.header}>
-                  <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
-                </View>
+              <Channel 
+                channel={chatChannel}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+              >
                 <View style={styles.chatContainer}>
                   <MessageList />
                   <MessageInput />
@@ -240,7 +239,7 @@ export const ChatScreen: React.FC = () => {
               </Channel>
             </Chat>
           </OverlayProvider>
-        </KeyboardAvoidingView>
+        </View>
       );
     } catch (error) {
       console.error('Error rendering chat interface:', error);
