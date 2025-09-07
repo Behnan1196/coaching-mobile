@@ -26,25 +26,34 @@ export function setupFirebaseMessaging() {
         if (notificationType === 'video_invite') {
           console.log('📹 Forcing video invite notification with maximum visibility');
           
-          // If this is a data-only notification (no title/body), create a proper one
-          if (!notification.request.content.title && data?.notificationTitle) {
-            console.log('📹 Creating local notification from data-only FCM message');
+          // For data-only notifications, always create a proper local notification
+          if (data?.showNotification === 'true' && data?.notificationTitle) {
+            console.log('📹 Creating enhanced local notification from FCM data');
+            console.log('📹 Notification data:', {
+              title: data.notificationTitle,
+              body: data.notificationBody,
+              originalTitle: notification.request.content.title,
+              originalBody: notification.request.content.body
+            });
             
             // Schedule a local notification to ensure it shows properly
             await Notifications.scheduleNotificationAsync({
               content: {
-                title: data.notificationTitle || 'Video Görüşme Daveti',
-                body: data.notificationBody || 'Size video görüşme daveti gönderildi',
+                title: data.notificationTitle || data.title || 'Video Görüşme Daveti',
+                body: data.notificationBody || data.body || 'Size video görüşme daveti gönderildi',
                 data: data,
                 sound: 'default',
                 priority: Notifications.AndroidNotificationPriority.MAX,
-                vibrate: [0, 250, 250, 250],
+                vibrate: [0, 500, 250, 500],
                 categoryIdentifier: 'video_invite',
               },
               trigger: null, // Show immediately
+              identifier: `video_invite_${Date.now()}`, // Unique identifier
             });
             
-            // Don't show the original empty notification
+            console.log('✅ Enhanced local notification scheduled');
+            
+            // Don't show the original FCM notification
             return {
               shouldShowAlert: false,
               shouldPlaySound: false,
