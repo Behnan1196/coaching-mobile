@@ -78,10 +78,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (session?.user) {
         // Clean up any leftover tokens from other users before initializing new ones
-        await cleanupLeftoverTokens();
+        try {
+          await cleanupLeftoverTokens();
+        } catch (error) {
+          console.error('Error cleaning up leftover tokens:', error);
+        }
+        
         await fetchUserProfile(session.user.id);
-        // Initialize push notifications when user signs in (with video invite handler)
-        initializePushNotifications(session.user.id, handleVideoInviteReceived);
+        
+        // Initialize push notifications asynchronously (non-blocking)
+        setTimeout(() => {
+          try {
+            initializePushNotifications(session.user.id, handleVideoInviteReceived);
+          } catch (error) {
+            console.error('Error initializing push notifications:', error);
+          }
+        }, 100);
       } else {
         setUserProfile(null);
       }
