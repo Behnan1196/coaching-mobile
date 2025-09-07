@@ -227,7 +227,8 @@ export const ChatScreen: React.FC = () => {
             <Chat client={chatClient}>
               <Channel 
                 channel={chatChannel}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 180 : 0}
+                disableKeyboardCompatibleView={false}
               >
                 <View style={styles.header}>
                   <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
