@@ -3,7 +3,6 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
 import { initializePushNotifications, cleanupNotificationTokens, cleanupLeftoverTokens, smartCleanupTokens } from '../lib/notifications';
-import { useNavigation } from '@react-navigation/native';
 
 interface AuthContextType {
   user: User | null;
