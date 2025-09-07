@@ -274,9 +274,16 @@ export async function initializePushNotifications(
     let primaryTokenSaved = false;
 
     if (Platform.OS === 'ios') {
-      console.log('🍎 iOS detected - attempting to get APNs token...');
+      console.log('🍎 iOS detected - requesting permissions first...');
       
-      // Get native device token for iOS (APNs)
+      // FIRST: Request permissions (this is critical for iOS!)
+      const permissionToken = await registerForPushNotifications();
+      if (!permissionToken) {
+        console.error('❌ iOS notification permissions denied or failed');
+        return;
+      }
+      
+      // SECOND: Get native device token for iOS (APNs) - now with permissions
       const deviceToken = await getDeviceToken();
       if (deviceToken) {
         console.log('📱 iOS APNs device token obtained:', deviceToken.substring(0, 20) + '...');
@@ -298,7 +305,7 @@ export async function initializePushNotifications(
           }, 5000);
         }
       } else {
-        console.error('❌ Failed to get iOS APNs device token - permissions might not be granted');
+        console.error('❌ Failed to get iOS APNs device token after permission grant');
       }
       
       // Skip Expo token for iOS to avoid FCM server key issues
