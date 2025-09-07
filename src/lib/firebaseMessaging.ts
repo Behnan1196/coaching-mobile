@@ -1,6 +1,10 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
+// Debounce mechanism to prevent duplicate notifications
+let lastNotificationTime = 0;
+const NOTIFICATION_DEBOUNCE_MS = 2000; // 2 seconds
+
 /**
  * Enhanced notification handler for Android background notifications
  * This ensures notifications are properly displayed when app is closed/background
@@ -26,10 +30,28 @@ export function setupFirebaseMessaging() {
         if (notificationType === 'video_invite') {
           console.log('📹 Forcing video invite notification with maximum visibility');
           
-          // For data-only notifications, always create a proper local notification
+          // For data-only notifications, create a proper local notification (with debounce)
           if (data?.showNotification === 'true' && data?.notificationTitle) {
+            const now = Date.now();
+            const inviteId = data?.inviteId || 'unknown';
+            
+            // Debounce to prevent duplicate notifications
+            if (now - lastNotificationTime < NOTIFICATION_DEBOUNCE_MS) {
+              console.log('⏰ Debouncing duplicate notification');
+              return {
+                shouldShowAlert: false,
+                shouldPlaySound: false,
+                shouldSetBadge: false,
+                shouldShowBanner: false,
+                shouldShowList: false,
+              };
+            }
+            
+            lastNotificationTime = now;
+            
             console.log('📹 Creating enhanced local notification from FCM data');
             console.log('📹 Notification data:', {
+              inviteId,
               title: data.notificationTitle,
               body: data.notificationBody,
               originalTitle: notification.request.content.title,
@@ -48,7 +70,7 @@ export function setupFirebaseMessaging() {
                 categoryIdentifier: 'video_invite',
               },
               trigger: null, // Show immediately
-              identifier: `video_invite_${Date.now()}`, // Unique identifier
+              identifier: `video_invite_${inviteId}`, // Use invite ID for uniqueness
             });
             
             console.log('✅ Enhanced local notification scheduled');
