@@ -11,6 +11,7 @@ import {
   Platform,
   Switch,
   Image,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
@@ -172,6 +173,16 @@ export const LoginScreen: React.FC = () => {
               <Text style={styles.loginButtonText}>Giriş Yap</Text>
             )}
           </TouchableOpacity>
+
+          {/* Membership Link */}
+          <TouchableOpacity 
+            style={styles.membershipLink}
+            onPress={() => Linking.openURL('https://www.ozgunkocluk.com/')}
+          >
+            <Text style={styles.membershipText}>
+              Hesabınız yok mu? <Text style={styles.membershipLinkText}>Üye olmak için tıklayın</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -210,13 +221,14 @@ const styles = StyleSheet.create({
   logo: {
     width: 180,
     height: 180,
-    marginBottom: 0,
+    marginBottom: -10,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#1F2937',
     marginBottom: 4,
+    marginTop: 0,
   },
   subtitle: {
     fontSize: 16,
@@ -266,5 +278,20 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  membershipLink: {
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 8,
+  },
+  membershipText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  membershipLinkText: {
+    color: '#01adb8',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 }); 
