@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   TextInput,
   Platform,
+  KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useStream } from '../contexts/StreamContext';
@@ -16,7 +18,6 @@ import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
 import { VideoCallScreen } from './VideoCallScreen';
 import { sendVideoInvite } from '../lib/notifications';
-import VideoInviteHandler from '../components/VideoInviteHandler';
 
 
 export const VideoCallTabScreen: React.FC = () => {
@@ -39,8 +40,10 @@ export const VideoCallTabScreen: React.FC = () => {
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [callPartner, setCallPartner] = useState<UserProfile | null>(null);
   
-  // Video invite state
-  const [showVideoInviteHandler, setShowVideoInviteHandler] = useState(false);
+  // Video invite state (inline form)
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [sendingInvite, setSendingInvite] = useState(false);
 
   useEffect(() => {
     if (userProfile) {
@@ -108,8 +111,37 @@ export const VideoCallTabScreen: React.FC = () => {
     }
   };
 
-  const handleOpenVideoInviteHandler = () => {
-    setShowVideoInviteHandler(true);
+  const handleToggleInviteForm = () => {
+    setShowInviteForm(!showInviteForm);
+    if (!showInviteForm) {
+      setInviteMessage(''); // Clear message when opening
+    }
+  };
+
+  const handleSendInvite = async () => {
+    if (!callPartner) return;
+
+    setSendingInvite(true);
+    try {
+      const result = await sendVideoInvite(callPartner.id, inviteMessage.trim() || undefined);
+      if (result.success) {
+        Alert.alert(
+          'Başarılı!', 
+          `${callPartner.full_name} adlı kişiye video görüşme daveti gönderildi!`,
+          [{ text: 'Tamam', onPress: () => {
+            setInviteMessage('');
+            setShowInviteForm(false);
+          }}]
+        );
+      } else {
+        Alert.alert('Hata', result.error || 'Davet gönderilirken hata oluştu');
+      }
+    } catch (error) {
+      console.error('Error sending invite:', error);
+      Alert.alert('Hata', 'Beklenmeyen bir hata oluştu');
+    } finally {
+      setSendingInvite(false);
+    }
   };
 
   if (showVideoCall && videoCall) {
@@ -139,7 +171,12 @@ export const VideoCallTabScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Video Görüşme</Text>
       </View>
@@ -189,13 +226,48 @@ export const VideoCallTabScreen: React.FC = () => {
               <View style={styles.inviteSection}>
                 <TouchableOpacity
                   style={styles.inviteCard}
-                  onPress={handleOpenVideoInviteHandler}
+                  onPress={handleToggleInviteForm}
                 >
                   <Text style={styles.inviteCardTitle}>📹 Video Görüşme Daveti Gönder</Text>
                   <Text style={styles.inviteCardSubtitle}>
                     {callPartner.full_name} adlı kişiye push bildirim ile video görüşme daveti gönderin
                   </Text>
                 </TouchableOpacity>
+
+                {/* Inline Invite Form */}
+                {showInviteForm && (
+                  <View style={styles.inviteForm}>
+                    <Text style={styles.inviteFormTitle}>Mesaj (İsteğe bağlı):</Text>
+                    <TextInput
+                      style={styles.inviteMessageInput}
+                      placeholder="Görüşme ile ilgili bir mesaj yazabilirsiniz..."
+                      value={inviteMessage}
+                      onChangeText={setInviteMessage}
+                      multiline={true}
+                      numberOfLines={3}
+                      maxLength={200}
+                    />
+                    <View style={styles.inviteFormButtons}>
+                      <TouchableOpacity
+                        style={styles.inviteCancelButton}
+                        onPress={() => setShowInviteForm(false)}
+                      >
+                        <Text style={styles.inviteCancelButtonText}>İptal</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.inviteSendButton, sendingInvite && styles.inviteSendButtonDisabled]}
+                        onPress={handleSendInvite}
+                        disabled={sendingInvite}
+                      >
+                        {sendingInvite ? (
+                          <ActivityIndicator color="white" size="small" />
+                        ) : (
+                          <Text style={styles.inviteSendButtonText}>Davet Gönder</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -213,15 +285,8 @@ export const VideoCallTabScreen: React.FC = () => {
           </View>
         )}
       </View>
-
-      {/* Video Invite Handler Modal */}
-      <VideoInviteHandler
-        visible={showVideoInviteHandler}
-        onClose={() => setShowVideoInviteHandler(false)}
-        targetUserId={callPartner?.id}
-        targetUserName={callPartner?.full_name}
-      />
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -229,6 +294,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  scrollContainer: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -369,5 +437,65 @@ const styles = StyleSheet.create({
   inviteCardSubtitle: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  // Inline invite form styles
+  inviteForm: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  inviteFormTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  inviteMessageInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: 'white',
+    fontSize: 16,
+    textAlignVertical: 'top',
+    minHeight: 80,
+    marginBottom: 16,
+  },
+  inviteFormButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  inviteCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  inviteCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  inviteSendButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  inviteSendButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  inviteSendButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
 }); 

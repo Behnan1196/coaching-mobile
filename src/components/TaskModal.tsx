@@ -9,6 +9,8 @@ import {
   StyleSheet,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Task, TaskType, Subject, Topic, Resource, MockExam } from '../types/database';
 import { supabase } from '../lib/supabase';
@@ -331,7 +333,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
             <Text style={styles.cancelButtonText}>İptal</Text>
@@ -613,6 +619,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           showMockExamDropdown
         )}
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
