@@ -338,6 +338,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
+        <View style={styles.modalContent}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
             <Text style={styles.cancelButtonText}>İptal</Text>
@@ -618,7 +619,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           () => setShowMockExamDropdown(false),
           showMockExamDropdown
         )}
-      </View>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -628,6 +629,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  modalContent: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
