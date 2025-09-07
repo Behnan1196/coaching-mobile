@@ -234,17 +234,16 @@ export const VideoCallTabScreen: React.FC = () => {
                   </Text>
                 </TouchableOpacity>
 
-                {/* Inline Invite Form */}
+                {/* Inline Invite Form - Simple like web */}
                 {showInviteForm && (
                   <View style={styles.inviteForm}>
-                    <Text style={styles.inviteFormTitle}>Mesaj (İsteğe bağlı):</Text>
                     <TextInput
                       style={styles.inviteMessageInput}
-                      placeholder="Görüşme ile ilgili bir mesaj yazabilirsiniz..."
+                      placeholder={`${callPartner.full_name} adlı kişiye özel mesaj (isteğe bağlı)...`}
                       value={inviteMessage}
                       onChangeText={setInviteMessage}
                       multiline={true}
-                      numberOfLines={3}
+                      numberOfLines={2}
                       maxLength={200}
                     />
                     <View style={styles.inviteFormButtons}>
@@ -252,7 +251,7 @@ export const VideoCallTabScreen: React.FC = () => {
                         style={styles.inviteCancelButton}
                         onPress={() => setShowInviteForm(false)}
                       >
-                        <Text style={styles.inviteCancelButtonText}>İptal</Text>
+                        <Text style={styles.inviteCancelButtonText}>✕</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.inviteSendButton, sendingInvite && styles.inviteSendButtonDisabled]}
@@ -262,7 +261,7 @@ export const VideoCallTabScreen: React.FC = () => {
                         {sendingInvite ? (
                           <ActivityIndicator color="white" size="small" />
                         ) : (
-                          <Text style={styles.inviteSendButtonText}>Davet Gönder</Text>
+                          <Text style={styles.inviteSendButtonText}>Daveti Gönder</Text>
                         )}
                       </TouchableOpacity>
                     </View>
@@ -438,63 +437,53 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
-  // Inline invite form styles
+  // Inline invite form styles - Simple like web
   inviteForm: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  inviteFormTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    marginTop: 12,
+    gap: 8,
   },
   inviteMessageInput: {
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 6,
+    padding: 8,
     backgroundColor: 'white',
-    fontSize: 16,
+    fontSize: 14,
     textAlignVertical: 'top',
-    minHeight: 80,
-    marginBottom: 16,
+    minHeight: 60,
   },
   inviteFormButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+    alignItems: 'center',
+    gap: 8,
   },
   inviteCancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: '#F3F4F6',
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 32,
   },
   inviteCancelButtonText: {
     fontSize: 16,
-    fontWeight: '600',
     color: '#6B7280',
+    fontWeight: '500',
   },
   inviteSendButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     backgroundColor: '#3B82F6',
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: 'center',
   },
   inviteSendButtonDisabled: {
     backgroundColor: '#9CA3AF',
   },
   inviteSendButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: 'white',
   },

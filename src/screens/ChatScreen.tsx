@@ -5,6 +5,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { 
   Chat, 
@@ -220,7 +222,11 @@ export const ChatScreen: React.FC = () => {
       }
 
       return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView 
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
           <OverlayProvider>
             <Chat client={chatClient}>
               <Channel channel={chatChannel}>
@@ -234,7 +240,7 @@ export const ChatScreen: React.FC = () => {
               </Channel>
             </Chat>
           </OverlayProvider>
-        </View>
+        </KeyboardAvoidingView>
       );
     } catch (error) {
       console.error('Error rendering chat interface:', error);

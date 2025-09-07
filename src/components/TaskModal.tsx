@@ -357,7 +357,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+        >
           <View style={styles.form}>
             {/* 1. Görev Türü * */}
             <View style={styles.formGroup}>
@@ -672,6 +677,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   form: {
     padding: 16,

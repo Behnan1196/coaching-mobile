@@ -402,12 +402,23 @@ export async function sendVideoInvite(
   message?: string
 ): Promise<{ success: boolean; error?: string; inviteId?: string }> {
   try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase client not available' };
+    }
+
+    // Get auth token
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app';
     
     const response = await fetch(`${apiUrl}/api/notifications/video-invite`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
         toUserId,
