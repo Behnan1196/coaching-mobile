@@ -16,6 +16,14 @@ export function setupFirebaseMessaging() {
     // Set up notification handler with enhanced background support
     Notifications.setNotificationHandler({
       handleNotification: async (notification) => {
+        console.log('🔔 NOTIFICATION HANDLER TRIGGERED - Raw notification:', {
+          title: notification.request.content.title,
+          body: notification.request.content.body,
+          hasData: !!notification.request.content.data,
+          dataKeys: notification.request.content.data ? Object.keys(notification.request.content.data) : [],
+          fullData: notification.request.content.data
+        });
+        
         const data = notification.request.content.data;
         const notificationType = data?.type;
         
@@ -26,56 +34,16 @@ export function setupFirebaseMessaging() {
           data: data,
         });
         
-        // For video invites, force maximum visibility
+        // For video invites, show with maximum visibility and sound
         if (notificationType === 'video_invite') {
-          console.log('📹 Forcing video invite notification with maximum visibility');
+          console.log('📹 Showing video invite notification with maximum visibility');
           
-          // For data-only notifications, create a proper local notification (with debounce)
-          if (data?.showNotification === 'true' && data?.notificationTitle) {
-            const now = Date.now();
-            const inviteId = data?.inviteId || 'unknown';
-            
-            // Debounce to prevent duplicate notifications
-            if (now - lastNotificationTime < NOTIFICATION_DEBOUNCE_MS) {
-              console.log('⏰ Debouncing duplicate notification');
-              return {
-                shouldShowAlert: false,
-                shouldPlaySound: false,
-                shouldSetBadge: false,
-                shouldShowBanner: false,
-                shouldShowList: false,
-              };
-            }
-            
-            lastNotificationTime = now;
-            
-            console.log('📹 Creating enhanced local notification from FCM data');
-            console.log('📹 Notification data:', {
-              inviteId,
-              title: data.notificationTitle,
-              body: data.notificationBody,
-              originalTitle: notification.request.content.title,
-              originalBody: notification.request.content.body
-            });
-            
-            // Schedule a local notification to ensure it shows properly
-            await Notifications.scheduleNotificationAsync({
-              content: {
-                title: data.notificationTitle || data.title || 'Video Görüşme Daveti',
-                body: data.notificationBody || data.body || 'Size video görüşme daveti gönderildi',
-                data: data,
-                sound: 'default',
-                priority: Notifications.AndroidNotificationPriority.MAX,
-                vibrate: [0, 500, 250, 500],
-                categoryIdentifier: 'video_invite',
-              },
-              trigger: null, // Show immediately
-              identifier: `video_invite_${inviteId}`, // Use invite ID for uniqueness
-            });
-            
-            console.log('✅ Enhanced local notification scheduled');
-            
-            // Don't show the original FCM notification
+          const now = Date.now();
+          const inviteId = data?.inviteId || 'unknown';
+          
+          // Debounce to prevent duplicate notifications
+          if (now - lastNotificationTime < NOTIFICATION_DEBOUNCE_MS) {
+            console.log('⏰ Debouncing duplicate notification');
             return {
               shouldShowAlert: false,
               shouldPlaySound: false,
@@ -85,7 +53,17 @@ export function setupFirebaseMessaging() {
             };
           }
           
-          // For normal notifications, show with full settings
+          lastNotificationTime = now;
+          
+          console.log('📹 Video invite notification data:', {
+            inviteId,
+            title: notification.request.content.title,
+            body: notification.request.content.body,
+            hasTitle: !!notification.request.content.title,
+            hasBody: !!notification.request.content.body
+          });
+          
+          // Show the notification with maximum visibility
           return {
             shouldShowAlert: true,
             shouldPlaySound: true,
@@ -106,6 +84,44 @@ export function setupFirebaseMessaging() {
       },
     });
 
+    // Also set up direct notification listeners for FCM data messages
+    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      console.log('📱 Direct notification listener triggered:', {
+        title: notification.request.content.title,
+        body: notification.request.content.body,
+        data: notification.request.content.data
+      });
+      
+      const data = notification.request.content.data;
+      if (data?.type === 'video_invite' && data?.showNotification === 'true') {
+        console.log('📹 Processing video invite via direct listener');
+        
+        // Create notification if it doesn't have proper title/body
+        if (!notification.request.content.title && data?.notificationTitle) {
+          console.log('📹 Creating notification from data-only message via direct listener');
+          
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: data.notificationTitle || 'Video Görüşme Daveti',
+              body: data.notificationBody || 'Size video görüşme daveti gönderildi',
+              data: data,
+              sound: 'default',
+              priority: Notifications.AndroidNotificationPriority.MAX,
+              vibrate: [0, 500, 250, 500],
+              categoryIdentifier: 'video_invite',
+            },
+            trigger: null,
+            identifier: `video_invite_direct_${data.inviteId || Date.now()}`,
+          }).then(() => {
+            console.log('✅ Direct listener notification scheduled');
+          }).catch(error => {
+            console.error('❌ Direct listener notification failed:', error);
+          });
+        }
+      }
+    });
+
     console.log('✅ Enhanced Firebase messaging setup complete for Android');
+    console.log('✅ Direct notification listener registered');
   }
 }
