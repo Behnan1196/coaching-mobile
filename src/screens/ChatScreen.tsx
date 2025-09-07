@@ -223,19 +223,17 @@ export const ChatScreen: React.FC = () => {
 
       return (
         <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
-          </View>
           <OverlayProvider>
             <Chat client={chatClient}>
               <Channel 
                 channel={chatChannel}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
               >
-                <View style={styles.chatContainer}>
-                  <MessageList />
-                  <MessageInput />
+                <View style={styles.header}>
+                  <Text style={styles.title}>💬 {chatPartner.full_name}</Text>
                 </View>
+                <MessageList />
+                <MessageInput />
               </Channel>
             </Chat>
           </OverlayProvider>
