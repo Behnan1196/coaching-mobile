@@ -78,10 +78,11 @@ export function setupFirebaseMessaging() {
             console.log('📹 App is active - showing notification with local backup');
             
             // Create local notification for consistency
+            const fromUserName = data?.fromUserName || 'Bilinmeyen';
             Notifications.scheduleNotificationAsync({
               content: {
-                title: data?.notificationTitle || data?.title || 'Video Görüşme Daveti',
-                body: data?.notificationBody || data?.body || 'Size video görüşme daveti gönderildi',
+                title: `📹 Video Görüşme Daveti - ${fromUserName}`,
+                body: data?.notificationBody || data?.body || `${fromUserName} size video görüşme daveti gönderdi`,
                 data: data,
                 sound: 'default',
                 priority: Notifications.AndroidNotificationPriority.MAX,
@@ -108,10 +109,11 @@ export function setupFirebaseMessaging() {
             // When app is background/closed, create local notification (this was working)
             console.log('📹 App is background/closed - creating local notification');
             
+            const fromUserName = data?.fromUserName || 'Bilinmeyen';
             Notifications.scheduleNotificationAsync({
               content: {
-                title: data?.notificationTitle || data?.title || 'Video Görüşme Daveti',
-                body: data?.notificationBody || data?.body || 'Size video görüşme daveti gönderildi',
+                title: `📹 Video Görüşme Daveti - ${fromUserName}`,
+                body: data?.notificationBody || data?.body || `${fromUserName} size video görüşme daveti gönderdi`,
                 data: data,
                 sound: 'default',
                 priority: Notifications.AndroidNotificationPriority.MAX,
@@ -164,10 +166,11 @@ export function setupFirebaseMessaging() {
         if (!notification.request.content.title && data?.notificationTitle) {
           console.log('📹 Creating notification from data-only message via direct listener');
           
+          const fromUserName = data?.fromUserName || 'Bilinmeyen';
           Notifications.scheduleNotificationAsync({
             content: {
-              title: data.notificationTitle || 'Video Görüşme Daveti',
-              body: data.notificationBody || 'Size video görüşme daveti gönderildi',
+              title: `📹 Video Görüşme Daveti - ${fromUserName}`,
+              body: data.notificationBody || `${fromUserName} size video görüşme daveti gönderdi`,
               data: data,
               sound: 'default',
               priority: Notifications.AndroidNotificationPriority.MAX,
