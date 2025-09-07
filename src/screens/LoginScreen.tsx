@@ -204,13 +204,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   header: {
-    marginBottom: 40,
+    marginBottom: 24,
     alignItems: 'center',
   },
   logo: {
-    width: 180,
-    height: 180,
-    marginBottom: 16,
+    width: 160,
+    height: 160,
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,
