@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
 import { initializePushNotifications, cleanupNotificationTokens, cleanupLeftoverTokens } from '../lib/notifications';
+import { setupFirebaseMessaging } from '../lib/firebaseMessaging';
 
 interface AuthContextType {
   user: User | null;
@@ -49,6 +50,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
 
+    // Setup Firebase messaging for background notifications
+    setupFirebaseMessaging();
+    
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
