@@ -99,7 +99,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 500, 250, 500],
         lightColor: '#FF0000',
-        sound: true, // Enable sound
+        sound: 'default', // Use default sound (not boolean)
         description: 'Özgün Koçluk video görüşme davetleri',
         showBadge: true,
         lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
