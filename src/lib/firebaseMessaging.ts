@@ -170,14 +170,18 @@ export function setupFirebaseMessaging() {
       if (data?.type === 'video_invite' && data?.showNotification === 'true') {
         console.log('📹 Processing video invite via direct listener');
         
-        // Create notification if it doesn't have proper title/body
-        if (!notification.request.content.title && data?.notificationTitle) {
+        // Create notification if it doesn't have proper title/body OR if title doesn't include username
+        const hasUsernameInTitle = notification.request.content.title && notification.request.content.title.includes(data?.fromUserName || '');
+        if ((!notification.request.content.title && data?.notificationTitle) || !hasUsernameInTitle) {
           console.log('📹 Creating notification from data-only message via direct listener');
           
           const fromUserName = data?.fromUserName || 'Bilinmeyen';
+          const directNotificationTitle = `📹 Video Görüşme Daveti - ${fromUserName}`;
+          console.log('📹 Direct listener creating notification with title:', directNotificationTitle);
+          
           Notifications.scheduleNotificationAsync({
             content: {
-              title: `📹 Video Görüşme Daveti - ${fromUserName}`,
+              title: directNotificationTitle,
               body: data.notificationBody || `${fromUserName} size video görüşme daveti gönderdi`,
               data: data,
               sound: 'default',
