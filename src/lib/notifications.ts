@@ -107,19 +107,33 @@ export async function registerForPushNotifications(): Promise<string | null> {
       });
     }
 
-    // Request permissions
+    // Request permissions with explicit iOS options
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
+      console.log('🔔 Requesting push notification permissions...');
+      const { status } = await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+          allowDisplayInCarPlay: true,
+          allowCriticalAlerts: false,
+          provideAppNotificationSettings: true,
+          allowProvisional: false,
+          allowAnnouncements: false,
+        },
+      });
       finalStatus = status;
     }
 
     if (finalStatus !== 'granted') {
-      console.log('❌ Push notification permission denied');
+      console.log('❌ Push notification permission denied:', finalStatus);
       return null;
     }
+
+    console.log('✅ Push notification permissions granted');
 
     // Get project ID
     const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
@@ -260,14 +274,18 @@ export async function initializePushNotifications(
     let primaryTokenSaved = false;
 
     if (Platform.OS === 'ios') {
+      console.log('🍎 iOS detected - attempting to get APNs token...');
+      
       // Get native device token for iOS (APNs)
       const deviceToken = await getDeviceToken();
       if (deviceToken) {
+        console.log('📱 iOS APNs device token obtained:', deviceToken.substring(0, 20) + '...');
         console.log('📱 Registering iOS device token for legacy APNs support');
+        
         const deviceTokenSaved = await saveNotificationToken(userId, deviceToken, 'apns');
         if (deviceTokenSaved) {
           primaryTokenSaved = true;
-          console.log('✅ iOS APNs token saved successfully');
+          console.log('✅ iOS APNs token saved successfully to database');
         } else {
           console.log('⚠️ Failed to save iOS APNs token, retrying in 5 seconds...');
           setTimeout(async () => {
@@ -279,6 +297,8 @@ export async function initializePushNotifications(
             }
           }, 5000);
         }
+      } else {
+        console.error('❌ Failed to get iOS APNs device token - permissions might not be granted');
       }
       
       // Skip Expo token for iOS to avoid FCM server key issues
