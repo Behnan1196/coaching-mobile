@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 // Debounce mechanism to prevent duplicate notifications
@@ -34,9 +34,17 @@ export function setupFirebaseMessaging() {
           data: data,
         });
         
-        // For video invites, always create a proper local notification from data
+        // For video invites, handle foreground vs background differently
         if (notificationType === 'video_invite') {
-          console.log('📹 Processing video invite notification');
+          const appState = AppState.currentState;
+          const isAppActive = appState === 'active';
+          
+          console.log('📹 Processing video invite notification', {
+            appState,
+            isAppActive,
+            hasTitle: !!notification.request.content.title,
+            hasBody: !!notification.request.content.body
+          });
           
           const now = Date.now();
           const inviteId = data?.inviteId || 'unknown';
@@ -55,7 +63,6 @@ export function setupFirebaseMessaging() {
           
           lastNotificationTime = now;
           
-          console.log('📹 Creating local notification from data-only FCM message');
           console.log('📹 Notification data available:', {
             inviteId,
             notificationTitle: data?.notificationTitle,
@@ -66,33 +73,68 @@ export function setupFirebaseMessaging() {
             originalBody: notification.request.content.body
           });
           
-          // Always create a local notification for data-only messages
-          Notifications.scheduleNotificationAsync({
-            content: {
-              title: data?.notificationTitle || data?.title || 'Video Görüşme Daveti',
-              body: data?.notificationBody || data?.body || 'Size video görüşme daveti gönderildi',
-              data: data,
-              sound: 'default',
-              priority: Notifications.AndroidNotificationPriority.MAX,
-              vibrate: [0, 500, 250, 500],
-              categoryIdentifier: 'video_invite',
-            },
-            trigger: null, // Show immediately
-            identifier: `video_invite_local_${inviteId}`,
-          }).then(() => {
-            console.log('✅ Local notification created successfully');
-          }).catch(error => {
-            console.error('❌ Failed to create local notification:', error);
-          });
-          
-          // Don't show the original data-only notification (it has no title/body anyway)
-          return {
-            shouldShowAlert: false,
-            shouldPlaySound: false,
-            shouldSetBadge: false,
-            shouldShowBanner: false,
-            shouldShowList: false,
-          };
+          if (isAppActive) {
+            // When app is active, show notification normally but also create local one for consistency
+            console.log('📹 App is active - showing notification with local backup');
+            
+            // Create local notification for consistency
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: data?.notificationTitle || data?.title || 'Video Görüşme Daveti',
+                body: data?.notificationBody || data?.body || 'Size video görüşme daveti gönderildi',
+                data: data,
+                sound: 'default',
+                priority: Notifications.AndroidNotificationPriority.MAX,
+                vibrate: [0, 500, 250, 500],
+                categoryIdentifier: 'video_invite',
+              },
+              trigger: null,
+              identifier: `video_invite_active_${inviteId}`,
+            }).then(() => {
+              console.log('✅ Active state local notification created');
+            }).catch(error => {
+              console.error('❌ Active state local notification failed:', error);
+            });
+            
+            // Also show the original notification
+            return {
+              shouldShowAlert: true,
+              shouldPlaySound: true,
+              shouldSetBadge: true,
+              shouldShowBanner: true,
+              shouldShowList: true,
+            };
+          } else {
+            // When app is background/closed, create local notification (this was working)
+            console.log('📹 App is background/closed - creating local notification');
+            
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: data?.notificationTitle || data?.title || 'Video Görüşme Daveti',
+                body: data?.notificationBody || data?.body || 'Size video görüşme daveti gönderildi',
+                data: data,
+                sound: 'default',
+                priority: Notifications.AndroidNotificationPriority.MAX,
+                vibrate: [0, 500, 250, 500],
+                categoryIdentifier: 'video_invite',
+              },
+              trigger: null,
+              identifier: `video_invite_bg_${inviteId}`,
+            }).then(() => {
+              console.log('✅ Background local notification created successfully');
+            }).catch(error => {
+              console.error('❌ Background local notification failed:', error);
+            });
+            
+            // Don't show the original data-only notification
+            return {
+              shouldShowAlert: false,
+              shouldPlaySound: false,
+              shouldSetBadge: false,
+              shouldShowBanner: false,
+              shouldShowList: false,
+            };
+          }
         }
         
         // Default behavior for other notifications
