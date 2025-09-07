@@ -279,14 +279,8 @@ export async function initializePushNotifications(
         }
       }
       
-      // Also register Expo token as fallback for iOS
-      const expoPushToken = await registerForPushNotifications();
-      if (expoPushToken) {
-        const expTokenSaved = await saveNotificationToken(userId, expoPushToken, 'expo');
-        if (expTokenSaved) {
-          console.log('✅ iOS Expo fallback token saved successfully');
-        }
-      }
+      // Skip Expo token for iOS to avoid FCM server key issues
+      console.log('⚠️ Skipping Expo token for iOS - using direct APNs only');
     } else {
       // For Android, prioritize FCM token, then Expo token
       const deviceToken = await getDeviceToken();
@@ -309,15 +303,8 @@ export async function initializePushNotifications(
         }
       }
 
-      // Also register Expo token as fallback for Android
-      const expoPushToken = await registerForPushNotifications();
-      if (expoPushToken) {
-        const expTokenSaved = await saveNotificationToken(userId, expoPushToken, 'expo');
-        if (expTokenSaved && !primaryTokenSaved) {
-          primaryTokenSaved = true;
-          console.log('✅ Android Expo token saved successfully');
-        }
-      }
+      // Skip Expo token for Android to avoid FCM server key issues
+      console.log('⚠️ Skipping Expo token for Android - using direct FCM only');
     }
 
     if (!primaryTokenSaved) {
