@@ -34,9 +34,9 @@ export function setupFirebaseMessaging() {
           data: data,
         });
         
-        // For video invites, show with maximum visibility and sound
+        // For video invites, always create a proper local notification from data
         if (notificationType === 'video_invite') {
-          console.log('📹 Showing video invite notification with maximum visibility');
+          console.log('📹 Processing video invite notification');
           
           const now = Date.now();
           const inviteId = data?.inviteId || 'unknown';
@@ -55,21 +55,43 @@ export function setupFirebaseMessaging() {
           
           lastNotificationTime = now;
           
-          console.log('📹 Video invite notification data:', {
+          console.log('📹 Creating local notification from data-only FCM message');
+          console.log('📹 Notification data available:', {
             inviteId,
-            title: notification.request.content.title,
-            body: notification.request.content.body,
-            hasTitle: !!notification.request.content.title,
-            hasBody: !!notification.request.content.body
+            notificationTitle: data?.notificationTitle,
+            notificationBody: data?.notificationBody,
+            title: data?.title,
+            body: data?.body,
+            originalTitle: notification.request.content.title,
+            originalBody: notification.request.content.body
           });
           
-          // Show the notification with maximum visibility
+          // Always create a local notification for data-only messages
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: data?.notificationTitle || data?.title || 'Video Görüşme Daveti',
+              body: data?.notificationBody || data?.body || 'Size video görüşme daveti gönderildi',
+              data: data,
+              sound: 'default',
+              priority: Notifications.AndroidNotificationPriority.MAX,
+              vibrate: [0, 500, 250, 500],
+              categoryIdentifier: 'video_invite',
+            },
+            trigger: null, // Show immediately
+            identifier: `video_invite_local_${inviteId}`,
+          }).then(() => {
+            console.log('✅ Local notification created successfully');
+          }).catch(error => {
+            console.error('❌ Failed to create local notification:', error);
+          });
+          
+          // Don't show the original data-only notification (it has no title/body anyway)
           return {
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: true,
-            shouldShowBanner: true,
-            shouldShowList: true,
+            shouldShowAlert: false,
+            shouldPlaySound: false,
+            shouldSetBadge: false,
+            shouldShowBanner: false,
+            shouldShowList: false,
           };
         }
         
