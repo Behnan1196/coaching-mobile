@@ -99,11 +99,13 @@ export async function registerForPushNotifications(): Promise<string | null> {
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 500, 250, 500],
         lightColor: '#FF0000',
-        sound: 'default',
+        sound: true, // Enable sound
         description: 'Özgün Koçluk video görüşme davetleri',
         showBadge: true,
         lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
         bypassDnd: true, // Bypass Do Not Disturb
+        enableLights: true,
+        enableVibrate: true,
       });
     }
 
