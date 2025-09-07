@@ -145,8 +145,11 @@ export const VideoCallTabScreen: React.FC = () => {
         onCallEnd={async () => {
           try {
             await endVideoCall();
-          } catch (error) {
-            console.error('Error ending video call:', error);
+          } catch (error: any) {
+            // Suppress "already been left" errors as they're harmless
+            if (!error?.message?.includes('already been left')) {
+              console.error('Error ending video call:', error);
+            }
           }
           setShowVideoCall(false);
         }} 

@@ -294,9 +294,21 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
       }
 
       console.log('🔚 [END CALL] Ending video call...');
-      await videoCall.leave();
+      
+      // Check if call is already left to avoid "Cannot leave call that has already been left" error
+      try {
+        await videoCall.leave();
+        console.log('✅ [END CALL] Successfully ended call');
+      } catch (leaveError: any) {
+        if (leaveError?.message?.includes('already been left')) {
+          console.log('ℹ️ [END CALL] Call was already left, cleaning up state');
+        } else {
+          // Re-throw other errors
+          throw leaveError;
+        }
+      }
+      
       setVideoCall(null);
-      console.log('✅ [END CALL] Successfully ended call');
     } catch (error) {
       console.error('❌ [END CALL] Failed to end call:', error);
       throw error;
