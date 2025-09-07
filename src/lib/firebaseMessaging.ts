@@ -65,12 +65,14 @@ export function setupFirebaseMessaging() {
           
           console.log('📹 Notification data available:', {
             inviteId,
+            fromUserName: data?.fromUserName,
             notificationTitle: data?.notificationTitle,
             notificationBody: data?.notificationBody,
             title: data?.title,
             body: data?.body,
             originalTitle: notification.request.content.title,
-            originalBody: notification.request.content.body
+            originalBody: notification.request.content.body,
+            allDataKeys: Object.keys(data || {})
           });
           
           if (isAppActive) {
@@ -79,9 +81,12 @@ export function setupFirebaseMessaging() {
             
             // Create local notification for consistency
             const fromUserName = data?.fromUserName || 'Bilinmeyen';
+            const notificationTitle = `📹 Video Görüşme Daveti - ${fromUserName}`;
+            console.log('📹 Creating notification with title:', notificationTitle);
+            
             Notifications.scheduleNotificationAsync({
               content: {
-                title: `📹 Video Görüşme Daveti - ${fromUserName}`,
+                title: notificationTitle,
                 body: data?.notificationBody || data?.body || `${fromUserName} size video görüşme daveti gönderdi`,
                 data: data,
                 sound: 'default',
@@ -110,9 +115,12 @@ export function setupFirebaseMessaging() {
             console.log('📹 App is background/closed - creating local notification');
             
             const fromUserName = data?.fromUserName || 'Bilinmeyen';
+            const notificationTitle = `📹 Video Görüşme Daveti - ${fromUserName}`;
+            console.log('📹 Creating background notification with title:', notificationTitle);
+            
             Notifications.scheduleNotificationAsync({
               content: {
-                title: `📹 Video Görüşme Daveti - ${fromUserName}`,
+                title: notificationTitle,
                 body: data?.notificationBody || data?.body || `${fromUserName} size video görüşme daveti gönderdi`,
                 data: data,
                 sound: 'default',
