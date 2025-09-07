@@ -406,9 +406,9 @@ export async function sendVideoInvite(
       return { success: false, error: 'Supabase client not available' };
     }
 
-    // Get auth token
+    // Get current user ID
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
+    if (!session?.user?.id) {
       return { success: false, error: 'Not authenticated' };
     }
 
@@ -418,9 +418,9 @@ export async function sendVideoInvite(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
+        fromUserId: session.user.id, // Add fromUserId for mobile
         toUserId,
         message,
       }),

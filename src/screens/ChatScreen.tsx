@@ -225,7 +225,7 @@ export const ChatScreen: React.FC = () => {
         <KeyboardAvoidingView 
           style={styles.container}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 140 : 0}
         >
           <OverlayProvider>
             <Chat client={chatClient}>

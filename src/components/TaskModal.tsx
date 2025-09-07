@@ -462,8 +462,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   style={[styles.input, errors.problem_count && styles.inputError]}
                   value={formData.problem_count.toString()}
                   onChangeText={(text) => {
-                    const num = parseInt(text) || 10;
-                    setFormData(prev => ({ ...prev, problem_count: num }));
+                    // Allow empty string, convert to number only if valid
+                    if (text === '') {
+                      setFormData(prev => ({ ...prev, problem_count: 0 }));
+                    } else {
+                      const num = parseInt(text);
+                      if (!isNaN(num) && num >= 0) {
+                        setFormData(prev => ({ ...prev, problem_count: num }));
+                      }
+                    }
                   }}
                   placeholder="Çözülecek soru sayısı"
                   placeholderTextColor="#9CA3AF"
@@ -518,8 +525,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 style={[styles.input, errors.estimated_duration && styles.inputError]}
                 value={formData.estimated_duration.toString()}
                 onChangeText={(text) => {
-                  const num = parseInt(text) || 60;
-                  setFormData(prev => ({ ...prev, estimated_duration: num }));
+                  // Allow empty string, convert to number only if valid
+                  if (text === '') {
+                    setFormData(prev => ({ ...prev, estimated_duration: 0 }));
+                  } else {
+                    const num = parseInt(text);
+                    if (!isNaN(num) && num >= 0) {
+                      setFormData(prev => ({ ...prev, estimated_duration: num }));
+                    }
+                  }
                 }}
                 placeholder="Dakika cinsinden"
                 placeholderTextColor="#9CA3AF"
