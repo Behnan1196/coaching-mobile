@@ -125,14 +125,9 @@ export const VideoCallTabScreen: React.FC = () => {
     try {
       const result = await sendVideoInvite(callPartner.id, inviteMessage.trim() || undefined);
       if (result.success) {
-        Alert.alert(
-          'Başarılı!', 
-          `${callPartner.full_name} adlı kişiye video görüşme daveti gönderildi!`,
-          [{ text: 'Tamam', onPress: () => {
-            setInviteMessage('');
-            setShowInviteForm(false);
-          }}]
-        );
+        // Success - just clear form and close, no alert needed
+        setInviteMessage('');
+        setShowInviteForm(false);
       } else {
         Alert.alert('Hata', result.error || 'Davet gönderilirken hata oluştu');
       }

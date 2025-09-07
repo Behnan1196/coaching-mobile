@@ -67,14 +67,9 @@ export default function VideoInviteHandler({
     try {
       const result = await sendVideoInvite(targetUserId, inviteMessage.trim() || undefined);
       if (result.success) {
-        Alert.alert(
-          'Başarılı!', 
-          `${targetUserName} adlı kişiye video görüşme daveti gönderildi!`,
-          [{ text: 'Tamam', onPress: () => {
-            setInviteMessage('');
-            onClose();
-          }}]
-        );
+        // Success - just clear form and close, no alert needed
+        setInviteMessage('');
+        onClose();
       } else {
         Alert.alert('Hata', result.error || 'Davet gönderilirken hata oluştu');
       }
