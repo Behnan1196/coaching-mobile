@@ -81,7 +81,7 @@ export function setupFirebaseMessaging() {
             
             // Create local notification for consistency
             const fromUserName = data?.fromUserName || 'Bilinmeyen';
-            const notificationTitle = `📹 Video Görüşme Daveti - ${fromUserName}`;
+            const notificationTitle = `Özgün Koçluk - Video Görüşme Daveti - ${fromUserName}`;
             console.log('📹 Creating notification with title:', notificationTitle);
             
             Notifications.scheduleNotificationAsync({
@@ -115,7 +115,7 @@ export function setupFirebaseMessaging() {
             console.log('📹 App is background/closed - creating local notification');
             
             const fromUserName = data?.fromUserName || 'Bilinmeyen';
-            const notificationTitle = `📹 Video Görüşme Daveti - ${fromUserName}`;
+            const notificationTitle = `Özgün Koçluk - Video Görüşme Daveti - ${fromUserName}`;
             console.log('📹 Creating background notification with title:', notificationTitle);
             
             Notifications.scheduleNotificationAsync({
@@ -176,7 +176,7 @@ export function setupFirebaseMessaging() {
           console.log('📹 Creating notification from data-only message via direct listener');
           
           const fromUserName = data?.fromUserName || 'Bilinmeyen';
-          const directNotificationTitle = `📹 Video Görüşme Daveti - ${fromUserName}`;
+          const directNotificationTitle = `Özgün Koçluk - Video Görüşme Daveti - ${fromUserName}`;
           console.log('📹 Direct listener creating notification with title:', directNotificationTitle);
           
           Notifications.scheduleNotificationAsync({
