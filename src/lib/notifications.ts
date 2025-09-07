@@ -138,7 +138,7 @@ export async function saveNotificationToken(
 ): Promise<boolean> {
   try {
     // Use the public API endpoint for mobile token registration
-    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v15.vercel.app';
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app';
     const response = await fetch(`${apiUrl}/api/notifications/register-token-public`, {
       method: 'POST',
       headers: {

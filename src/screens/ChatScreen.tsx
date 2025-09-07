@@ -58,13 +58,13 @@ export const ChatScreen: React.FC = () => {
     isDemoMode,
     isEnabled: !!chatChannel && !isDemoMode,
     streamApiKey: process.env.EXPO_PUBLIC_STREAM_API_KEY,
-    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v15.vercel.app'
+    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app'
   });
   
   const { triggerActivity } = useActivityTracking({
     channelId: chatChannel?.id || null,
     isEnabled: !!chatChannel && !isDemoMode, // Re-enabled with smart filtering
-    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v15.vercel.app'
+    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app'
   });
 
   useEffect(() => {
