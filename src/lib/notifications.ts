@@ -98,10 +98,12 @@ export async function registerForPushNotifications(): Promise<string | null> {
         name: 'Özgün Koçluk - Video Davetleri',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 500, 250, 500],
-        lightColor: '#00FF00',
+        lightColor: '#FF0000',
         sound: 'default',
         description: 'Özgün Koçluk video görüşme davetleri',
         showBadge: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: true, // Bypass Do Not Disturb
       });
     }
 
