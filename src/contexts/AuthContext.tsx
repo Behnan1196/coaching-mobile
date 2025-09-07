@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types/database';
-import { initializePushNotifications, cleanupNotificationTokens, cleanupLeftoverTokens, smartCleanupTokens } from '../lib/notifications';
+import { initializePushNotifications, cleanupNotificationTokens, cleanupLeftoverTokens } from '../lib/notifications';
 
 interface AuthContextType {
   user: User | null;

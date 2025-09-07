@@ -395,6 +395,61 @@ export async function cleanupNotificationTokens(userId: string): Promise<void> {
 }
 
 /**
+ * Clean up notification tokens from previous user sessions
+ * This prevents cross-user notification delivery when switching accounts
+ */
+export async function cleanupLeftoverTokens(): Promise<void> {
+  try {
+    console.log('🧹 Cleaning up leftover notification tokens from previous sessions');
+    
+    if (!supabase) {
+      console.error('❌ Supabase client not available for token cleanup');
+      return;
+    }
+
+    // Get current session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) {
+      console.log('⚠️ No current session, skipping token cleanup');
+      return;
+    }
+
+    const currentUserId = session.user.id;
+    console.log('👤 Current user ID:', currentUserId);
+
+    // Get all tokens from local storage or device that might be for other users
+    // Since we can't easily identify "other user" tokens without server query,
+    // we'll clean up inactive tokens and let the current user re-register
+    const { error } = await supabase
+      .from('notification_tokens')
+      .update({ is_active: false })
+      .neq('user_id', currentUserId);
+
+    if (error) {
+      console.error('❌ Error deactivating other user tokens:', error);
+    } else {
+      console.log('✅ Deactivated notification tokens from other users');
+    }
+
+    // Also clean up any old tokens for current user (they'll re-register)
+    const { error: currentUserError } = await supabase
+      .from('notification_tokens')
+      .update({ is_active: false })
+      .eq('user_id', currentUserId)
+      .lt('updated_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()); // Older than 5 minutes
+
+    if (currentUserError) {
+      console.error('❌ Error cleaning up old current user tokens:', currentUserError);
+    } else {
+      console.log('✅ Cleaned up old tokens for current user');
+    }
+
+  } catch (error) {
+    console.error('❌ Error in cleanupLeftoverTokens:', error);
+  }
+}
+
+/**
  * Send video invite notification via API
  */
 export async function sendVideoInvite(
