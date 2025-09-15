@@ -67,12 +67,64 @@ export const createStreamChatClient = async (user: { id: string; name: string },
   }
 };
 
+// Retry mechanism with exponential backoff for Stream.io calls
+const retryWithBackoff = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> => {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Check if it's a rate limiting error
+      if (error.message?.includes('Too many requests') || error.message?.includes('429')) {
+        if (attempt < maxRetries) {
+          const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000; // Add jitter
+          console.warn(`⚠️ Rate limited, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+      }
+      
+      // For non-rate-limiting errors or final attempt, throw immediately
+      throw error;
+    }
+  }
+  
+  throw lastError!;
+};
+
 // Create a video call between coach and student
 export const createVideoCallId = (coachId: string, studentId: string): string => {
   // Create a unique but short call ID for the coach-student pair
   const shortCoachId = coachId.substring(0, 8);
   const shortStudentId = studentId.substring(0, 8);
   return `call-${[shortCoachId, shortStudentId].sort().join('-')}`;
+};
+
+// Create video call with retry mechanism
+export const createVideoCall = async (videoClient: StreamVideoClient, coachId: string, studentId: string) => {
+  const callId = createVideoCallId(coachId, studentId);
+  const call = videoClient.call('default', callId);
+  
+  // Use retry mechanism for getOrCreate to handle rate limiting
+  await retryWithBackoff(async () => {
+    await call.getOrCreate({
+      data: {
+        members: [
+          { user_id: coachId },
+          { user_id: studentId },
+        ],
+      },
+    });
+  });
+  
+  return call;
 };
 
 // Create a chat channel between coach and student
@@ -123,6 +175,42 @@ export const formatStreamUser = (user: { id: string; full_name: string; email: s
   email: user.email,
   role: 'user',
 });
+
+// Ensure partner user exists in Stream.io before video calls
+export const ensurePartnerUserExists = async (chatClient: StreamChat, partnerId: string) => {
+  try {
+    console.log('👤 [MOBILE] Ensuring partner user exists in Stream.io:', partnerId);
+    
+    // Import supabase client
+    const { supabase } = await import('./supabase');
+    
+    // Get partner info from Supabase
+    const { data: partnerProfile } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', partnerId)
+      .single();
+    
+    if (partnerProfile) {
+      // Create/update partner user in Stream.io
+      const partnerStreamUser = formatStreamUser({
+        id: partnerProfile.id,
+        full_name: partnerProfile.full_name,
+        email: partnerProfile.email || ''
+      });
+      
+      console.log('👤 [MOBILE] Partner user formatted:', partnerStreamUser);
+      
+      // Upsert partner user in Stream.io
+      await chatClient.upsertUser(partnerStreamUser);
+      console.log('✅ [MOBILE] Partner user created/updated in Stream.io');
+    } else {
+      console.warn('⚠️ [MOBILE] Partner profile not found in Supabase:', partnerId);
+    }
+  } catch (error) {
+    console.warn('⚠️ [MOBILE] Could not create partner user, continuing anyway:', error);
+  }
+};
 
 // Utility function to create unique channel names for real-time subscriptions
 export const createUniqueChannelName = (baseName: string, userId: string, additionalId?: string | number) => {

@@ -7,8 +7,10 @@ import {
   TouchableOpacity, 
   Alert,
   Linking,
-  RefreshControl
+  RefreshControl,
+  Platform
 } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -61,15 +63,142 @@ const UsefulLinksScreen = () => {
 
   const openLink = async (url: string) => {
     try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
+      console.log('🔗 Attempting to open URL:', url);
+      
+      // Check network connectivity first
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        Alert.alert(
+          'İnternet Bağlantısı Yok',
+          'Link açmak için internet bağlantısı gereklidir. Lütfen internet bağlantınızı kontrol edin.',
+          [{ text: 'Tamam' }]
+        );
+        return;
+      }
+      
+      // Check if it's a YouTube link
+      const isYouTubeLink = url.includes('youtube.com') || url.includes('youtu.be');
+      const isYouTubePlaylist = url.includes('playlist?list=');
+      
+      if (isYouTubeLink && Platform.OS === 'android') {
+        // For Android YouTube links, use Chrome Custom Tabs for playlists
+        if (isYouTubePlaylist) {
+          await openYouTubePlaylistAndroid(url);
+        } else {
+          await openYouTubeLinkAndroid(url);
+        }
       } else {
-        Alert.alert('Hata', 'Bu link açılamıyor.');
+        // For other links or iOS, use standard approach
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert('Hata', 'Bu link açılamıyor.');
+        }
       }
     } catch (error) {
       console.error('Error opening link:', error);
       Alert.alert('Hata', 'Link açılırken bir hata oluştu.');
+    }
+  };
+
+  const openYouTubePlaylistAndroid = async (url: string) => {
+    try {
+      console.log('📺 Opening YouTube playlist:', url);
+      
+      // Convert to mobile YouTube URL for better compatibility
+      const mobileUrl = url.replace('www.youtube.com', 'm.youtube.com');
+      
+      // Try to open with regular browser first
+      const supported = await Linking.canOpenURL(mobileUrl);
+      if (supported) {
+        await Linking.openURL(mobileUrl);
+        console.log('✅ YouTube playlist opened successfully');
+      } else {
+        throw new Error('Browser not supported');
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to open playlist:', error);
+      
+      // Show user options
+      Alert.alert(
+        'YouTube Playlist',
+        'Playlist açılamıyor. Lütfen:\n\n• İnternet bağlantınızı kontrol edin\n• YouTube uygulamasının yüklü olduğundan emin olun\n• Ofis ağında YouTube erişimi kısıtlı olabilir',
+        [
+          {
+            text: 'Tarayıcıda Aç',
+            onPress: () => {
+              Linking.openURL(url).catch(() => {
+                Alert.alert('Hata', 'Link tarayıcıda açılamıyor.');
+              });
+            }
+          },
+          {
+            text: 'YouTube Uygulaması',
+            onPress: () => {
+              const youtubeAppUrl = `vnd.youtube:${url.split('list=')[1]}`;
+              Linking.openURL(youtubeAppUrl).catch(() => {
+                Alert.alert('Hata', 'YouTube uygulaması bulunamadı.');
+              });
+            }
+          },
+          {
+            text: 'Tamam',
+            style: 'cancel'
+          }
+        ]
+      );
+    }
+  };
+
+  const openYouTubeLinkAndroid = async (url: string) => {
+    try {
+      console.log('📺 Opening YouTube video:', url);
+      
+      // Convert to mobile YouTube URL for better compatibility
+      const mobileUrl = url.replace('www.youtube.com', 'm.youtube.com');
+      
+      // Try to open with regular browser first
+      const supported = await Linking.canOpenURL(mobileUrl);
+      if (supported) {
+        await Linking.openURL(mobileUrl);
+        console.log('✅ YouTube video opened successfully');
+      } else {
+        throw new Error('Browser not supported');
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to open video:', error);
+      
+      // Show user options
+      Alert.alert(
+        'YouTube Video',
+        'Video açılamıyor. Lütfen:\n\n• İnternet bağlantınızı kontrol edin\n• YouTube uygulamasının yüklü olduğundan emin olun\n• Ofis ağında YouTube erişimi kısıtlı olabilir',
+        [
+          {
+            text: 'Tarayıcıda Aç',
+            onPress: () => {
+              Linking.openURL(url).catch(() => {
+                Alert.alert('Hata', 'Link tarayıcıda açılamıyor.');
+              });
+            }
+          },
+          {
+            text: 'YouTube Uygulaması',
+            onPress: () => {
+              const youtubeAppUrl = `vnd.youtube:${url.split('v=')[1] || url.split('youtu.be/')[1]}`;
+              Linking.openURL(youtubeAppUrl).catch(() => {
+                Alert.alert('Hata', 'YouTube uygulaması bulunamadı.');
+              });
+            }
+          },
+          {
+            text: 'Tamam',
+            style: 'cancel'
+          }
+        ]
+      );
     }
   };
 
