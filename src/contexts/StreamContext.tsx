@@ -7,9 +7,11 @@ import {
   generateUserToken, 
   createStreamVideoClient, 
   createStreamChatClient,
-  createVideoCallId, 
+  createVideoCallId,
+  createVideoCall, 
   createChatChannel,
   formatStreamUser,
+  ensurePartnerUserExists,
   isDemoMode 
 } from '../lib/stream';
 
@@ -51,6 +53,7 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
   const [videoCall, setVideoCall] = useState<Call | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [initializingVideoPartners, setInitializingVideoPartners] = useState<Set<string>>(new Set());
   const [chatClient, setChatClient] = useState<StreamChat | null>(null);
   const [chatChannel, setChatChannel] = useState<Channel | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
@@ -195,6 +198,9 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         email: user.email || userProfile.email || ''
       });
       
+      // Ensure partner user exists in Stream.io before creating chat channel
+      await ensurePartnerUserExists(chatClient, partnerId);
+      
       // Create or get chat channel using existing chat client
       const channel = await createChatChannel(chatClient, streamUser.id, partnerId, streamUser.name, partnerName);
       
@@ -218,6 +224,14 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         throw new Error('Video client not initialized');
       }
 
+      // Prevent multiple simultaneous initializations for the same partner
+      if (initializingVideoPartners.has(partnerId)) {
+        console.log('📹 [VIDEO CALL] Initialization already in progress for partner:', partnerId);
+        return;
+      }
+
+      setInitializingVideoPartners(prev => new Set(prev).add(partnerId));
+
       if (isDemoMode()) {
         console.log('⚠️ [VIDEO CALL] Demo mode - creating mock call');
         // Create a mock call object for demo purposes
@@ -230,22 +244,15 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         return mockCall;
       }
 
-      // Create unique call ID for this coach-student pair
-      const callId = createVideoCallId(user.id, partnerId);
-      console.log(`📹 [VIDEO CALL] Creating call with ID: ${callId}`);
+      console.log(`📹 [VIDEO CALL] Creating call with partner: ${partnerId}`);
       
-      // Create the call
-      const call = videoClient.call('default', callId);
+      // Ensure partner user exists in Stream.io before creating video call
+      if (chatClient) {
+        await ensurePartnerUserExists(chatClient, partnerId);
+      }
       
-      // Create or get the call with both users as members
-      await call.getOrCreate({
-        data: {
-          members: [
-            { user_id: user.id },
-            { user_id: partnerId },
-          ],
-        },
-      });
+      // Use the new createVideoCall function with retry mechanism
+      const call = await createVideoCall(videoClient, user.id, partnerId);
       
       setVideoCall(call);
       console.log('✅ [VIDEO CALL] Call initialized successfully');
@@ -253,7 +260,19 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
       return call;
     } catch (error) {
       console.error('❌ [VIDEO CALL] Failed to initialize call:', error);
+      
+      // Provide user-friendly error messages for rate limiting
+      if (error instanceof Error && error.message.includes('Too many requests')) {
+        throw new Error('Video call service is temporarily busy. Please wait a moment and try again.');
+      }
+      
       throw error;
+    } finally {
+      setInitializingVideoPartners(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(partnerId);
+        return newSet;
+      });
     }
   };
 
