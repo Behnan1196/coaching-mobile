@@ -121,7 +121,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       
       const [subjectsRes, topicsRes, resourcesRes, mockExamsRes] = await Promise.all([
         supabase.from('subjects').select('*').order('name'),
-        supabase.from('topics').select('*').order('name'),
+        supabase.from('topics').select('*'),
         supabase.from('resources').select('*').order('name'),
         supabase.from('mock_exams').select('*').order('name'),
       ]);
@@ -206,10 +206,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         resource_id: formData.resource_id || null,
         mock_exam_id: formData.mock_exam_id || null,
         task_type: formData.task_type,
-        scheduled_date: selectedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+        scheduled_date: selectedDate ? new Date(Date.UTC(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         scheduled_start_time: formData.scheduled_start_time || null,
         estimated_duration: formData.estimated_duration,
-        problem_count: formData.task_type === 'practice' ? formData.problem_count : null,
+        problem_count: (formData.task_type === 'practice' || formData.task_type === 'study' || formData.task_type === 'review') ? formData.problem_count : null,
         status: 'pending' as const,
         priority: 'medium' as const,
         assigned_to: selectedStudent.id,
@@ -455,7 +455,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             )}
 
             {/* Problem Count - Only for practice tasks */}
-            {formData.task_type === 'practice' && (
+            {(formData.task_type === 'practice' || formData.task_type === 'study' || formData.task_type === 'review') && (
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Soru Sayısı</Text>
                 <TextInput

@@ -36,6 +36,7 @@ export const ChatScreen: React.FC = () => {
   const [assignedCoach, setAssignedCoach] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatPartner, setChatPartner] = useState<UserProfile | null>(null);
+  const [currentPartnerId, setCurrentPartnerId] = useState<string | null>(null);
 
   // Safety check to prevent crashes
   useEffect(() => {
@@ -68,6 +69,17 @@ export const ChatScreen: React.FC = () => {
     isEnabled: !!chatChannel && !isDemoMode, // Re-enabled with smart filtering
     apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app'
   });
+
+  // Reset chat state when partner changes
+  useEffect(() => {
+    const newPartnerId = userProfile?.role === 'coach' ? selectedStudent?.id : assignedCoach?.id;
+    if (currentPartnerId !== newPartnerId) {
+      console.log('🔄 ChatScreen: Partner changed from', currentPartnerId, 'to', newPartnerId);
+      setCurrentPartnerId(newPartnerId || null);
+      // Reset chat partner to force reinitialization
+      setChatPartner(null);
+    }
+  }, [selectedStudent?.id, assignedCoach?.id, currentPartnerId, userProfile?.role]);
 
   useEffect(() => {
     if (userProfile) {

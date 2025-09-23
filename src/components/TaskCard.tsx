@@ -230,8 +230,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </Text>
         )}
 
-        {/* Problem count for SORU ÇÖZ and SINAV */}
-        {['practice', 'exam'].includes(task.task_type) && task.problem_count && (
+        {/* Problem count for SORU ÇÖZ, SINAV, ÇALIŞMA and TEKRAR */}
+        {(task.task_type === 'practice' || task.task_type === 'exam' || task.task_type === 'study' || task.task_type === 'review') && task.problem_count && (
           <Text style={[styles.problemCount, isCompleted && styles.completedText]}>
             {formatQuestionCount(task.problem_count)}
           </Text>
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   taskSubjectTopic: {
     fontSize: 14,
     color: '#1F2937',
-    fontWeight: '500',
+    fontWeight: '700',
     marginBottom: 4,
   },
   mockExamName: {

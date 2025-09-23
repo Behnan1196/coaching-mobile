@@ -3,8 +3,20 @@ import { View, Text, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { ChatScreen } from './ChatScreen';
 import { VideoCallTabScreen } from './VideoCallTabScreen';
+import { useCoachStudent } from '../contexts/CoachStudentContext';
 
 const Tab = createMaterialTopTabNavigator();
+
+// Wrapper components to force remount when student changes
+const ChatScreenWrapper: React.FC = () => {
+  const { selectedStudent } = useCoachStudent();
+  return <ChatScreen key={`chat-${selectedStudent?.id || 'none'}`} />;
+};
+
+const VideoCallTabScreenWrapper: React.FC = () => {
+  const { selectedStudent } = useCoachStudent();
+  return <VideoCallTabScreen key={`video-${selectedStudent?.id || 'none'}`} />;
+};
 
 export const ChatTabScreen: React.FC = () => {
   return (
@@ -32,8 +44,8 @@ export const ChatTabScreen: React.FC = () => {
           },
         }}
       >
-        <Tab.Screen name="Messages" component={ChatScreen} options={{ title: 'Mesajlar' }} />
-        <Tab.Screen name="VideoCall" component={VideoCallTabScreen} options={{ title: 'Video Görüşme' }} />
+        <Tab.Screen name="Messages" component={ChatScreenWrapper} options={{ title: 'Mesajlar' }} />
+        <Tab.Screen name="VideoCall" component={VideoCallTabScreenWrapper} options={{ title: 'Video Görüşme' }} />
       </Tab.Navigator>
     </View>
   );

@@ -71,8 +71,8 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
     },
     onInsert: (payload) => {
       console.log('➕ [MONTHLY] New task inserted:', payload.new.id);
-      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const monthStart = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
+      const monthEnd = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0));
       const taskDate = new Date(payload.new.scheduled_date);
       if (taskDate >= monthStart && taskDate <= monthEnd) {
         setTasks(prev => [...prev, {
@@ -98,8 +98,8 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
     if (!currentUser || !supabase) return;
 
     try {
-      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const monthStart = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
+      const monthEnd = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0));
 
       let query = supabase
         .from('tasks')
@@ -142,8 +142,8 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
   const getMonthDays = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
+    const firstDay = new Date(Date.UTC(year, month, 1));
+    const lastDay = new Date(Date.UTC(year, month + 1, 0));
     const daysInMonth = lastDay.getDate();
     const startingWeekDay = firstDay.getDay();
     
@@ -151,7 +151,7 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
     
     // Add empty days for the beginning of the month
     for (let i = 0; i < startingWeekDay; i++) {
-      const emptyDate = new Date(year, month, -startingWeekDay + i + 1);
+      const emptyDate = new Date(Date.UTC(year, month, -startingWeekDay + i + 1));
       days.push({
         date: emptyDate,
         tasks: [],
@@ -163,7 +163,7 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
     
     // Add actual days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
+      const date = new Date(Date.UTC(year, month, day));
       const dayTasks = getTasksForDate(date);
       const completedTasks = dayTasks.filter(task => task.status === 'completed').length;
       const totalTasks = dayTasks.length;

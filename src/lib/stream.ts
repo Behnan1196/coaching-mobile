@@ -121,7 +121,7 @@ export const formatStreamUser = (user: { id: string; full_name: string; email: s
   id: user.id,
   name: user.full_name,
   email: user.email,
-  role: 'user',
+  // Removed role field since Stream.io doesn't have custom roles defined
 });
 
 // Utility function to create unique channel names for real-time subscriptions

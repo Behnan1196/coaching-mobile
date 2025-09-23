@@ -177,6 +177,17 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         throw new Error('Chat client not ready or user not authenticated');
       }
 
+      // Clean up existing channel if switching partners
+      if (chatChannel) {
+        console.log('🧹 [CHAT] Cleaning up existing chat channel before switching partners');
+        try {
+          await chatChannel.stopWatching();
+        } catch (cleanupError) {
+          console.warn('⚠️ [CHAT] Error stopping previous channel watch:', cleanupError);
+        }
+        setChatChannel(null);
+      }
+
       // Create Stream user object
       const streamUser = formatStreamUser({
         id: user.id,
