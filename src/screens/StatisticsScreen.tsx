@@ -337,23 +337,6 @@ const StatisticsScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Total Questions Summary */}
-          <View style={styles.fullWidthCard}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>
-                {showMonthlyStats ? 'Aylık' : 'Haftalık'} Toplam Soru
-              </Text>
-              <Text style={styles.cardIcon}>🎯</Text>
-            </View>
-            <View style={styles.cardContent}>
-              <View style={styles.totalStatsContainer}>
-                <Text style={styles.totalStatsNumber}>
-                  {(showMonthlyStats ? calculateMonthlyStats() : calculateWeeklyStats()).reduce((sum, stat) => sum + stat.totalProblems, 0)}
-                </Text>
-                <Text style={styles.totalStatsLabel}>soru çözüldü</Text>
-              </View>
-            </View>
-          </View>
 
           {/* Question Stats Card */}
           <View style={styles.fullWidthCard}>
@@ -385,6 +368,14 @@ const StatisticsScreen: React.FC = () => {
                   <Text style={styles.emptyStateText}>Henüz soru çözülmemiş.</Text>
                 </View>
               )}
+              
+              {/* Total Questions Solved - Added at bottom */}
+              <View style={styles.totalStatsContainer}>
+                <Text style={styles.totalStatsNumber}>
+                  {(showMonthlyStats ? calculateMonthlyStats() : calculateWeeklyStats()).reduce((sum, stat) => sum + stat.totalProblems, 0)}
+                </Text>
+                <Text style={styles.totalStatsLabel}>Toplam Çözülen Soru</Text>
+              </View>
             </View>
           </View>
 
