@@ -99,6 +99,8 @@ export const getTaskTypeColor = (taskType: string): string => {
       return '#10B981'; // Green
     case 'coaching_session':
       return '#059669'; // Emerald
+    case 'deneme_analizi':
+      return '#0891B2'; // Cyan
     default:
       return '#6B7280'; // Gray
   }
@@ -118,6 +120,8 @@ export const getTaskTypeText = (taskType: string): string => {
       return 'Kaynak';
     case 'coaching_session':
       return 'Koçluk Seansı';
+    case 'deneme_analizi':
+      return 'Deneme Analizi';
     default:
       return 'Görev';
   }

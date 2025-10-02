@@ -149,9 +149,15 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
     
     const days: DayData[] = [];
     
+    // Adjust for Monday-starting week (0=Sunday, 1=Monday, etc.)
+    // If first day is Sunday (0), we need 6 empty days before
+    // If first day is Monday (1), we need 0 empty days before
+    // If first day is Tuesday (2), we need 1 empty day before, etc.
+    const emptyDaysBefore = startingWeekDay === 0 ? 6 : startingWeekDay - 1;
+    
     // Add empty days for the beginning of the month
-    for (let i = 0; i < startingWeekDay; i++) {
-      const emptyDate = new Date(Date.UTC(year, month, -startingWeekDay + i + 1));
+    for (let i = 0; i < emptyDaysBefore; i++) {
+      const emptyDate = new Date(Date.UTC(year, month, -emptyDaysBefore + i + 1));
       days.push({
         date: emptyDate,
         tasks: [],
@@ -335,7 +341,7 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
             const isToday = dayData.date.toDateString() === new Date().toDateString();
             const backgroundColor = isCurrentMonth ? getDayColor(dayData.completionRate, dayData.totalTasks) : '#F9FAFB';
             const textColor = isCurrentMonth && dayData.totalTasks > 0 ? 'white' : '#374151';
-            
+
             return (
               <TouchableOpacity
                 key={index}

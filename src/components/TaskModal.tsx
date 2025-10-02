@@ -62,7 +62,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     task_type: 'study',
     scheduled_start_time: '',
     estimated_duration: 60,
-    problem_count: 10,
+    problem_count: 0,
   });
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -98,7 +98,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         task_type: task.task_type,
         scheduled_start_time: task.scheduled_start_time || '',
         estimated_duration: task.estimated_duration || 60,
-        problem_count: task.problem_count || 10,
+        problem_count: task.problem_count || 0,
       });
     } else {
       setFormData({
@@ -110,7 +110,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         task_type: 'study',
         scheduled_start_time: '',
         estimated_duration: 60,
-        problem_count: 10,
+        problem_count: 0,
       });
     }
   }, [task, selectedDate]);
@@ -154,9 +154,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       newErrors.mock_exam_id = 'Sınav türü görevler için bir deneme sınavı seçmelisiniz';
     }
 
-    // Validate start time for coaching sessions
-    if (formData.task_type === 'coaching_session' && !formData.scheduled_start_time) {
-      newErrors.scheduled_start_time = 'Koçluk seansları için başlangıç saati belirtmelisiniz';
+    // Validate start time for coaching sessions and deneme analizi
+    if ((formData.task_type === 'coaching_session' || formData.task_type === 'deneme_analizi') && !formData.scheduled_start_time) {
+      newErrors.scheduled_start_time = 'Koçluk seansları ve deneme analizi için başlangıç saati belirtmelisiniz';
     }
 
     // Validate time format if provided
@@ -251,6 +251,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       case 'review': return 'Tekrar';
       case 'resource': return 'Kaynak';
       case 'coaching_session': return 'Koçluk Seansı';
+      case 'deneme_analizi': return 'Deneme Analizi';
       default: return 'Çalışma';
     }
   };
@@ -294,6 +295,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     { id: 'review', name: 'Tekrar', value: 'review' },
     { id: 'resource', name: 'Kaynak', value: 'resource' },
     { id: 'coaching_session', name: 'Koçluk Seansı', value: 'coaching_session' },
+    { id: 'deneme_analizi', name: 'Deneme Analizi', value: 'deneme_analizi' },
   ];
 
   const renderDropdown = (
@@ -497,7 +499,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {/* 5. Başlangıç (--:-- format) */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>
-                Başlangıç {formData.task_type === 'coaching_session' ? '*' : ''}
+                Başlangıç {(formData.task_type === 'coaching_session' || formData.task_type === 'deneme_analizi') ? '*' : ''}
               </Text>
               <TextInput
                 style={[styles.input, errors.scheduled_start_time && styles.inputError]}
@@ -564,7 +566,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               task_type: value as TaskType,
               resource_id: value === 'resource' ? prev.resource_id : '',
               mock_exam_id: ['exam', 'practice'].includes(value) ? prev.mock_exam_id : '',
-              problem_count: value === 'practice' ? prev.problem_count : 10,
+              problem_count: value === 'practice' ? prev.problem_count : 0,
             }));
           },
           () => setShowTaskTypeDropdown(false),

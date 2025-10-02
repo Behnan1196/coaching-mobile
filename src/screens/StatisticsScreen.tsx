@@ -337,6 +337,24 @@ const StatisticsScreen: React.FC = () => {
             </View>
           </View>
 
+          {/* Total Questions Summary */}
+          <View style={styles.fullWidthCard}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>
+                {showMonthlyStats ? 'Aylık' : 'Haftalık'} Toplam Soru
+              </Text>
+              <Text style={styles.cardIcon}>🎯</Text>
+            </View>
+            <View style={styles.cardContent}>
+              <View style={styles.totalStatsContainer}>
+                <Text style={styles.totalStatsNumber}>
+                  {(showMonthlyStats ? calculateMonthlyStats() : calculateWeeklyStats()).reduce((sum, stat) => sum + stat.totalProblems, 0)}
+                </Text>
+                <Text style={styles.totalStatsLabel}>soru çözüldü</Text>
+              </View>
+            </View>
+          </View>
+
           {/* Question Stats Card */}
           <View style={styles.fullWidthCard}>
             <View style={styles.cardHeader}>
@@ -378,14 +396,15 @@ const StatisticsScreen: React.FC = () => {
             </View>
             <View style={styles.cardContent}>
               {(() => {
-                const taskTypes = ['study', 'practice', 'exam', 'review', 'resource', 'coaching_session'];
+                const taskTypes = ['study', 'practice', 'exam', 'review', 'resource', 'coaching_session', 'deneme_analizi'];
                 const taskTypeNames: Record<string, string> = {
                   'study': 'Çalışma',
                   'practice': 'Soru Çöz',
                   'exam': 'Sınav',
                   'review': 'Tekrar',
                   'resource': 'Kaynak',
-                  'coaching_session': 'Koçluk Seansı'
+                  'coaching_session': 'Koçluk Seansı',
+                  'deneme_analizi': 'Deneme Analizi'
                 };
                 
                 const filteredTasks = getFilteredTasks();
@@ -803,6 +822,21 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  totalStatsContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  totalStatsNumber: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#249096',
+    marginBottom: 4,
+  },
+  totalStatsLabel: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   weekDayLabels: {
     flexDirection: 'row',
