@@ -4,18 +4,34 @@ import { createMaterialTopTabNavigator } from '@react-navigation/material-top-ta
 import { ChatScreen } from './ChatScreen';
 import { VideoCallTabScreen } from './VideoCallTabScreen';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Tab = createMaterialTopTabNavigator();
 
-// Wrapper components to force remount when student changes
+// Wrapper components to force remount when partner changes (only for coaches)
 const ChatScreenWrapper: React.FC = () => {
   const { selectedStudent } = useCoachStudent();
-  return <ChatScreen key={`chat-${selectedStudent?.id || 'none'}`} />;
+  const { userProfile } = useAuth();
+  
+  // Only use remounting key for coaches when they switch students
+  // Students always have the same assigned coach, so no remounting needed
+  const key = userProfile?.role === 'coach' 
+    ? `chat-${selectedStudent?.id || 'none'}` 
+    : 'chat-student';
+    
+  return <ChatScreen key={key} />;
 };
 
 const VideoCallTabScreenWrapper: React.FC = () => {
   const { selectedStudent } = useCoachStudent();
-  return <VideoCallTabScreen key={`video-${selectedStudent?.id || 'none'}`} />;
+  const { userProfile } = useAuth();
+  
+  // Only use remounting key for coaches when they switch students
+  const key = userProfile?.role === 'coach' 
+    ? `video-${selectedStudent?.id || 'none'}` 
+    : 'video-student';
+    
+  return <VideoCallTabScreen key={key} />;
 };
 
 export const ChatTabScreen: React.FC = () => {

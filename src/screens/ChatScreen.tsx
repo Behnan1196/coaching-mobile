@@ -70,22 +70,28 @@ export const ChatScreen: React.FC = () => {
     apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app'
   });
 
-  // Reset chat state when partner changes
+  // Track partner changes for debugging
   useEffect(() => {
     const newPartnerId = userProfile?.role === 'coach' ? selectedStudent?.id : assignedCoach?.id;
     if (currentPartnerId !== newPartnerId) {
       console.log('🔄 ChatScreen: Partner changed from', currentPartnerId, 'to', newPartnerId);
       setCurrentPartnerId(newPartnerId || null);
-      // Reset chat partner to force reinitialization
-      setChatPartner(null);
     }
   }, [selectedStudent?.id, assignedCoach?.id, currentPartnerId, userProfile?.role]);
 
   useEffect(() => {
+    console.log('📱 ChatScreen: useEffect triggered', {
+      userProfile: userProfile?.role,
+      selectedStudent: selectedStudent?.full_name,
+      assignedCoach: assignedCoach?.full_name
+    });
+    
     if (userProfile) {
       if (userProfile.role === 'student') {
+        console.log('📱 ChatScreen: User is student, fetching assigned coach');
         fetchAssignedCoach();
       } else if (userProfile.role === 'coach') {
+        console.log('📱 ChatScreen: User is coach, setting selected student as chat partner');
         setChatPartner(selectedStudent);
         setLoading(false);
       }
@@ -103,27 +109,39 @@ export const ChatScreen: React.FC = () => {
   const fetchAssignedCoach = async () => {
     try {
       if (!supabase) {
-        console.log('Supabase not available');
+        console.log('📱 ChatScreen: Supabase not available');
         return;
       }
       
-      const { data, error } = await supabase
+      console.log('📱 ChatScreen: Fetching assigned coach for student:', userProfile?.id);
+      
+      // Use the same pattern as VideoCallTabScreen (which works)
+      const { data: assignment, error } = await supabase
         .from('coach_student_assignments')
         .select(`
+          coach_id,
           coach:user_profiles!coach_student_assignments_coach_id_fkey(*)
         `)
         .eq('student_id', userProfile?.id)
+        .eq('is_active', true)
         .single();
 
       if (error) {
-        console.error('Error fetching assigned coach:', error);
-      } else if (data?.coach) {
-        const coach = data.coach as unknown as UserProfile;
-        setAssignedCoach(coach);
-        setChatPartner(coach);
+        console.error('📱 ChatScreen: Error fetching assigned coach:', error);
+        console.error('📱 ChatScreen: Error details:', JSON.stringify(error, null, 2));
+      } else {
+        console.log('📱 ChatScreen: Query result:', JSON.stringify(assignment, null, 2));
+        if (assignment && assignment.coach) {
+          const coach = assignment.coach as unknown as UserProfile;
+          console.log('📱 ChatScreen: Found assigned coach:', coach.full_name);
+          setAssignedCoach(coach);
+          setChatPartner(coach);
+        } else {
+          console.log('📱 ChatScreen: No assigned coach found for student - assignment structure:', assignment);
+        }
       }
     } catch (error) {
-      console.error('Error fetching assigned coach:', error);
+      console.error('📱 ChatScreen: Error fetching assigned coach:', error);
     } finally {
       setLoading(false);
     }
@@ -156,6 +174,13 @@ export const ChatScreen: React.FC = () => {
 
   // Show no partner state
   if (!chatPartner) {
+    console.log('📱 ChatScreen: No chat partner found', {
+      userRole: userProfile?.role,
+      assignedCoach: assignedCoach?.full_name,
+      selectedStudent: selectedStudent?.full_name,
+      loading
+    });
+    
     return (
       <View style={styles.container}>
         <View style={styles.emptyStateContainer}>
@@ -164,6 +189,12 @@ export const ChatScreen: React.FC = () => {
               ? '👨‍🏫 Henüz size atanmış bir koç bulunmuyor' 
               : '👨‍🎓 Lütfen bir öğrenci seçin'}
           </Text>
+          {/* Debug info in development */}
+          {__DEV__ && (
+            <Text style={styles.debugText}>
+              Debug: Role={userProfile?.role}, AssignedCoach={assignedCoach?.full_name || 'null'}, Loading={loading.toString()}
+            </Text>
+          )}
         </View>
       </View>
     );
@@ -392,5 +423,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#991B1B',
     textAlign: 'center',
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 10,
+    fontFamily: 'monospace',
   },
 }); 
