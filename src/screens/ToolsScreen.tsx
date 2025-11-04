@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
 import { EducationalLink } from '../types/database';
+import { ExamResultsScreen } from './ExamResultsScreen';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -350,6 +351,7 @@ export const ToolsScreen: React.FC = () => {
           tabBarScrollEnabled: true,
         }}
       >
+        <Tab.Screen name="ExamResults" component={ExamResultsScreen} options={{ title: 'Sınav Sonuçları' }} />
         <Tab.Screen name="Links" component={UsefulLinksScreen} options={{ title: 'Yararlı Linkler' }} />
       </Tab.Navigator>
     </View>

@@ -199,13 +199,36 @@ export interface MockExamResult {
   tyt_sosyal_total_net?: number
   tyt_fen_total_net?: number
   
-  // AYT Scores
+  // AYT Scores - Matematik Group
   ayt_matematik_correct?: number
   ayt_matematik_wrong?: number
   ayt_matematik_net?: number
   ayt_geometri_correct?: number
   ayt_geometri_wrong?: number
   ayt_geometri_net?: number
+  
+  // AYT Scores - Fen Group
+  ayt_fizik_correct?: number
+  ayt_fizik_wrong?: number
+  ayt_fizik_net?: number
+  ayt_kimya_correct?: number
+  ayt_kimya_wrong?: number
+  ayt_kimya_net?: number
+  ayt_biyoloji_correct?: number
+  ayt_biyoloji_wrong?: number
+  ayt_biyoloji_net?: number
+  
+  // AYT Scores - Sözel Group
+  ayt_edebiyat_correct?: number
+  ayt_edebiyat_wrong?: number
+  ayt_edebiyat_net?: number
+  ayt_tarih_correct?: number
+  ayt_tarih_wrong?: number
+  ayt_tarih_net?: number
+  ayt_cografya_correct?: number
+  ayt_cografya_wrong?: number
+  ayt_cografya_net?: number
+  
   ayt_total_net?: number
   
   // Tarama Scores
