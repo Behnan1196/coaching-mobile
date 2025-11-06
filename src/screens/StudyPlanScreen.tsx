@@ -1,54 +1,87 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { TodayTab } from '../components/TodayTab';
+import { DailyTab } from '../components/DailyTab';
 import { WeeklyPlanTab } from '../components/WeeklyPlanTab';
 import { MonthlyPlanTab } from '../components/MonthlyPlanTab';
+import { DateNavigationProvider, useDateNavigation } from '../contexts/DateNavigationContext';
 
 const Tab = createMaterialTopTabNavigator();
 
-const TodayScreen = () => <TodayTab />;
+const DailyScreen = () => <DailyTab />;
 
 const WeeklyPlanScreen = () => <WeeklyPlanTab />;
 
 const MonthlyPlanScreen = () => {
+  const { navigateToDaily } = useDateNavigation();
+
   const handleNavigateToWeek = (weekDate: Date) => {
     // This would navigate to the weekly tab with the specific week
     // For now, we'll just log it
     console.log('Navigate to week:', weekDate);
   };
 
-  return <MonthlyPlanTab onNavigateToWeek={handleNavigateToWeek} />;
+  const handleNavigateToDaily = (date: Date) => {
+    navigateToDaily(date);
+  };
+
+  return (
+    <MonthlyPlanTab 
+      onNavigateToWeek={handleNavigateToWeek}
+      onNavigateToDaily={handleNavigateToDaily}
+    />
+  );
+};
+
+const StudyPlanContent: React.FC = () => {
+  const tabNavigatorRef = useRef<any>(null);
+  const { setNavigateToDaily } = useDateNavigation();
+
+  useEffect(() => {
+    // Set up the navigation callback to switch to Daily tab
+    setNavigateToDaily((date: Date) => {
+      if (tabNavigatorRef.current) {
+        tabNavigatorRef.current.navigate('Daily');
+      }
+    });
+  }, [setNavigateToDaily]);
+
+  return (
+    <Tab.Navigator
+      ref={tabNavigatorRef}
+      screenOptions={{
+        tabBarActiveTintColor: '#249096',
+        tabBarInactiveTintColor: '#6B7280',
+        tabBarIndicatorStyle: {
+          backgroundColor: '#249096',
+        },
+        tabBarLabelStyle: {
+          fontSize: 14,
+          fontWeight: '600',
+        },
+        tabBarStyle: {
+          backgroundColor: 'white',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: '#E5E7EB',
+        },
+      }}
+    >
+      <Tab.Screen name="Daily" component={DailyScreen} options={{ title: 'Günlük' }} />
+      <Tab.Screen name="Weekly" component={WeeklyPlanScreen} options={{ title: 'Haftalık Plan' }} />
+      <Tab.Screen name="Monthly" component={MonthlyPlanScreen} options={{ title: 'Aylık Plan' }} />
+    </Tab.Navigator>
+  );
 };
 
 export const StudyPlanScreen: React.FC = () => {
   return (
-    <View style={styles.container}>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: '#249096',
-          tabBarInactiveTintColor: '#6B7280',
-          tabBarIndicatorStyle: {
-            backgroundColor: '#249096',
-          },
-          tabBarLabelStyle: {
-            fontSize: 14,
-            fontWeight: '600',
-          },
-          tabBarStyle: {
-            backgroundColor: 'white',
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: '#E5E7EB',
-          },
-        }}
-      >
-        <Tab.Screen name="Today" component={TodayScreen} options={{ title: 'Bugün' }} />
-        <Tab.Screen name="Weekly" component={WeeklyPlanScreen} options={{ title: 'Haftalık Plan' }} />
-        <Tab.Screen name="Monthly" component={MonthlyPlanScreen} options={{ title: 'Aylık Plan' }} />
-      </Tab.Navigator>
-    </View>
+    <DateNavigationProvider>
+      <View style={styles.container}>
+        <StudyPlanContent />
+      </View>
+    </DateNavigationProvider>
   );
 };
 

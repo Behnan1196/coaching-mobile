@@ -22,6 +22,7 @@ const { width } = Dimensions.get('window');
 
 interface MonthlyPlanTabProps {
   onNavigateToWeek?: (weekDate: Date) => void;
+  onNavigateToDaily?: (date: Date) => void;
 }
 
 interface DayData {
@@ -32,7 +33,7 @@ interface DayData {
   completionRate: number;
 }
 
-export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek }) => {
+export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek, onNavigateToDaily }) => {
   const { userProfile } = useAuth();
   const { selectedStudent } = useCoachStudent();
   const [tasks, setTasks] = useState<TaskWithRelations[]>([]);
@@ -209,19 +210,29 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
   };
 
   const handleDayPress = (dayData: DayData) => {
+    const isCurrentMonth = dayData.date.getMonth() === currentMonth.getMonth();
+    
+    if (!isCurrentMonth) {
+      return; // Don't handle clicks on days from other months
+    }
+
     if (userProfile?.role === 'coach' && selectedStudent) {
-      // For coaches, show options to add task or navigate to week
+      // For coaches, show options to add task, navigate to daily view, or weekly view
       Alert.alert(
         'Seçenekler',
-        'Bu gün için ne yapmak istiyorsunuz?',
+        `${dayData.date.toLocaleDateString('tr-TR')} için ne yapmak istiyorsunuz?`,
         [
           { text: 'İptal', style: 'cancel' },
+          { text: 'Günlük Görünüm', onPress: () => onNavigateToDaily && onNavigateToDaily(dayData.date) },
           { text: 'Görev Ekle', onPress: () => handleAddTask(dayData.date) },
           { text: 'Haftalık Görünüm', onPress: () => onNavigateToWeek && onNavigateToWeek(dayData.date) },
         ]
       );
-    } else if (onNavigateToWeek) {
-      onNavigateToWeek(dayData.date);
+    } else {
+      // For students, directly navigate to daily view
+      if (onNavigateToDaily) {
+        onNavigateToDaily(dayData.date);
+      }
     }
   };
 
