@@ -23,15 +23,7 @@ const MonthlyPlanScreen = () => {
 
   const handleNavigateToDaily = (date: Date) => {
     console.log('🗓️ MonthlyPlanScreen: Navigating to daily for date:', date.toISOString().split('T')[0]);
-    
-    // Try both methods - first the regular one, then force if needed
     navigateToDaily(date);
-    
-    // Also try force navigation as backup
-    setTimeout(() => {
-      console.log('🚀 Attempting force navigation as backup');
-      forceNavigateToDaily(date);
-    }, 300);
   };
 
   return (
@@ -43,31 +35,41 @@ const MonthlyPlanScreen = () => {
 };
 
 const StudyPlanContent: React.FC = () => {
-  const { tabNavigatorRef, activeTab, setActiveTab } = useDateNavigation();
+  const { tabNavigatorRef, activeTab, setActiveTab, navigationKey } = useDateNavigation();
 
   useEffect(() => {
     console.log('📱 StudyPlanContent mounted, tab navigator ref available:', !!tabNavigatorRef.current);
-  }, []);
+    console.log('🔑 Navigation key changed:', navigationKey, 'Active tab:', activeTab);
+  }, [navigationKey, activeTab]);
 
   const handleTabNavigatorReady = () => {
     console.log('🎯 Tab Navigator is ready and ref is set');
   };
 
   const handleTabChange = (state: any) => {
-    const currentTab = state.routes[state.index].name;
-    console.log('📋 Tab changed to:', currentTab);
-    setActiveTab(currentTab);
+    if (state && state.routes && state.routes[state.index]) {
+      const currentTab = state.routes[state.index].name;
+      console.log('📋 Tab changed to:', currentTab);
+      setActiveTab(currentTab);
+    }
+  };
+
+  // Force initial route based on activeTab
+  const getInitialRouteName = () => {
+    console.log('🎯 Setting initial route to:', activeTab);
+    return activeTab;
   };
 
   return (
     <Tab.Navigator
+      key={`tab-navigator-${navigationKey}`} // Force re-render when navigationKey changes
       ref={(ref) => {
         tabNavigatorRef.current = ref;
-        console.log('📌 Tab Navigator ref set:', !!ref);
+        console.log('📌 Tab Navigator ref set:', !!ref, 'Key:', navigationKey);
       }}
       onReady={handleTabNavigatorReady}
       onStateChange={handleTabChange}
-      initialRouteName={activeTab}
+      initialRouteName={getInitialRouteName()}
       screenOptions={{
         tabBarActiveTintColor: '#249096',
         tabBarInactiveTintColor: '#6B7280',

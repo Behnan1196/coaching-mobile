@@ -8,6 +8,7 @@ interface DateNavigationContextType {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   forceNavigateToDaily: (date: Date) => void;
+  navigationKey: number;
 }
 
 const DateNavigationContext = createContext<DateNavigationContextType | undefined>(undefined);
@@ -27,73 +28,56 @@ interface DateNavigationProviderProps {
 export const DateNavigationProvider: React.FC<DateNavigationProviderProps> = ({ children }) => {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [activeTab, setActiveTab] = useState('Daily');
+  const [navigationKey, setNavigationKey] = useState(0);
   const tabNavigatorRef = useRef<any>(null);
 
   const navigateToDaily = useCallback((date: Date) => {
     console.log('🗓️ Navigating to daily view with date:', date.toISOString().split('T')[0]);
     setSelectedDate(date);
+    setActiveTab('Daily');
     
-    // Navigate to Daily tab with multiple attempts
-    const attemptNavigation = (attempt: number = 1) => {
-      if (attempt > 5) {
-        console.error('❌ Failed to navigate after 5 attempts');
-        return;
-      }
-
+    // Force re-render of navigator with Daily as active tab
+    setNavigationKey(prev => prev + 1);
+    
+    // Also try programmatic navigation as backup
+    setTimeout(() => {
       if (tabNavigatorRef.current) {
         try {
-          // Try different navigation methods
-          if (tabNavigatorRef.current.jumpTo) {
+          console.log('🎯 Attempting programmatic navigation to Daily tab');
+          
+          // Get current state
+          const state = tabNavigatorRef.current.getState?.();
+          console.log('📊 Current tab state:', state);
+          
+          // Try jumpTo first (most reliable for tab navigation)
+          if (typeof tabNavigatorRef.current.jumpTo === 'function') {
             tabNavigatorRef.current.jumpTo('Daily');
-            console.log(`✅ Successfully navigated to Daily tab (attempt ${attempt} - jumpTo)`);
-          } else if (tabNavigatorRef.current.navigate) {
-            tabNavigatorRef.current.navigate('Daily');
-            console.log(`✅ Successfully navigated to Daily tab (attempt ${attempt} - navigate)`);
-          } else {
-            console.warn(`⚠️ No navigation method available (attempt ${attempt})`);
-            setTimeout(() => attemptNavigation(attempt + 1), 200);
+            console.log('✅ Successfully used jumpTo method');
+            return;
           }
+          
+          // Fallback to navigate
+          if (typeof tabNavigatorRef.current.navigate === 'function') {
+            tabNavigatorRef.current.navigate('Daily');
+            console.log('✅ Successfully used navigate method');
+            return;
+          }
+          
+          console.warn('⚠️ No suitable navigation method found');
         } catch (error) {
-          console.error(`❌ Navigation attempt ${attempt} failed:`, error);
-          setTimeout(() => attemptNavigation(attempt + 1), 200);
+          console.error('❌ Navigation failed:', error);
         }
       } else {
-        console.warn(`⚠️ Tab navigator ref not available (attempt ${attempt})`);
-        setTimeout(() => attemptNavigation(attempt + 1), 200);
+        console.warn('⚠️ Tab navigator ref not available');
       }
-    };
-
-    // Start navigation attempts
-    setTimeout(() => attemptNavigation(), 100);
+    }, 150);
   }, []);
 
   const forceNavigateToDaily = useCallback((date: Date) => {
     console.log('🚀 Force navigating to daily view with date:', date.toISOString().split('T')[0]);
     setSelectedDate(date);
     setActiveTab('Daily');
-    
-    // Force navigation using state change
-    setTimeout(() => {
-      if (tabNavigatorRef.current) {
-        try {
-          const state = tabNavigatorRef.current.getState();
-          console.log('📊 Current navigation state:', state);
-          
-          // Try to reset to Daily tab
-          tabNavigatorRef.current.reset({
-            index: 0,
-            routes: [
-              { name: 'Daily' },
-              { name: 'Weekly' },
-              { name: 'Monthly' }
-            ]
-          });
-          console.log('✅ Successfully reset to Daily tab');
-        } catch (error) {
-          console.error('❌ Force navigation failed:', error);
-        }
-      }
-    }, 50);
+    setNavigationKey(prev => prev + 1);
   }, []);
 
   const handleSetSelectedDate = useCallback((date: Date) => {
@@ -111,6 +95,7 @@ export const DateNavigationProvider: React.FC<DateNavigationProviderProps> = ({ 
         activeTab,
         setActiveTab,
         forceNavigateToDaily,
+        navigationKey,
       }}
     >
       {children}
