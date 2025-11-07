@@ -35,11 +35,24 @@ export const DailyTab: React.FC = () => {
   const currentUser = userProfile?.role === 'student' ? userProfile : selectedStudent;
 
   useEffect(() => {
+    console.log('📅 DailyTab: Date changed to:', selectedDate.toISOString().split('T')[0]);
     if (currentUser) {
+      loadDailyTasks();
+      if (subjects.length === 0) {
+        loadRelatedData();
+      }
+    }
+  }, [currentUser, selectedDate]);
+
+  // Initial load effect
+  useEffect(() => {
+    console.log('🚀 DailyTab: Initial mount, currentUser:', !!currentUser);
+    if (currentUser) {
+      setLoading(true);
       loadDailyTasks();
       loadRelatedData();
     }
-  }, [currentUser, selectedDate]);
+  }, [currentUser]);
 
   // Use the new real-time subscription hook
   const { isConnected, lastError, reconnect } = useRealTimeSubscription({
@@ -80,7 +93,12 @@ export const DailyTab: React.FC = () => {
   }, [lastError]);
 
   const loadDailyTasks = async () => {
-    if (!currentUser || !supabase) return;
+    if (!currentUser || !supabase) {
+      console.log('⚠️ DailyTab: Cannot load tasks - missing currentUser or supabase');
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
 
     try {
       const targetDate = selectedDate.toISOString().split('T')[0];
@@ -115,10 +133,12 @@ export const DailyTab: React.FC = () => {
         throw error;
       }
 
+      console.log('✅ [DAILY] Loaded', data?.length || 0, 'tasks for', targetDate);
       setTasks(data || []);
     } catch (error) {
-      console.error('Error loading daily tasks:', error);
+      console.error('❌ Error loading daily tasks:', error);
       Alert.alert('Hata', 'Günlük görevler yüklenirken bir hata oluştu');
+      setTasks([]); // Set empty array on error
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -126,9 +146,14 @@ export const DailyTab: React.FC = () => {
   };
 
   const loadRelatedData = async () => {
-    if (!supabase) return;
+    if (!supabase) {
+      console.log('⚠️ DailyTab: Cannot load related data - missing supabase');
+      return;
+    }
 
     try {
+      console.log('📚 [DAILY] Loading related data (subjects, topics, resources)');
+      
       // Load subjects
       const { data: subjectsData } = await supabase
         .from('subjects')
@@ -150,17 +175,24 @@ export const DailyTab: React.FC = () => {
         .eq('is_active', true)
         .order('name');
 
+      console.log('✅ [DAILY] Loaded related data:', {
+        subjects: subjectsData?.length || 0,
+        topics: topicsData?.length || 0,
+        resources: resourcesData?.length || 0
+      });
+
       setSubjects(subjectsData || []);
       setTopics(topicsData || []);
       setResources(resourcesData || []);
     } catch (error) {
-      console.error('Error loading related data:', error);
+      console.error('❌ Error loading related data:', error);
     }
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    console.log('🔄 DailyTab: Navigating date from', selectedDate.toISOString().split('T')[0], 'to', newDate.toISOString().split('T')[0]);
     setSelectedDate(newDate);
   };
 

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { DailyTab } from '../components/DailyTab';
@@ -22,6 +22,7 @@ const MonthlyPlanScreen = () => {
   };
 
   const handleNavigateToDaily = (date: Date) => {
+    console.log('🗓️ MonthlyPlanScreen: Navigating to daily for date:', date.toISOString().split('T')[0]);
     navigateToDaily(date);
   };
 
@@ -34,17 +35,11 @@ const MonthlyPlanScreen = () => {
 };
 
 const StudyPlanContent: React.FC = () => {
-  const tabNavigatorRef = useRef<any>(null);
-  const { setNavigateToDaily } = useDateNavigation();
+  const { tabNavigatorRef } = useDateNavigation();
 
   useEffect(() => {
-    // Set up the navigation callback to switch to Daily tab
-    setNavigateToDaily((date: Date) => {
-      if (tabNavigatorRef.current) {
-        tabNavigatorRef.current.navigate('Daily');
-      }
-    });
-  }, [setNavigateToDaily]);
+    console.log('📱 StudyPlanContent mounted, tab navigator ref available:', !!tabNavigatorRef.current);
+  }, []);
 
   return (
     <Tab.Navigator

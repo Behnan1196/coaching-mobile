@@ -1,11 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useRef } from 'react';
 
 interface DateNavigationContextType {
   selectedDate: Date;
   setSelectedDate: (date: Date) => void;
   navigateToDaily: (date: Date) => void;
-  onNavigateToDaily?: (date: Date) => void;
-  setNavigateToDaily: (callback: (date: Date) => void) => void;
+  tabNavigatorRef: React.MutableRefObject<any>;
 }
 
 const DateNavigationContext = createContext<DateNavigationContextType | undefined>(undefined);
@@ -23,28 +22,38 @@ interface DateNavigationProviderProps {
 }
 
 export const DateNavigationProvider: React.FC<DateNavigationProviderProps> = ({ children }) => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [onNavigateToDaily, setOnNavigateToDaily] = useState<((date: Date) => void) | undefined>();
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const tabNavigatorRef = useRef<any>(null);
 
-  const navigateToDaily = (date: Date) => {
+  const navigateToDaily = useCallback((date: Date) => {
+    console.log('🗓️ Navigating to daily view with date:', date.toISOString().split('T')[0]);
     setSelectedDate(date);
-    if (onNavigateToDaily) {
-      onNavigateToDaily(date);
+    
+    // Navigate to Daily tab
+    if (tabNavigatorRef.current) {
+      try {
+        tabNavigatorRef.current.navigate('Daily');
+        console.log('✅ Successfully navigated to Daily tab');
+      } catch (error) {
+        console.error('❌ Error navigating to Daily tab:', error);
+      }
+    } else {
+      console.warn('⚠️ Tab navigator ref is not available');
     }
-  };
+  }, []);
 
-  const setNavigateToDaily = (callback: (date: Date) => void) => {
-    setOnNavigateToDaily(() => callback);
-  };
+  const handleSetSelectedDate = useCallback((date: Date) => {
+    console.log('📅 Setting selected date:', date.toISOString().split('T')[0]);
+    setSelectedDate(date);
+  }, []);
 
   return (
     <DateNavigationContext.Provider
       value={{
         selectedDate,
-        setSelectedDate,
+        setSelectedDate: handleSetSelectedDate,
         navigateToDaily,
-        onNavigateToDaily,
-        setNavigateToDaily,
+        tabNavigatorRef,
       }}
     >
       {children}
