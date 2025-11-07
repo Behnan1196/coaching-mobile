@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { DailyTab } from '../components/DailyTab';
@@ -36,62 +36,23 @@ const MonthlyPlanScreen = () => {
 
 const StudyPlanContent: React.FC = () => {
   const { tabNavigatorRef, activeTab, setActiveTab, navigationKey, shouldNavigateToDaily, setShouldNavigateToDaily } = useDateNavigation();
+  const [currentTabIndex, setCurrentTabIndex] = useState(0);
+  const [navigatorKey, setNavigatorKey] = useState(0);
 
   useEffect(() => {
     console.log('📱 [STUDY_PLAN] StudyPlanContent mounted, tab navigator ref available:', !!tabNavigatorRef.current);
     console.log('🔑 [STUDY_PLAN] Navigation key changed:', navigationKey, 'Active tab:', activeTab);
   }, [navigationKey, activeTab]);
 
-  // Handle navigation flag
+  // Handle navigation flag with forced re-render
   useEffect(() => {
-    if (shouldNavigateToDaily && tabNavigatorRef.current) {
-      console.log('🚀 [STUDY_PLAN] shouldNavigateToDaily is true, attempting navigation');
-      
-      const attemptNavigation = () => {
-        try {
-          // Try multiple navigation methods
-          if (typeof tabNavigatorRef.current.jumpTo === 'function') {
-            tabNavigatorRef.current.jumpTo('Daily');
-            console.log('✅ [STUDY_PLAN] Successfully navigated using jumpTo');
-            setShouldNavigateToDaily(false);
-            setActiveTab('Daily');
-            return true;
-          }
-          
-          if (typeof tabNavigatorRef.current.navigate === 'function') {
-            tabNavigatorRef.current.navigate('Daily');
-            console.log('✅ [STUDY_PLAN] Successfully navigated using navigate');
-            setShouldNavigateToDaily(false);
-            setActiveTab('Daily');
-            return true;
-          }
-          
-          console.warn('⚠️ [STUDY_PLAN] No navigation methods available');
-          return false;
-        } catch (error) {
-          console.error('❌ [STUDY_PLAN] Navigation failed:', error);
-          return false;
-        }
-      };
-
-      // Try immediately
-      if (!attemptNavigation()) {
-        // If immediate attempt fails, try with delays
-        setTimeout(() => {
-          if (attemptNavigation()) return;
-          
-          setTimeout(() => {
-            if (attemptNavigation()) return;
-            
-            // Final attempt
-            setTimeout(() => {
-              attemptNavigation();
-            }, 500);
-          }, 200);
-        }, 100);
-      }
+    if (shouldNavigateToDaily) {
+      console.log('🚀 [STUDY_PLAN] shouldNavigateToDaily is true, forcing navigator re-render with Daily as initial');
+      setActiveTab('Daily');
+      setNavigatorKey(prev => prev + 1); // Force complete re-render
+      setShouldNavigateToDaily(false);
     }
-  }, [shouldNavigateToDaily, tabNavigatorRef, setShouldNavigateToDaily, setActiveTab]);
+  }, [shouldNavigateToDaily, setShouldNavigateToDaily, setActiveTab]);
 
   const handleTabNavigatorReady = () => {
     console.log('🎯 [STUDY_PLAN] Tab Navigator is ready and ref is set');
@@ -101,8 +62,9 @@ const StudyPlanContent: React.FC = () => {
   const handleTabChange = (state: any) => {
     if (state && state.routes && state.routes[state.index]) {
       const currentTab = state.routes[state.index].name;
-      console.log('📋 [STUDY_PLAN] Tab changed to:', currentTab);
+      console.log('📋 [STUDY_PLAN] Tab changed to:', currentTab, 'Index:', state.index);
       setActiveTab(currentTab);
+      setCurrentTabIndex(state.index);
     }
   };
 
@@ -110,12 +72,14 @@ const StudyPlanContent: React.FC = () => {
 
   return (
     <Tab.Navigator
+      key={`navigator-${navigatorKey}`} // Force complete re-render
       ref={(ref) => {
         tabNavigatorRef.current = ref;
-        console.log('📌 [STUDY_PLAN] Tab Navigator ref set:', !!ref);
+        console.log('📌 [STUDY_PLAN] Tab Navigator ref set:', !!ref, 'Key:', navigatorKey, 'ActiveTab:', activeTab);
       }}
       onReady={handleTabNavigatorReady}
       onStateChange={handleTabChange}
+      initialRouteName={activeTab} // Use activeTab as initial route
       screenOptions={{
         tabBarActiveTintColor: '#249096',
         tabBarInactiveTintColor: '#6B7280',
@@ -135,9 +99,39 @@ const StudyPlanContent: React.FC = () => {
         },
       }}
     >
-      <Tab.Screen name="Daily" component={DailyScreen} options={{ title: 'Günlük' }} />
-      <Tab.Screen name="Weekly" component={WeeklyPlanScreen} options={{ title: 'Haftalık Plan' }} />
-      <Tab.Screen name="Monthly" component={MonthlyPlanScreen} options={{ title: 'Aylık Plan' }} />
+      <Tab.Screen 
+        name="Daily" 
+        component={DailyScreen} 
+        options={{ title: 'Günlük' }}
+        listeners={{
+          focus: () => {
+            console.log('🎯 [STUDY_PLAN] Daily tab focused');
+            setActiveTab('Daily');
+          }
+        }}
+      />
+      <Tab.Screen 
+        name="Weekly" 
+        component={WeeklyPlanScreen} 
+        options={{ title: 'Haftalık Plan' }}
+        listeners={{
+          focus: () => {
+            console.log('🎯 [STUDY_PLAN] Weekly tab focused');
+            setActiveTab('Weekly');
+          }
+        }}
+      />
+      <Tab.Screen 
+        name="Monthly" 
+        component={MonthlyPlanScreen} 
+        options={{ title: 'Aylık Plan' }}
+        listeners={{
+          focus: () => {
+            console.log('🎯 [STUDY_PLAN] Monthly tab focused');
+            setActiveTab('Monthly');
+          }
+        }}
+      />
     </Tab.Navigator>
   );
 };
