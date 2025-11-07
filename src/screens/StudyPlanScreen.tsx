@@ -38,25 +38,30 @@ const StudyPlanContent: React.FC = () => {
   const { tabNavigatorRef, activeTab, setActiveTab, navigationKey } = useDateNavigation();
 
   useEffect(() => {
-    console.log('📱 StudyPlanContent mounted, tab navigator ref available:', !!tabNavigatorRef.current);
-    console.log('🔑 Navigation key changed:', navigationKey, 'Active tab:', activeTab);
+    console.log('📱 [STUDY_PLAN] StudyPlanContent mounted, tab navigator ref available:', !!tabNavigatorRef.current);
+    console.log('🔑 [STUDY_PLAN] Navigation key changed:', navigationKey, 'Active tab:', activeTab);
   }, [navigationKey, activeTab]);
 
+  useEffect(() => {
+    console.log('🔄 [STUDY_PLAN] Component re-rendered due to navigationKey change:', navigationKey);
+  }, [navigationKey]);
+
   const handleTabNavigatorReady = () => {
-    console.log('🎯 Tab Navigator is ready and ref is set');
+    console.log('🎯 [STUDY_PLAN] Tab Navigator is ready and ref is set');
+    console.log('🎯 [STUDY_PLAN] Navigator ready with activeTab:', activeTab, 'navigationKey:', navigationKey);
   };
 
   const handleTabChange = (state: any) => {
     if (state && state.routes && state.routes[state.index]) {
       const currentTab = state.routes[state.index].name;
-      console.log('📋 Tab changed to:', currentTab);
+      console.log('📋 [STUDY_PLAN] Tab changed to:', currentTab);
       setActiveTab(currentTab);
     }
   };
 
   // Force initial route based on activeTab
   const getInitialRouteName = () => {
-    console.log('🎯 Setting initial route to:', activeTab);
+    console.log('🎯 [STUDY_PLAN] Setting initial route to:', activeTab, 'with navigationKey:', navigationKey);
     return activeTab;
   };
 
@@ -65,7 +70,7 @@ const StudyPlanContent: React.FC = () => {
       key={`tab-navigator-${navigationKey}`} // Force re-render when navigationKey changes
       ref={(ref) => {
         tabNavigatorRef.current = ref;
-        console.log('📌 Tab Navigator ref set:', !!ref, 'Key:', navigationKey);
+        console.log('📌 [STUDY_PLAN] Tab Navigator ref set:', !!ref, 'Key:', navigationKey, 'ActiveTab:', activeTab);
       }}
       onReady={handleTabNavigatorReady}
       onStateChange={handleTabChange}

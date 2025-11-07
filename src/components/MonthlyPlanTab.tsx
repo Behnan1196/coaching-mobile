@@ -216,28 +216,16 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
       return; // Don't handle clicks on days from other months
     }
 
-    if (userProfile?.role === 'coach' && selectedStudent) {
-      // For coaches, show options to add task, navigate to daily view, or weekly view
-      Alert.alert(
-        'Seçenekler',
-        `${dayData.date.toLocaleDateString('tr-TR')} için ne yapmak istiyorsunuz?`,
-        [
-          { text: 'İptal', style: 'cancel' },
-          { text: 'Günlük Görünüm', onPress: () => onNavigateToDaily && onNavigateToDaily(dayData.date) },
-          { text: 'Görev Ekle', onPress: () => handleAddTask(dayData.date) },
-          { text: 'Haftalık Görünüm', onPress: () => onNavigateToWeek && onNavigateToWeek(dayData.date) },
-        ]
-      );
+    // For ALL users (both coaches and students), directly navigate to daily view
+    console.log('🎯 Day clicked:', dayData.date.toISOString().split('T')[0]);
+    console.log('🎯 User role:', userProfile?.role);
+    console.log('🎯 onNavigateToDaily function available:', !!onNavigateToDaily);
+    
+    if (onNavigateToDaily) {
+      console.log('🎯 Calling onNavigateToDaily...');
+      onNavigateToDaily(dayData.date);
     } else {
-      // For students, directly navigate to daily view
-      console.log('🎯 Student clicked on date:', dayData.date.toISOString().split('T')[0]);
-      console.log('🎯 onNavigateToDaily function available:', !!onNavigateToDaily);
-      if (onNavigateToDaily) {
-        console.log('🎯 Calling onNavigateToDaily...');
-        onNavigateToDaily(dayData.date);
-      } else {
-        console.warn('⚠️ onNavigateToDaily function not available');
-      }
+      console.warn('⚠️ onNavigateToDaily function not available');
     }
   };
 

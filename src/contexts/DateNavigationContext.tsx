@@ -32,46 +32,66 @@ export const DateNavigationProvider: React.FC<DateNavigationProviderProps> = ({ 
   const tabNavigatorRef = useRef<any>(null);
 
   const navigateToDaily = useCallback((date: Date) => {
-    console.log('🗓️ Navigating to daily view with date:', date.toISOString().split('T')[0]);
+    console.log('🗓️ [CONTEXT] Navigating to daily view with date:', date.toISOString().split('T')[0]);
+    console.log('🗓️ [CONTEXT] Current activeTab before change:', activeTab);
+    
     setSelectedDate(date);
     setActiveTab('Daily');
     
-    // Force re-render of navigator with Daily as active tab
-    setNavigationKey(prev => prev + 1);
+    console.log('🗓️ [CONTEXT] Set activeTab to Daily, incrementing navigationKey');
     
-    // Also try programmatic navigation as backup
-    setTimeout(() => {
-      if (tabNavigatorRef.current) {
-        try {
-          console.log('🎯 Attempting programmatic navigation to Daily tab');
-          
-          // Get current state
-          const state = tabNavigatorRef.current.getState?.();
-          console.log('📊 Current tab state:', state);
-          
-          // Try jumpTo first (most reliable for tab navigation)
-          if (typeof tabNavigatorRef.current.jumpTo === 'function') {
-            tabNavigatorRef.current.jumpTo('Daily');
-            console.log('✅ Successfully used jumpTo method');
-            return;
-          }
-          
-          // Fallback to navigate
-          if (typeof tabNavigatorRef.current.navigate === 'function') {
-            tabNavigatorRef.current.navigate('Daily');
-            console.log('✅ Successfully used navigate method');
-            return;
-          }
-          
-          console.warn('⚠️ No suitable navigation method found');
-        } catch (error) {
-          console.error('❌ Navigation failed:', error);
-        }
-      } else {
-        console.warn('⚠️ Tab navigator ref not available');
+    // Force re-render of navigator with Daily as active tab
+    setNavigationKey(prev => {
+      const newKey = prev + 1;
+      console.log('🔑 [CONTEXT] Navigation key changed from', prev, 'to', newKey);
+      return newKey;
+    });
+    
+    // Also try programmatic navigation as backup with multiple attempts
+    const attemptNavigation = (attempt: number = 1) => {
+      if (attempt > 3) {
+        console.error('❌ [CONTEXT] Failed to navigate after 3 attempts');
+        return;
       }
-    }, 150);
-  }, []);
+
+      setTimeout(() => {
+        if (tabNavigatorRef.current) {
+          try {
+            console.log(`🎯 [CONTEXT] Attempting programmatic navigation (attempt ${attempt})`);
+            
+            // Get current state
+            const state = tabNavigatorRef.current.getState?.();
+            console.log('📊 [CONTEXT] Current tab state:', state);
+            
+            // Try jumpTo first (most reliable for tab navigation)
+            if (typeof tabNavigatorRef.current.jumpTo === 'function') {
+              tabNavigatorRef.current.jumpTo('Daily');
+              console.log(`✅ [CONTEXT] Successfully used jumpTo method (attempt ${attempt})`);
+              return;
+            }
+            
+            // Fallback to navigate
+            if (typeof tabNavigatorRef.current.navigate === 'function') {
+              tabNavigatorRef.current.navigate('Daily');
+              console.log(`✅ [CONTEXT] Successfully used navigate method (attempt ${attempt})`);
+              return;
+            }
+            
+            console.warn(`⚠️ [CONTEXT] No suitable navigation method found (attempt ${attempt})`);
+          } catch (error) {
+            console.error(`❌ [CONTEXT] Navigation attempt ${attempt} failed:`, error);
+          }
+        } else {
+          console.warn(`⚠️ [CONTEXT] Tab navigator ref not available (attempt ${attempt})`);
+        }
+        
+        // Try again
+        attemptNavigation(attempt + 1);
+      }, 100 * attempt); // Increasing delay for each attempt
+    };
+
+    attemptNavigation();
+  }, [activeTab]);
 
   const forceNavigateToDaily = useCallback((date: Date) => {
     console.log('🚀 Force navigating to daily view with date:', date.toISOString().split('T')[0]);
