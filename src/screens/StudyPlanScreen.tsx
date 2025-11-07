@@ -13,7 +13,7 @@ const DailyScreen = () => <DailyTab />;
 const WeeklyPlanScreen = () => <WeeklyPlanTab />;
 
 const MonthlyPlanScreen = () => {
-  const { navigateToDaily } = useDateNavigation();
+  const { navigateToDaily, forceNavigateToDaily } = useDateNavigation();
 
   const handleNavigateToWeek = (weekDate: Date) => {
     // This would navigate to the weekly tab with the specific week
@@ -23,7 +23,15 @@ const MonthlyPlanScreen = () => {
 
   const handleNavigateToDaily = (date: Date) => {
     console.log('🗓️ MonthlyPlanScreen: Navigating to daily for date:', date.toISOString().split('T')[0]);
+    
+    // Try both methods - first the regular one, then force if needed
     navigateToDaily(date);
+    
+    // Also try force navigation as backup
+    setTimeout(() => {
+      console.log('🚀 Attempting force navigation as backup');
+      forceNavigateToDaily(date);
+    }, 300);
   };
 
   return (
@@ -35,7 +43,7 @@ const MonthlyPlanScreen = () => {
 };
 
 const StudyPlanContent: React.FC = () => {
-  const { tabNavigatorRef } = useDateNavigation();
+  const { tabNavigatorRef, activeTab, setActiveTab } = useDateNavigation();
 
   useEffect(() => {
     console.log('📱 StudyPlanContent mounted, tab navigator ref available:', !!tabNavigatorRef.current);
@@ -45,6 +53,12 @@ const StudyPlanContent: React.FC = () => {
     console.log('🎯 Tab Navigator is ready and ref is set');
   };
 
+  const handleTabChange = (state: any) => {
+    const currentTab = state.routes[state.index].name;
+    console.log('📋 Tab changed to:', currentTab);
+    setActiveTab(currentTab);
+  };
+
   return (
     <Tab.Navigator
       ref={(ref) => {
@@ -52,6 +66,8 @@ const StudyPlanContent: React.FC = () => {
         console.log('📌 Tab Navigator ref set:', !!ref);
       }}
       onReady={handleTabNavigatorReady}
+      onStateChange={handleTabChange}
+      initialRouteName={activeTab}
       screenOptions={{
         tabBarActiveTintColor: '#249096',
         tabBarInactiveTintColor: '#6B7280',

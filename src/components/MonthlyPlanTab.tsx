@@ -235,8 +235,23 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
       if (onNavigateToDaily) {
         console.log('🎯 Calling onNavigateToDaily...');
         onNavigateToDaily(dayData.date);
+        
+        // Show a helpful message to user
+        setTimeout(() => {
+          Alert.alert(
+            'Tarih Seçildi',
+            `${dayData.date.toLocaleDateString('tr-TR')} tarihi seçildi. Günlük görünüm için "Günlük" sekmesine geçin.`,
+            [
+              { text: 'Tamam', style: 'default' }
+            ]
+          );
+        }, 500);
       } else {
         console.warn('⚠️ onNavigateToDaily function not available');
+        Alert.alert(
+          'Tarih Seçildi',
+          `${dayData.date.toLocaleDateString('tr-TR')} tarihi seçildi. Günlük görünüm için "Günlük" sekmesine geçin.`
+        );
       }
     }
   };
