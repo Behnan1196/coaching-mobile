@@ -29,17 +29,27 @@ export const DateNavigationProvider: React.FC<DateNavigationProviderProps> = ({ 
     console.log('🗓️ Navigating to daily view with date:', date.toISOString().split('T')[0]);
     setSelectedDate(date);
     
-    // Navigate to Daily tab
-    if (tabNavigatorRef.current) {
-      try {
-        tabNavigatorRef.current.navigate('Daily');
-        console.log('✅ Successfully navigated to Daily tab');
-      } catch (error) {
-        console.error('❌ Error navigating to Daily tab:', error);
+    // Navigate to Daily tab with a small delay to ensure ref is available
+    setTimeout(() => {
+      if (tabNavigatorRef.current) {
+        try {
+          // Use jumpTo instead of navigate for tab navigation
+          tabNavigatorRef.current.jumpTo('Daily');
+          console.log('✅ Successfully navigated to Daily tab');
+        } catch (error) {
+          console.error('❌ Error navigating to Daily tab:', error);
+          // Fallback to navigate method
+          try {
+            tabNavigatorRef.current.navigate('Daily');
+            console.log('✅ Successfully navigated to Daily tab (fallback)');
+          } catch (fallbackError) {
+            console.error('❌ Fallback navigation also failed:', fallbackError);
+          }
+        }
+      } else {
+        console.warn('⚠️ Tab navigator ref is not available after timeout');
       }
-    } else {
-      console.warn('⚠️ Tab navigator ref is not available');
-    }
+    }, 100);
   }, []);
 
   const handleSetSelectedDate = useCallback((date: Date) => {

@@ -231,8 +231,12 @@ export const MonthlyPlanTab: React.FC<MonthlyPlanTabProps> = ({ onNavigateToWeek
     } else {
       // For students, directly navigate to daily view
       console.log('🎯 Student clicked on date:', dayData.date.toISOString().split('T')[0]);
+      console.log('🎯 onNavigateToDaily function available:', !!onNavigateToDaily);
       if (onNavigateToDaily) {
+        console.log('🎯 Calling onNavigateToDaily...');
         onNavigateToDaily(dayData.date);
+      } else {
+        console.warn('⚠️ onNavigateToDaily function not available');
       }
     }
   };

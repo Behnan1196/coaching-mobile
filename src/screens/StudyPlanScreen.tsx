@@ -41,9 +41,17 @@ const StudyPlanContent: React.FC = () => {
     console.log('📱 StudyPlanContent mounted, tab navigator ref available:', !!tabNavigatorRef.current);
   }, []);
 
+  const handleTabNavigatorReady = () => {
+    console.log('🎯 Tab Navigator is ready and ref is set');
+  };
+
   return (
     <Tab.Navigator
-      ref={tabNavigatorRef}
+      ref={(ref) => {
+        tabNavigatorRef.current = ref;
+        console.log('📌 Tab Navigator ref set:', !!ref);
+      }}
+      onReady={handleTabNavigatorReady}
       screenOptions={{
         tabBarActiveTintColor: '#249096',
         tabBarInactiveTintColor: '#6B7280',
