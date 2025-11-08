@@ -45,7 +45,8 @@
         "resourceClass": "m-medium"
       },
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
       },
       "env": {
         "EXPO_PUBLIC_STREAM_API_KEY": "9xvpnn7jqchk",
