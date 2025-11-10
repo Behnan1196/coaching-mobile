@@ -153,12 +153,33 @@ const StatisticsScreen: React.FC = () => {
   const getWeekStart = (date: Date): Date => {
     const start = new Date(date);
     const day = start.getDay();
-    // For Monday-based week: Sunday should be part of current week (as last day)
-    // So we need to go back to Monday of the same week
-    const diff = day === 0 ? start.getDate() - 6 : start.getDate() - day + 1;
-    start.setDate(diff);
-    start.setHours(0, 0, 0, 0);
-    return start;
+    
+    // Debug: Log the calculation
+    console.log('🗓️ [MOBILE DEBUG] Hafta başlangıcı hesaplama:', {
+      inputDate: date.toLocaleDateString('tr-TR'),
+      inputDay: date.toLocaleDateString('tr-TR', { weekday: 'long' }),
+      dayNumber: day
+    });
+    
+    // Alternative approach: Use a more explicit calculation
+    let daysToSubtract;
+    if (day === 0) { // Sunday
+      daysToSubtract = 6; // Go back 6 days to Monday
+    } else { // Monday = 1, Tuesday = 2, etc.
+      daysToSubtract = day - 1; // Go back to Monday
+    }
+    
+    const result = new Date(start);
+    result.setDate(start.getDate() - daysToSubtract);
+    result.setHours(0, 0, 0, 0);
+    
+    console.log('🗓️ [MOBILE DEBUG] Hesaplanan hafta başlangıcı:', {
+      weekStart: result.toLocaleDateString('tr-TR'),
+      weekStartDay: result.toLocaleDateString('tr-TR', { weekday: 'long' }),
+      daysToSubtract: daysToSubtract
+    });
+    
+    return result;
   };
 
   const formatDateForDB = (date: Date): string => {
@@ -196,7 +217,25 @@ const StatisticsScreen: React.FC = () => {
 
     const weekTasks = weeklyTasks.filter(task => {
       const taskDate = new Date(task.scheduled_date || '');
-      return taskDate >= weekStart && taskDate <= weekEnd && task.status === 'completed';
+      const isInWeek = taskDate >= weekStart && taskDate <= weekEnd;
+      const isCompleted = task.status === 'completed';
+      
+      // Debug: Log each task's date comparison
+      if (task.scheduled_date) {
+        console.log('📋 [MOBILE DEBUG] Görev kontrolü:', {
+          title: task.title,
+          task_type: task.task_type,
+          scheduled_date: task.scheduled_date,
+          taskDate: taskDate.toLocaleDateString('tr-TR'),
+          taskDay: taskDate.toLocaleDateString('tr-TR', { weekday: 'long' }),
+          isInWeek,
+          isCompleted,
+          problem_count: task.problem_count,
+          willBeIncluded: isInWeek && isCompleted
+        });
+      }
+      
+      return isInWeek && isCompleted;
     });
 
     return subjects.map(subject => {
