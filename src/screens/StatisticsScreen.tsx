@@ -153,7 +153,9 @@ const StatisticsScreen: React.FC = () => {
   const getWeekStart = (date: Date): Date => {
     const start = new Date(date);
     const day = start.getDay();
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    // For Monday-based week: Sunday should be part of current week (as last day)
+    // So we need to go back to Monday of the same week
+    const diff = day === 0 ? start.getDate() - 6 : start.getDate() - day + 1;
     start.setDate(diff);
     start.setHours(0, 0, 0, 0);
     return start;
@@ -183,6 +185,14 @@ const StatisticsScreen: React.FC = () => {
     const weekStart = getWeekStart(currentWeek);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
+
+    console.log('📅 [MOBILE DEBUG] Haftalık istatistik aralığı:', {
+      currentWeek: currentWeek.toLocaleDateString('tr-TR'),
+      weekStart: weekStart.toLocaleDateString('tr-TR'),
+      weekEnd: weekEnd.toLocaleDateString('tr-TR'),
+      weekStartDay: weekStart.toLocaleDateString('tr-TR', { weekday: 'long' }),
+      weekEndDay: weekEnd.toLocaleDateString('tr-TR', { weekday: 'long' })
+    });
 
     const weekTasks = weeklyTasks.filter(task => {
       const taskDate = new Date(task.scheduled_date || '');

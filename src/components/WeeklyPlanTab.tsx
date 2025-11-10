@@ -87,7 +87,9 @@ export const WeeklyPlanTab: React.FC = () => {
   const getWeekStart = (date: Date) => {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+    // For Monday-based week: Sunday should be part of current week (as last day)
+    // So we need to go back to Monday of the same week
+    const diff = day === 0 ? d.getDate() - 6 : d.getDate() - day + 1;
     return new Date(d.setDate(diff));
   };
 
