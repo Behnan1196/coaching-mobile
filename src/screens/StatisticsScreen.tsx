@@ -191,6 +191,18 @@ const StatisticsScreen: React.FC = () => {
 
     return subjects.map(subject => {
       const subjectTasks = weekTasks.filter(task => task.subject_id === subject.id);
+      
+      // Debug: Log review tasks for this subject
+      const reviewTasks = subjectTasks.filter(task => task.task_type === 'review');
+      if (reviewTasks.length > 0) {
+        console.log(`📊 [MOBILE DEBUG] ${subject.name} - Haftalık Tekrar görevleri:`, reviewTasks.map(t => ({
+          title: t.title,
+          task_type: t.task_type,
+          problem_count: t.problem_count,
+          status: t.status
+        })));
+      }
+      
       const totalProblems = subjectTasks.reduce((sum, task) => sum + (task.problem_count || 0), 0);
       return {
         subject: subject.name,
@@ -204,6 +216,18 @@ const StatisticsScreen: React.FC = () => {
 
     return subjects.map(subject => {
       const subjectTasks = monthlyTasks.filter(task => task.subject_id === subject.id && task.status === 'completed');
+      
+      // Debug: Log review tasks for this subject
+      const reviewTasks = subjectTasks.filter(task => task.task_type === 'review');
+      if (reviewTasks.length > 0) {
+        console.log(`📊 [MOBILE DEBUG] ${subject.name} - Tekrar görevleri:`, reviewTasks.map(t => ({
+          title: t.title,
+          task_type: t.task_type,
+          problem_count: t.problem_count,
+          status: t.status
+        })));
+      }
+      
       const totalProblems = subjectTasks.reduce((sum, task) => sum + (task.problem_count || 0), 0);
       return {
         subject: subject.name,
