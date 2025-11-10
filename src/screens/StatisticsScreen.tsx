@@ -154,13 +154,6 @@ const StatisticsScreen: React.FC = () => {
     const start = new Date(date);
     const day = start.getDay();
     
-    // Debug: Log the calculation
-    console.log('🗓️ [MOBILE DEBUG] Hafta başlangıcı hesaplama:', {
-      inputDate: date.toLocaleDateString('tr-TR'),
-      inputDay: date.toLocaleDateString('tr-TR', { weekday: 'long' }),
-      dayNumber: day
-    });
-    
     // Alternative approach: Use a more explicit calculation
     let daysToSubtract;
     if (day === 0) { // Sunday
@@ -172,12 +165,6 @@ const StatisticsScreen: React.FC = () => {
     const result = new Date(start);
     result.setDate(start.getDate() - daysToSubtract);
     result.setHours(0, 0, 0, 0);
-    
-    console.log('🗓️ [MOBILE DEBUG] Hesaplanan hafta başlangıcı:', {
-      weekStart: result.toLocaleDateString('tr-TR'),
-      weekStartDay: result.toLocaleDateString('tr-TR', { weekday: 'long' }),
-      daysToSubtract: daysToSubtract
-    });
     
     return result;
   };
@@ -207,33 +194,17 @@ const StatisticsScreen: React.FC = () => {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
 
-    console.log('📅 [MOBILE DEBUG] Haftalık istatistik aralığı:', {
-      currentWeek: currentWeek.toLocaleDateString('tr-TR'),
-      weekStart: weekStart.toLocaleDateString('tr-TR'),
-      weekEnd: weekEnd.toLocaleDateString('tr-TR'),
-      weekStartDay: weekStart.toLocaleDateString('tr-TR', { weekday: 'long' }),
-      weekEndDay: weekEnd.toLocaleDateString('tr-TR', { weekday: 'long' })
-    });
+
 
     const weekTasks = weeklyTasks.filter(task => {
       const taskDate = new Date(task.scheduled_date || '');
+      // Normalize times for proper comparison
+      taskDate.setHours(0, 0, 0, 0);
+      
       const isInWeek = taskDate >= weekStart && taskDate <= weekEnd;
       const isCompleted = task.status === 'completed';
       
-      // Debug: Log each task's date comparison
-      if (task.scheduled_date) {
-        console.log('📋 [MOBILE DEBUG] Görev kontrolü:', {
-          title: task.title,
-          task_type: task.task_type,
-          scheduled_date: task.scheduled_date,
-          taskDate: taskDate.toLocaleDateString('tr-TR'),
-          taskDay: taskDate.toLocaleDateString('tr-TR', { weekday: 'long' }),
-          isInWeek,
-          isCompleted,
-          problem_count: task.problem_count,
-          willBeIncluded: isInWeek && isCompleted
-        });
-      }
+
       
       return isInWeek && isCompleted;
     });
@@ -241,16 +212,7 @@ const StatisticsScreen: React.FC = () => {
     return subjects.map(subject => {
       const subjectTasks = weekTasks.filter(task => task.subject_id === subject.id);
       
-      // Debug: Log review tasks for this subject
-      const reviewTasks = subjectTasks.filter(task => task.task_type === 'review');
-      if (reviewTasks.length > 0) {
-        console.log(`📊 [MOBILE DEBUG] ${subject.name} - Haftalık Tekrar görevleri:`, reviewTasks.map(t => ({
-          title: t.title,
-          task_type: t.task_type,
-          problem_count: t.problem_count,
-          status: t.status
-        })));
-      }
+
       
       const totalProblems = subjectTasks.reduce((sum, task) => sum + (task.problem_count || 0), 0);
       return {
@@ -266,16 +228,7 @@ const StatisticsScreen: React.FC = () => {
     return subjects.map(subject => {
       const subjectTasks = monthlyTasks.filter(task => task.subject_id === subject.id && task.status === 'completed');
       
-      // Debug: Log review tasks for this subject
-      const reviewTasks = subjectTasks.filter(task => task.task_type === 'review');
-      if (reviewTasks.length > 0) {
-        console.log(`📊 [MOBILE DEBUG] ${subject.name} - Tekrar görevleri:`, reviewTasks.map(t => ({
-          title: t.title,
-          task_type: t.task_type,
-          problem_count: t.problem_count,
-          status: t.status
-        })));
-      }
+
       
       const totalProblems = subjectTasks.reduce((sum, task) => sum + (task.problem_count || 0), 0);
       return {
