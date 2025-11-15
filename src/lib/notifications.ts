@@ -313,10 +313,10 @@ export async function initializePushNotifications(
       // Skip Expo token for iOS to avoid FCM server key issues
       console.log('⚠️ Skipping Expo token for iOS - using direct APNs only');
     } else {
-      // For Android, prioritize FCM token, then Expo token
+      // For Android, use FCM token for compatibility with web FCM Admin SDK
       const deviceToken = await getDeviceToken();
       if (deviceToken) {
-        console.log('📱 Registering Android FCM token');
+        console.log('📱 Registering Android FCM token for FCM Admin SDK compatibility');
         const deviceTokenSaved = await saveNotificationToken(userId, deviceToken, 'fcm');
         if (deviceTokenSaved) {
           primaryTokenSaved = true;
@@ -334,8 +334,12 @@ export async function initializePushNotifications(
         }
       }
 
-      // Skip Expo token for Android to avoid FCM server key issues
-      console.log('⚠️ Skipping Expo token for Android - using direct FCM only');
+      // Also register Expo token as backup
+      const expoPushToken = await registerForPushNotifications();
+      if (expoPushToken) {
+        console.log('📱 Also registering Expo token as backup');
+        await saveNotificationToken(userId, expoPushToken, 'expo');
+      }
     }
 
     if (!primaryTokenSaved) {
