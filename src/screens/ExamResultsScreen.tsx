@@ -18,6 +18,19 @@ import { useCoachStudent } from '../contexts/CoachStudentContext';
 import { supabase } from '../lib/supabase';
 import { MockExamResult } from '../types/database';
 
+const TARAMA_LESSONS = [
+  'Türkçe',
+  'Matematik', 
+  'Geometri',
+  'Tarih',
+  'Coğrafya',
+  'Felsefe',
+  'Din Bilgisi',
+  'Fizik',
+  'Kimya',
+  'Biyoloji'
+];
+
 interface ExamForm {
   exam_type: 'TYT' | 'AYT' | 'Tarama';
   exam_date: string;
@@ -76,7 +89,6 @@ interface ExamForm {
   
   // Tarama Scores
   tarama_lessons: Array<{
-    lesson: string;
     subject: string;
     question_count: number;
     correct: number;
@@ -95,6 +107,16 @@ export const ExamResultsScreen: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingExam, setEditingExam] = useState<MockExamResult | null>(null);
   const [examModalTab, setExamModalTab] = useState<'TYT' | 'AYT' | 'Tarama'>('TYT');
+  
+  // Tarama lesson modal
+  const [showTaramaModal, setShowTaramaModal] = useState(false);
+  const [taramaForm, setTaramaForm] = useState({
+    lesson: '',
+    question_count: 10,
+    correct: 0,
+    wrong: 0,
+  });
+  const [editingTaramaIndex, setEditingTaramaIndex] = useState<number | null>(null);
   
   const [examForm, setExamForm] = useState<ExamForm>({
     exam_type: 'TYT',
@@ -240,6 +262,7 @@ export const ExamResultsScreen: React.FC = () => {
       ayt_tarih_wrong: 0,
       ayt_cografya_correct: 0,
       ayt_cografya_wrong: 0,
+      tarama_lessons: [],
       notes: '',
     });
     setExamModalTab('TYT');
@@ -407,6 +430,8 @@ export const ExamResultsScreen: React.FC = () => {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
+            if (!supabase) return;
+            
             try {
               const { error } = await supabase
                 .from('mock_exam_results')
@@ -1379,17 +1404,32 @@ export const ExamResultsScreen: React.FC = () => {
                 {examForm.tarama_lessons.map((lesson, index) => (
                   <View key={index} style={styles.taramaLessonCard}>
                     <View style={styles.taramaLessonHeader}>
-                      <Text style={styles.taramaLessonTitle}>
-                        {lesson.lesson} - {lesson.subject}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          const newLessons = examForm.tarama_lessons.filter((_, i) => i !== index);
-                          setExamForm(prev => ({ ...prev, tarama_lessons: newLessons }));
-                        }}
-                      >
-                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                      </TouchableOpacity>
+                      <Text style={styles.taramaLessonTitle}>{lesson.subject}</Text>
+                      <View style={styles.taramaLessonActions}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setTaramaForm({
+                              lesson: lesson.subject,
+                              question_count: lesson.question_count,
+                              correct: lesson.correct,
+                              wrong: lesson.wrong,
+                            });
+                            setEditingTaramaIndex(index);
+                            setShowTaramaModal(true);
+                          }}
+                          style={{ marginRight: 12 }}
+                        >
+                          <Ionicons name="create-outline" size={20} color="#3B82F6" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => {
+                            const newLessons = examForm.tarama_lessons.filter((_, i) => i !== index);
+                            setExamForm(prev => ({ ...prev, tarama_lessons: newLessons }));
+                          }}
+                        >
+                          <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                     <Text style={styles.taramaLessonInfo}>
                       Soru: {lesson.question_count} | Doğru: {lesson.correct} | Yanlış: {lesson.wrong} | Net: {(lesson.correct - (lesson.wrong / 4)).toFixed(2)}
@@ -1400,79 +1440,14 @@ export const ExamResultsScreen: React.FC = () => {
                 <TouchableOpacity
                   style={styles.addTaramaButton}
                   onPress={() => {
-                    Alert.prompt(
-                      'Ders Ekle',
-                      'Ders adı (örn: Matematik - Türev)',
-                      [
-                        { text: 'İptal', style: 'cancel' },
-                        {
-                          text: 'Devam',
-                          onPress: (lessonName) => {
-                            if (!lessonName) return;
-                            const [lesson, subject] = lessonName.split('-').map(s => s.trim());
-                            
-                            Alert.prompt(
-                              'Soru Sayısı',
-                              'Toplam soru sayısı',
-                              [
-                                { text: 'İptal', style: 'cancel' },
-                                {
-                                  text: 'Devam',
-                                  onPress: (questionCount) => {
-                                    const count = parseInt(questionCount || '0');
-                                    
-                                    Alert.prompt(
-                                      'Doğru Sayısı',
-                                      'Doğru cevap sayısı',
-                                      [
-                                        { text: 'İptal', style: 'cancel' },
-                                        {
-                                          text: 'Devam',
-                                          onPress: (correct) => {
-                                            const correctCount = parseInt(correct || '0');
-                                            
-                                            Alert.prompt(
-                                              'Yanlış Sayısı',
-                                              'Yanlış cevap sayısı',
-                                              [
-                                                { text: 'İptal', style: 'cancel' },
-                                                {
-                                                  text: 'Ekle',
-                                                  onPress: (wrong) => {
-                                                    const wrongCount = parseInt(wrong || '0');
-                                                    
-                                                    const newLesson = {
-                                                      lesson: lesson || 'Ders',
-                                                      subject: subject || 'Konu',
-                                                      question_count: count,
-                                                      correct: correctCount,
-                                                      wrong: wrongCount,
-                                                    };
-                                                    
-                                                    setExamForm(prev => ({
-                                                      ...prev,
-                                                      tarama_lessons: [...prev.tarama_lessons, newLesson]
-                                                    }));
-                                                  }
-                                                }
-                                              ],
-                                              'plain-text'
-                                            );
-                                          }
-                                        }
-                                      ],
-                                      'plain-text'
-                                    );
-                                  }
-                                }
-                              ],
-                              'plain-text'
-                            );
-                          }
-                        }
-                      ],
-                      'plain-text'
-                    );
+                    setTaramaForm({
+                      lesson: '',
+                      question_count: 10,
+                      correct: 0,
+                      wrong: 0,
+                    });
+                    setEditingTaramaIndex(null);
+                    setShowTaramaModal(true);
                   }}
                 >
                   <Ionicons name="add-circle-outline" size={24} color="#10B981" />
@@ -1502,6 +1477,151 @@ export const ExamResultsScreen: React.FC = () => {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Tarama Lesson Modal */}
+      <Modal
+        visible={showTaramaModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTaramaModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.taramaModalContent}>
+            <View style={styles.taramaModalHeader}>
+              <Text style={styles.taramaModalTitle}>
+                {editingTaramaIndex !== null ? 'Ders Düzenle' : 'Ders Ekle'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowTaramaModal(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.taramaModalBody}>
+              {/* Lesson Selection */}
+              <View style={styles.taramaFormGroup}>
+                <Text style={styles.taramaFormLabel}>Ders *</Text>
+                <View style={styles.pickerContainer}>
+                  {TARAMA_LESSONS.map((lesson) => (
+                    <TouchableOpacity
+                      key={lesson}
+                      style={[
+                        styles.lessonOption,
+                        taramaForm.lesson === lesson && styles.lessonOptionSelected
+                      ]}
+                      onPress={() => setTaramaForm(prev => ({ ...prev, lesson }))}
+                    >
+                      <Text style={[
+                        styles.lessonOptionText,
+                        taramaForm.lesson === lesson && styles.lessonOptionTextSelected
+                      ]}>
+                        {lesson}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Question Count */}
+              <View style={styles.taramaFormGroup}>
+                <Text style={styles.taramaFormLabel}>Soru Sayısı *</Text>
+                <TextInput
+                  style={styles.taramaFormInput}
+                  value={String(taramaForm.question_count)}
+                  onChangeText={(text) => {
+                    const num = parseInt(text) || 0;
+                    setTaramaForm(prev => ({ ...prev, question_count: Math.max(1, Math.min(100, num)) }));
+                  }}
+                  keyboardType="number-pad"
+                  placeholder="10"
+                />
+              </View>
+
+              {/* Correct Answers */}
+              <View style={styles.taramaFormGroup}>
+                <Text style={styles.taramaFormLabel}>Doğru Sayısı *</Text>
+                <TextInput
+                  style={styles.taramaFormInput}
+                  value={String(taramaForm.correct)}
+                  onChangeText={(text) => {
+                    const num = parseInt(text) || 0;
+                    setTaramaForm(prev => ({ ...prev, correct: Math.max(0, Math.min(prev.question_count, num)) }));
+                  }}
+                  keyboardType="number-pad"
+                  placeholder="0"
+                />
+              </View>
+
+              {/* Wrong Answers */}
+              <View style={styles.taramaFormGroup}>
+                <Text style={styles.taramaFormLabel}>Yanlış Sayısı *</Text>
+                <TextInput
+                  style={styles.taramaFormInput}
+                  value={String(taramaForm.wrong)}
+                  onChangeText={(text) => {
+                    const num = parseInt(text) || 0;
+                    setTaramaForm(prev => ({ ...prev, wrong: Math.max(0, Math.min(prev.question_count, num)) }));
+                  }}
+                  keyboardType="number-pad"
+                  placeholder="0"
+                />
+              </View>
+
+              {/* Net Calculation */}
+              <View style={styles.netDisplay}>
+                <Text style={styles.netLabel}>Net:</Text>
+                <Text style={styles.netValue}>
+                  {(taramaForm.correct - (taramaForm.wrong / 4)).toFixed(2)}
+                </Text>
+              </View>
+            </ScrollView>
+
+            <View style={styles.taramaModalFooter}>
+              <TouchableOpacity
+                style={styles.taramaCancelButton}
+                onPress={() => setShowTaramaModal(false)}
+              >
+                <Text style={styles.taramaCancelButtonText}>İptal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.taramaSaveButton,
+                  !taramaForm.lesson && styles.taramaSaveButtonDisabled
+                ]}
+                disabled={!taramaForm.lesson}
+                onPress={() => {
+                  if (!taramaForm.lesson) return;
+
+                  const newLesson = {
+                    subject: taramaForm.lesson,
+                    question_count: taramaForm.question_count,
+                    correct: taramaForm.correct,
+                    wrong: taramaForm.wrong,
+                  };
+
+                  if (editingTaramaIndex !== null) {
+                    // Update existing lesson
+                    const newLessons = [...examForm.tarama_lessons];
+                    newLessons[editingTaramaIndex] = newLesson;
+                    setExamForm(prev => ({ ...prev, tarama_lessons: newLessons }));
+                  } else {
+                    // Add new lesson
+                    setExamForm(prev => ({
+                      ...prev,
+                      tarama_lessons: [...prev.tarama_lessons, newLesson]
+                    }));
+                  }
+
+                  setShowTaramaModal(false);
+                }}
+              >
+                <Text style={styles.taramaSaveButtonText}>
+                  {editingTaramaIndex !== null ? 'Güncelle' : 'Ekle'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -1825,5 +1945,133 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#10B981',
     marginLeft: 8,
+  },
+  taramaLessonActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  taramaModalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  taramaModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  taramaModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  taramaModalBody: {
+    padding: 16,
+  },
+  taramaFormGroup: {
+    marginBottom: 16,
+  },
+  taramaFormLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  lessonOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: 'white',
+  },
+  lessonOptionSelected: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  lessonOptionText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  lessonOptionTextSelected: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  taramaFormInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: 'white',
+  },
+  netDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0FDF4',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  netLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#065F46',
+    marginRight: 8,
+  },
+  netValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#10B981',
+  },
+  taramaModalFooter: {
+    flexDirection: 'row',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    gap: 12,
+  },
+  taramaCancelButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  taramaCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  taramaSaveButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+  },
+  taramaSaveButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  taramaSaveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
 });
