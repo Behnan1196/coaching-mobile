@@ -552,3 +552,59 @@ export async function getPendingVideoInvites(): Promise<{
     };
   }
 }
+/**
+ 
+* Send chat message notification via API
+ * Sends push notification to recipient when a chat message is sent
+ */
+export async function sendChatMessageNotification(
+  recipientId: string,
+  messageText: string,
+  channelId?: string
+): Promise<{ success: boolean; error?: string; notificationsSent?: number }> {
+  try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase client not available' };
+    }
+
+    // Get current user ID
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app';
+    
+    const response = await fetch(`${apiUrl}/api/notifications/chat-message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        recipientId,
+        messageText,
+        channelId,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('❌ Error sending chat notification:', result);
+      return { success: false, error: result.error || 'Failed to send chat notification' };
+    }
+
+    console.log('✅ Chat notification sent successfully:', result);
+    return { 
+      success: true, 
+      notificationsSent: result.notificationsSent,
+    };
+  } catch (error) {
+    console.error('❌ Error sending chat notification:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}

@@ -1408,14 +1408,19 @@ export const ExamResultsScreen: React.FC = () => {
                       <View style={styles.taramaLessonActions}>
                         <TouchableOpacity
                           onPress={() => {
-                            setTaramaForm({
-                              lesson: lesson.subject,
-                              question_count: lesson.question_count,
-                              correct: lesson.correct,
-                              wrong: lesson.wrong,
-                            });
-                            setEditingTaramaIndex(index);
-                            setShowTaramaModal(true);
+                            console.log('🎯 Edit lesson button pressed');
+                            // Close main modal first
+                            setShowModal(false);
+                            setTimeout(() => {
+                              setTaramaForm({
+                                lesson: lesson.subject,
+                                question_count: lesson.question_count,
+                                correct: lesson.correct,
+                                wrong: lesson.wrong,
+                              });
+                              setEditingTaramaIndex(index);
+                              setShowTaramaModal(true);
+                            }, 300);
                           }}
                           style={{ marginRight: 12 }}
                         >
@@ -1441,15 +1446,19 @@ export const ExamResultsScreen: React.FC = () => {
                   style={styles.addTaramaButton}
                   onPress={() => {
                     console.log('🎯 Ders Ekle button pressed');
-                    setTaramaForm({
-                      lesson: '',
-                      question_count: 10,
-                      correct: 0,
-                      wrong: 0,
-                    });
-                    setEditingTaramaIndex(null);
-                    setShowTaramaModal(true);
-                    console.log('🎯 showTaramaModal set to true');
+                    // Close main modal first, then open Tarama modal
+                    setShowModal(false);
+                    setTimeout(() => {
+                      setTaramaForm({
+                        lesson: '',
+                        question_count: 10,
+                        correct: 0,
+                        wrong: 0,
+                      });
+                      setEditingTaramaIndex(null);
+                      setShowTaramaModal(true);
+                      console.log('🎯 showTaramaModal set to true');
+                    }, 300);
                   }}
                 >
                   <Ionicons name="add-circle-outline" size={24} color="#10B981" />
@@ -1582,7 +1591,10 @@ export const ExamResultsScreen: React.FC = () => {
             <View style={styles.taramaModalFooter}>
               <TouchableOpacity
                 style={styles.taramaCancelButton}
-                onPress={() => setShowTaramaModal(false)}
+                onPress={() => {
+                  setShowTaramaModal(false);
+                  setTimeout(() => setShowModal(true), 300);
+                }}
               >
                 <Text style={styles.taramaCancelButtonText}>İptal</Text>
               </TouchableOpacity>

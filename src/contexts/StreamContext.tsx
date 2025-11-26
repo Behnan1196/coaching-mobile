@@ -121,30 +121,43 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
     
     channel.on('message.new', async (event) => {
       const message = event.message;
+      if (!message) return;
+      
       const messageUserId = message.user?.id;
+      if (!messageUserId) return;
       
-      // Don't show notifications for our own messages
       if (messageUserId === currentUserId) {
-        return;
-      }
-      
-      console.log('📨 [CHAT] New message received from:', message.user?.name);
-      
-      // Send local push notification
-      // The notification handler will decide whether to show it based on current tab
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `💬 ${message.user?.name || 'Yeni mesaj'}`,
-          body: message.text || 'Yeni bir mesaj aldınız',
-          data: {
-            type: 'chat_message',
-            channelId: channel.id,
-            userId: messageUserId,
-            userName: message.user?.name,
+        // This is our own message - send push notification to recipient
+        const members = Object.keys(channel.state.members);
+        const recipientId = members.find(id => id !== currentUserId);
+        
+        if (recipientId && message.text) {
+          console.log('📤 [CHAT] Sending push notification to recipient:', recipientId);
+          
+          // Import and call the notification function
+          const { sendChatMessageNotification } = await import('../lib/notifications');
+          await sendChatMessageNotification(recipientId, message.text, channel.id);
+        }
+      } else {
+        // This is a message from someone else - show local notification
+        console.log('📨 [CHAT] New message received from:', message.user?.name);
+        
+        // Send local push notification
+        // The notification handler will decide whether to show it based on current tab
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `💬 ${message.user?.name || 'Yeni mesaj'}`,
+            body: message.text || 'Yeni bir mesaj aldınız',
+            data: {
+              type: 'chat_message',
+              channelId: channel.id,
+              userId: messageUserId,
+              userName: message.user?.name,
+            },
           },
-        },
-        trigger: null, // Show immediately
-      });
+          trigger: null, // Show immediately
+        });
+      }
     });
   };
 
