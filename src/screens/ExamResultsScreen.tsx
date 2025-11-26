@@ -1440,6 +1440,7 @@ export const ExamResultsScreen: React.FC = () => {
                 <TouchableOpacity
                   style={styles.addTaramaButton}
                   onPress={() => {
+                    console.log('🎯 Ders Ekle button pressed');
                     setTaramaForm({
                       lesson: '',
                       question_count: 10,
@@ -1448,6 +1449,7 @@ export const ExamResultsScreen: React.FC = () => {
                     });
                     setEditingTaramaIndex(null);
                     setShowTaramaModal(true);
+                    console.log('🎯 showTaramaModal set to true');
                   }}
                 >
                   <Ionicons name="add-circle-outline" size={24} color="#10B981" />
@@ -1480,6 +1482,7 @@ export const ExamResultsScreen: React.FC = () => {
       </Modal>
 
       {/* Tarama Lesson Modal */}
+      {console.log('🔍 Tarama Modal render - visible:', showTaramaModal)}
       <Modal
         visible={showTaramaModal}
         animationType="slide"
