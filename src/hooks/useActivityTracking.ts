@@ -4,39 +4,72 @@ import { supabase } from '../lib/stream';
 
 // Activity tracking hook for chat channels
 interface UseActivityTrackingProps {
-  channelId: string | null;
+  userId: string | null;
+  currentScreen: string;
   isEnabled: boolean;
-  apiUrl?: string;
 }
 
-export function useActivityTracking({ channelId, isEnabled, apiUrl }: UseActivityTrackingProps) {
-  const triggerActivity = async () => {
-    if (!isEnabled || !channelId || !apiUrl) {
+export function useActivityTracking({ userId, currentScreen, isEnabled }: UseActivityTrackingProps) {
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!isEnabled || !userId || !supabase) {
       return;
     }
 
-    try {
-      const response = await fetch(`${apiUrl}/api/notifications/user-activity`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          channelId,
-          activityType: 'chat_interaction',
-          timestamp: new Date().toISOString(),
-        }),
-      });
+    // Update activity immediately
+    const updateActivity = async () => {
+      try {
+        const { error } = await supabase
+          .from('user_activity')
+          .upsert({
+            user_id: userId,
+            current_screen: currentScreen,
+            last_activity_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id'
+          });
 
-      if (!response.ok) {
-        console.warn('Failed to track activity:', response.status);
+        if (error) {
+          console.warn('Failed to update activity:', error);
+        }
+      } catch (error) {
+        console.warn('Error updating activity:', error);
       }
-    } catch (error) {
-      console.warn('Error tracking activity:', error);
-    }
-  };
+    };
 
-  return { triggerActivity };
+    // Update immediately
+    updateActivity();
+
+    // Update every 10 seconds while on this screen
+    intervalRef.current = setInterval(updateActivity, 10000);
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      
+      // Clear current screen when leaving
+      if (supabase) {
+        supabase
+          .from('user_activity')
+          .update({
+            current_screen: null,
+            last_activity_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId)
+          .then(() => {
+            console.log('Cleared current screen on unmount');
+          })
+          .catch((error) => {
+            console.warn('Error clearing screen:', error);
+          });
+      }
+    };
+  }, [userId, currentScreen, isEnabled]);
+
+  return {};
 }
 
 interface UseRealTimeSubscriptionOptions {

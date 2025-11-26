@@ -55,19 +55,11 @@ export const ChatScreen: React.FC = () => {
     }
   }, [userProfile, chatClient, chatChannel, isDemoMode]);
 
-  // Track user activity in this chat channel - SMART FILTERING
-  console.log('🎯 ChatScreen Activity Tracking Config:', {
-    channelId: chatChannel?.id,
-    isDemoMode,
-    isEnabled: !!chatChannel && !isDemoMode,
-    streamApiKey: process.env.EXPO_PUBLIC_STREAM_API_KEY,
-    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app'
-  });
-  
-  const { triggerActivity } = useActivityTracking({
-    channelId: chatChannel?.id || null,
-    isEnabled: !!chatChannel && !isDemoMode, // Re-enabled with smart filtering
-    apiUrl: process.env.EXPO_PUBLIC_API_URL || 'https://ozgun-v20.vercel.app'
+  // Track user activity in chat screen - prevents notifications while user is viewing chat
+  useActivityTracking({
+    userId: userProfile?.id || null,
+    currentScreen: 'chat',
+    isEnabled: !!userProfile && !isDemoMode
   });
 
   // Track partner changes for debugging
