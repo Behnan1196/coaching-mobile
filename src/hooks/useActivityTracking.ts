@@ -19,6 +19,8 @@ export function useActivityTracking({ userId, currentScreen, isEnabled }: UseAct
 
     // Update activity immediately
     const updateActivity = async () => {
+      if (!supabase) return;
+      
       try {
         console.log('📊 Updating activity:', { userId, currentScreen });
         const { error } = await supabase
@@ -41,11 +43,42 @@ export function useActivityTracking({ userId, currentScreen, isEnabled }: UseAct
       }
     };
 
+    const clearActivity = async () => {
+      if (!supabase) return;
+      
+      try {
+        console.log('🧹 Clearing activity for:', userId);
+        const { error } = await supabase
+          .from('user_activity')
+          .update({
+            current_screen: null,
+            last_activity_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+
+        if (error) {
+          console.warn('❌ Failed to clear activity:', error);
+        } else {
+          console.log('✅ Activity cleared successfully');
+        }
+      } catch (error) {
+        console.warn('❌ Error clearing activity:', error);
+      }
+    };
+
     // Update immediately
     updateActivity();
 
     // Update every 10 seconds while on this screen
     intervalRef.current = setInterval(updateActivity, 10000);
+
+    // Listen for app state changes
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        console.log('📱 App going to background, clearing activity');
+        clearActivity();
+      }
+    });
 
     // Cleanup on unmount or when dependencies change
     return () => {
@@ -53,23 +86,12 @@ export function useActivityTracking({ userId, currentScreen, isEnabled }: UseAct
         clearInterval(intervalRef.current);
       }
       
+      // Remove app state listener
+      subscription?.remove();
+      
       // Clear current screen when leaving
-      if (supabase) {
-        console.log('🧹 Cleaning up activity tracking for:', userId);
-        supabase
-          .from('user_activity')
-          .update({
-            current_screen: null,
-            last_activity_at: new Date().toISOString(),
-          })
-          .eq('user_id', userId)
-          .then(() => {
-            console.log('✅ Cleared current screen on unmount');
-          })
-          .catch((error) => {
-            console.warn('❌ Error clearing screen:', error);
-          });
-      }
+      console.log('🧹 Cleaning up activity tracking on unmount for:', userId);
+      clearActivity();
     };
   }, [userId, currentScreen, isEnabled]);
 
