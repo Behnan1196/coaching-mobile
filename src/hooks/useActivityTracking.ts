@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { supabase } from '../lib/stream';
+import { supabase } from '../lib/supabase';
 
 // Activity tracking hook for chat channels
 interface UseActivityTrackingProps {
