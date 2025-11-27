@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { 
   Chat, 
   Channel, 
@@ -55,11 +56,15 @@ export const ChatScreen: React.FC = () => {
     }
   }, [userProfile, chatClient, chatChannel, isDemoMode]);
 
+  // Check if this screen is focused
+  const isFocused = useIsFocused();
+  
   // Track user activity in chat screen - prevents notifications while user is viewing chat
+  // Only track when screen is focused (active tab)
   useActivityTracking({
     userId: userProfile?.id || null,
     currentScreen: 'chat',
-    isEnabled: !!userProfile && !isDemoMode
+    isEnabled: !!userProfile && !isDemoMode && isFocused
   });
 
   // Clear activity when component unmounts or loses focus
