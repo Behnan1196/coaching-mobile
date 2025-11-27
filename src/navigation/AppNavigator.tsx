@@ -54,14 +54,14 @@ const MainTabs: React.FC = () => {
             setCurrentTab(currentRoute.name);
             
             // Update activity tracking based on current tab
-            if (user?.id && supabase) {
+            if (userProfile?.id && supabase) {
               const isChat = currentRoute.name === 'Chat';
               console.log('📊 Updating activity for tab change:', { tab: currentRoute.name, isChat });
               
               supabase
                 .from('user_activity')
                 .upsert({
-                  user_id: user.id,
+                  user_id: userProfile.id,
                   current_screen: isChat ? 'chat' : null,
                   last_activity_at: new Date().toISOString(),
                 }, {
