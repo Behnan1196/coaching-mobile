@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { Call, StreamVideoClient } from '@stream-io/video-react-native-sdk';
 import { StreamChat, Channel } from 'stream-chat';
 import * as Notifications from 'expo-notifications';
@@ -58,6 +58,9 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
   const [chatChannel, setChatChannel] = useState<Channel | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  
+  // Track processed messages to prevent duplicate notifications
+  const processedMessagesRef = useRef<Set<string>>(new Set());
   const [isStreamReady, setIsStreamReady] = useState(false);
 
   useEffect(() => {
@@ -119,19 +122,16 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
   const setupChatMessageListener = (channel: Channel, currentUserId: string) => {
     console.log('🔔 [CHAT] Setting up message listener for notifications');
     
-    // Track processed messages to prevent duplicates
-    const processedMessages = new Set<string>();
-    
     const messageHandler = async (event: any) => {
       const message = event.message;
       if (!message || !message.id) return;
       
-      // Prevent duplicate processing of the same message
-      if (processedMessages.has(message.id)) {
+      // Prevent duplicate processing of the same message using context-level Set
+      if (processedMessagesRef.current.has(message.id)) {
         console.log('⏭️ [CHAT] Message already processed, skipping:', message.id);
         return;
       }
-      processedMessages.add(message.id);
+      processedMessagesRef.current.add(message.id);
       
       const messageUserId = message.user?.id;
       if (!messageUserId) return;
