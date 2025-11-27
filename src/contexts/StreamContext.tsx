@@ -119,7 +119,10 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
   const setupChatMessageListener = (channel: Channel, currentUserId: string) => {
     console.log('🔔 [CHAT] Setting up message listener for notifications');
     
-    channel.on('message.new', async (event) => {
+    // Remove any existing listeners to prevent duplicates
+    channel.off('message.new');
+    
+    const messageHandler = async (event: any) => {
       const message = event.message;
       if (!message) return;
       
@@ -158,7 +161,9 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
           trigger: null, // Show immediately
         });
       }
-    });
+    };
+    
+    channel.on('message.new', messageHandler);
   };
 
   const cleanupStream = () => {
