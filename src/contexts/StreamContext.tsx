@@ -137,7 +137,7 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
       if (!messageUserId) return;
       
       if (messageUserId === currentUserId) {
-        // This is our own message - send push notification to recipient
+        // This is our own message - send push notification to recipient via backend
         const members = Object.keys(channel.state.members);
         const recipientId = members.find(id => id !== currentUserId);
         
@@ -149,24 +149,10 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
           await sendChatMessageNotification(recipientId, message.text, channel.id);
         }
       } else {
-        // This is a message from someone else - show local notification
-        console.log('📨 [CHAT] New message received from:', message.user?.name);
-        
-        // Send local push notification
-        // The notification handler will decide whether to show it based on current tab
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `💬 ${message.user?.name || 'Yeni mesaj'}`,
-            body: message.text || 'Yeni bir mesaj aldınız',
-            data: {
-              type: 'chat_message',
-              channelId: channel.id,
-              userId: messageUserId,
-              userName: message.user?.name,
-            },
-          },
-          trigger: null, // Show immediately
-        });
+        // This is a message from someone else
+        // Don't show local notification here - backend will send push notification
+        // This prevents duplicate notifications (local + backend)
+        console.log('📨 [CHAT] New message received from:', message.user?.name, '- backend will send notification');
       }
     };
     
