@@ -62,6 +62,25 @@ export const ChatScreen: React.FC = () => {
     isEnabled: !!userProfile && !isDemoMode
   });
 
+  // Clear activity when component unmounts or loses focus
+  useEffect(() => {
+    return () => {
+      // Cleanup when leaving chat screen
+      if (userProfile?.id && supabase && !isDemoMode) {
+        console.log('🧹 ChatScreen unmounting, clearing activity');
+        supabase
+          .from('user_activity')
+          .update({
+            current_screen: null,
+            last_activity_at: new Date().toISOString(),
+          })
+          .eq('user_id', userProfile.id)
+          .then(() => console.log('✅ Activity cleared on ChatScreen unmount'))
+          .catch((error) => console.warn('❌ Error clearing activity:', error));
+      }
+    };
+  }, [userProfile?.id, isDemoMode]);
+
   // Track partner changes for debugging
   useEffect(() => {
     const newPartnerId = userProfile?.role === 'coach' ? selectedStudent?.id : assignedCoach?.id;
