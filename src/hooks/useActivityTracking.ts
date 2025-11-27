@@ -20,6 +20,7 @@ export function useActivityTracking({ userId, currentScreen, isEnabled }: UseAct
     // Update activity immediately
     const updateActivity = async () => {
       try {
+        console.log('📊 Updating activity:', { userId, currentScreen });
         const { error } = await supabase
           .from('user_activity')
           .upsert({
@@ -31,10 +32,12 @@ export function useActivityTracking({ userId, currentScreen, isEnabled }: UseAct
           });
 
         if (error) {
-          console.warn('Failed to update activity:', error);
+          console.warn('❌ Failed to update activity:', error);
+        } else {
+          console.log('✅ Activity updated successfully');
         }
       } catch (error) {
-        console.warn('Error updating activity:', error);
+        console.warn('❌ Error updating activity:', error);
       }
     };
 
