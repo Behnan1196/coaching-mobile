@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { CoachStudentProvider, useCoachStudent } from '../contexts/CoachStudentContext';
 import { NavigationProvider, useNavigation } from '../contexts/NavigationContext';
 import { useStream } from '../contexts/StreamContext';
+import { supabase } from '../lib/supabase';
 import { LoginScreen } from '../screens/LoginScreen';
 import { StudyPlanScreen } from '../screens/StudyPlanScreen';
 import { ChatTabScreen } from '../screens/ChatTabScreen';
@@ -51,6 +52,24 @@ const MainTabs: React.FC = () => {
             const currentRoute = state.routes[state.index];
             console.log('📍 Tab changed to:', currentRoute.name);
             setCurrentTab(currentRoute.name);
+            
+            // Update activity tracking based on current tab
+            if (user?.id && supabase) {
+              const isChat = currentRoute.name === 'Chat';
+              console.log('📊 Updating activity for tab change:', { tab: currentRoute.name, isChat });
+              
+              supabase
+                .from('user_activity')
+                .upsert({
+                  user_id: user.id,
+                  current_screen: isChat ? 'chat' : null,
+                  last_activity_at: new Date().toISOString(),
+                }, {
+                  onConflict: 'user_id'
+                })
+                .then(() => console.log('✅ Activity updated for tab:', currentRoute.name))
+                .catch((error) => console.warn('❌ Error updating activity:', error));
+            }
           },
         })}
       >
@@ -100,7 +119,7 @@ const MainTabs: React.FC = () => {
 };
 
 const AuthenticatedApp: React.FC = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, user } = useAuth();
   const { videoCall } = useStream();
   const navigationRef = useRef<NavigationContainerRef<any>>(null);
 
