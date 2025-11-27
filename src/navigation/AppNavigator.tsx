@@ -23,6 +23,7 @@ const Stack = createStackNavigator();
 
 const MainTabs: React.FC = () => {
   const { setCurrentTab } = useNavigation();
+  const { userProfile } = useAuth();
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top', 'bottom']}>
