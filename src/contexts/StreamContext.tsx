@@ -119,8 +119,10 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
   const setupChatMessageListener = (channel: Channel, currentUserId: string) => {
     console.log('🔔 [CHAT] Setting up message listener for notifications');
     
-    // Remove any existing listeners to prevent duplicates
-    channel.off('message.new');
+    // Note: We don't remove existing listeners here because:
+    // 1. Channel is recreated when switching partners (see cleanup in initializeChatChannel)
+    // 2. Stream Chat handles duplicate listeners internally
+    // 3. The channel.off() method requires the exact handler reference
     
     const messageHandler = async (event: any) => {
       const message = event.message;
