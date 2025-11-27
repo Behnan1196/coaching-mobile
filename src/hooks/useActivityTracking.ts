@@ -55,6 +55,7 @@ export function useActivityTracking({ userId, currentScreen, isEnabled }: UseAct
       
       // Clear current screen when leaving
       if (supabase) {
+        console.log('🧹 Cleaning up activity tracking for:', userId);
         supabase
           .from('user_activity')
           .update({
@@ -63,10 +64,10 @@ export function useActivityTracking({ userId, currentScreen, isEnabled }: UseAct
           })
           .eq('user_id', userId)
           .then(() => {
-            console.log('Cleared current screen on unmount');
+            console.log('✅ Cleared current screen on unmount');
           })
           .catch((error) => {
-            console.warn('Error clearing screen:', error);
+            console.warn('❌ Error clearing screen:', error);
           });
       }
     };
