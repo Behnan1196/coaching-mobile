@@ -573,6 +573,17 @@ export const ExamResultsScreen: React.FC = () => {
                 </Text>
               </View>
             </>
+          ) : exam.exam_type === 'Tarama' && exam.tarama_lessons ? (
+            <>
+              {exam.tarama_lessons.map((lesson: any, index: number) => (
+                <View key={index} style={[styles.resultItem, { backgroundColor: '#F0FDF4' }]}>
+                  <Text style={[styles.resultLabel, { color: '#166534' }]}>{lesson.subject}</Text>
+                  <Text style={[styles.resultValue, { color: '#166534' }]}>
+                    {calculateNet(lesson.correct || 0, lesson.wrong || 0)}
+                  </Text>
+                </View>
+              ))}
+            </>
           ) : null}
         </View>
 
@@ -604,7 +615,11 @@ export const ExamResultsScreen: React.FC = () => {
                     parseFloat(calculateNet(exam.ayt_tarih_correct || 0, exam.ayt_tarih_wrong || 0)) +
                     parseFloat(calculateNet(exam.ayt_cografya_correct || 0, exam.ayt_cografya_wrong || 0))
                   ).toFixed(2)
-                : '0.00'
+                : exam.exam_type === 'Tarama' && exam.tarama_lessons
+                  ? exam.tarama_lessons.reduce((total: number, lesson: any) => 
+                      total + parseFloat(calculateNet(lesson.correct || 0, lesson.wrong || 0)), 0
+                    ).toFixed(2)
+                  : '0.00'
             }
           </Text>
         </View>
