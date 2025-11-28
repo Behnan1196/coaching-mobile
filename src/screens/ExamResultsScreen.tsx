@@ -484,20 +484,7 @@ export const ExamResultsScreen: React.FC = () => {
               {new Date(exam.exam_date).toLocaleDateString('tr-TR')}
             </Text>
           </View>
-          <View style={styles.examActions}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => openEditModal(exam)}
-            >
-              <Ionicons name="pencil" size={16} color="#6B7280" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => deleteExam(exam.id)}
-            >
-              <Ionicons name="trash" size={16} color="#EF4444" />
-            </TouchableOpacity>
-          </View>
+          {/* Edit/Delete buttons removed - use web interface for exam management */}
         </View>
 
         {/* Exam Results Summary */}
@@ -664,7 +651,7 @@ export const ExamResultsScreen: React.FC = () => {
             <Text style={styles.emptyStateText}>Henüz sınav sonucu eklenmemiş</Text>
             <Text style={styles.emptyStateSubtext}>
               {userProfile?.role === 'coach' 
-                ? 'Öğrenciniz için sınav sonucu eklemek için + butonuna tıklayın.'
+                ? 'Sınav sonucu eklemek için web arayüzünü kullanın.'
                 : 'Koçunuz tarafından sınav sonuçlarınız eklendiğinde burada görünecek.'}
             </Text>
           </View>
@@ -673,12 +660,7 @@ export const ExamResultsScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      {/* Add Button - Only for coaches */}
-      {userProfile?.role === 'coach' && (
-        <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-          <Ionicons name="add" size={24} color="white" />
-        </TouchableOpacity>
-      )}
+      {/* Add/Edit/Delete buttons removed - use web interface for exam management */}
 
       {/* Exam Modal */}
       <Modal
