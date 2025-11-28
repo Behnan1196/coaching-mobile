@@ -382,7 +382,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 style={canEditProblemCount ? styles.problemCountEditable : undefined}
               >
                 <Text style={[styles.problemCount, styles.boldText, isCompleted && styles.completedText]}>
-                  {formatQuestionCount(task.problem_count) || 'Soru sayısı yok'}
+                  {formatQuestionCount(task.problem_count) || 'Soru yok'}
                 </Text>
                 {canEditProblemCount && (
                   <Text style={styles.editHint}>Dokunarak düzenle</Text>
