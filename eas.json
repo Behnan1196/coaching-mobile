@@ -46,7 +46,8 @@
       },
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease"
+        "gradleCommand": ":app:bundleRelease",
+        "ndk": "26.1.10909125"
       },
       "env": {
         "EXPO_PUBLIC_STREAM_API_KEY": "9xvpnn7jqchk",
