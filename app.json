@@ -29,10 +29,11 @@
       }
     },
     "android": {
-      "versionCode": 9,
+      "versionCode": 10,
       "minSdkVersion": 21,
       "targetSdkVersion": 35,
       "compileSdkVersion": 35,
+      "supports16KbPageSize": true,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
