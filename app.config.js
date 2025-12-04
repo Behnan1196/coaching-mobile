@@ -25,7 +25,7 @@ module.exports = {
       }
     },
     android: {
-      versionCode: 10,
+      versionCode: 11,
       minSdkVersion: 21,
       targetSdkVersion: 35,
       compileSdkVersion: 35,
