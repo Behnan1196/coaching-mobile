@@ -14,6 +14,13 @@ node_modules/
 *.key
 *.mobileprovision
 
+# Android build outputs
+android/app/build/
+android/build/
+android/.gradle/
+android/app/.cxx/
+android/app/release/
+
 # Metro
 .metro-health-check*
 

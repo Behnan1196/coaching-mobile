@@ -59,7 +59,19 @@ module.exports = {
           android: {
             usesCleartextTraffic: false,
             // NDK version for 16KB page size support
-            ndkVersion: "26.1.10909125"
+            ndkVersion: "27.1.12297006",
+            // Enable new architecture for better 16KB support
+            newArchEnabled: false,
+            // Custom properties for 16KB page size
+            extraPropertiesGradle: {
+              "android.bundle.enableUncompressedNativeLibs": "false"
+            },
+            // Packagingptions for native libs
+            packagingOptions: {
+              jniLibs: {
+                useLegacyPackaging: false
+              }
+            }
           }
         }
       ]
