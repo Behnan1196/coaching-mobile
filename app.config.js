@@ -47,11 +47,7 @@ module.exports = {
         "android.permission.INTERNET"
       ],
       package: "com.behnan.coachingmobile.v2",
-      googleServicesFile: "./google-services.json",
-      // Add gradle properties for 16KB page size
-      gradleProperties: {
-        "android.bundle.enableUncompressedNativeLibs": "false"
-      }
+      googleServicesFile: "./google-services.json"
     },
     plugins: [
       "expo-av",
@@ -62,14 +58,8 @@ module.exports = {
         {
           android: {
             usesCleartextTraffic: false,
-            enableProguardInReleaseBuilds: true,
-            enableShrinkResourcesInReleaseBuilds: true,
             // NDK version for 16KB page size support
-            ndkVersion: "26.1.10909125",
-            // Gradle properties for 16KB support
-            extraPropertiesGradle: {
-              "android.bundle.enableUncompressedNativeLibs": false
-            }
+            ndkVersion: "26.1.10909125"
           }
         }
       ]
