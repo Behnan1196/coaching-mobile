@@ -42,6 +42,7 @@ yarn-error.*
 
 # Firebase configuration (sensitive)
 google-services.json
+android/app/google-services.json
 google-service-account-key.json
 
 # Keep template file

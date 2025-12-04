@@ -16,6 +16,16 @@ const setupGoogleServices = () => {
   
   if (fileExists && !isEASBuild) {
     console.log('✅ google-services.json already exists locally - skipping creation');
+    
+    // But still copy to android/app if needed
+    const androidAppPath = path.join(__dirname, '..', 'android', 'app', 'google-services.json');
+    const androidFolderExists = fs.existsSync(path.join(__dirname, '..', 'android', 'app'));
+    
+    if (androidFolderExists && !fs.existsSync(androidAppPath)) {
+      fs.copyFileSync(googleServicesPath, androidAppPath);
+      console.log('✅ google-services.json copied to android/app/');
+    }
+    
     return;
   }
   
@@ -62,6 +72,15 @@ const setupGoogleServices = () => {
     console.log('   Project ID:', parsedJson.project_info?.project_id);
     console.log('   Package name:', parsedJson.client?.[0]?.client_info?.android_client_info?.package_name);
     console.log('   Build environment:', isEASBuild ? 'EAS Build' : 'Local');
+    
+    // Copy to android/app if android folder exists (bare workflow)
+    const androidAppPath = path.join(__dirname, '..', 'android', 'app', 'google-services.json');
+    const androidFolderExists = fs.existsSync(path.join(__dirname, '..', 'android', 'app'));
+    
+    if (androidFolderExists) {
+      fs.copyFileSync(googleServicesPath, androidAppPath);
+      console.log('✅ google-services.json copied to android/app/');
+    }
     
   } catch (error) {
     console.error('❌ Error creating google-services.json:', error.message);
