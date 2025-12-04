@@ -92,7 +92,7 @@ android {
         applicationId 'com.behnan.coachingmobile.v2'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 14
+        versionCode 15
         versionName "1.0.8"
         
         // NDK configuration for 16KB page size support
