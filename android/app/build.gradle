@@ -103,9 +103,8 @@ android {
         // CMake flags for 16KB page size
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
-                cFlags "-Wl,-z,max-page-size=16384"
-                cppFlags "-Wl,-z,max-page-size=16384"
+                arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                          "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384"
             }
         }
     }
